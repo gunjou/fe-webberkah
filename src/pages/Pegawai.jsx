@@ -41,7 +41,7 @@ const Pegawai = () => {
           <div className="title flex text-2xl pt-4 pl-4 font-bold">
             Daftar Pegawai
           </div>
-          <div className="tabel rounded-[20px] mt-4 mr-4 ml-4 shadow-md bg-white w-full h-full">
+          <div className="tabel rounded-[20px] mt-4 mr-4 ml-4 px-2 shadow-md bg-white w-full h-full">
             {/* Search box */}
             <div className="ml-2 mb-6 pt-4 flex items-center justify-between">
               <span className="flex text-lg pl-2 font-semibold mr-[300px]">

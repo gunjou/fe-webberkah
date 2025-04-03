@@ -119,7 +119,7 @@ const Presensi = () => {
                     Orang
                   </p>
                 </div>
-                <span className="flex items-center justify-center absolute top-4 right-4 text-blue-700 text-3xl text-center w-8 h-8 rounded-md bg-blue-400">
+                <span className="flex items-center justify-center absolute top-4 right-4 text-yellow-700 text-3xl text-center w-8 h-8 rounded-md bg-yellow-400">
                   <PiOfficeChairBold className="h-6 w-6" />
                 </span>
               </Card>
@@ -141,7 +141,7 @@ const Presensi = () => {
                     Orang
                   </p>
                 </div>
-                <span className="flex items-center justify-center absolute top-4 right-4 text-green-700 text-3xl text-center w-8 h-8 rounded-md bg-green-400">
+                <span className="flex items-center justify-center absolute top-4 right-4 text-blue-700 text-3xl text-center w-8 h-8 rounded-md bg-blue-400">
                   <FaHelmetSafety className="h-6 w-6" />
                 </span>
               </Card>
@@ -162,7 +162,7 @@ const Presensi = () => {
                     Orang
                   </p>
                 </div>
-                <span className="flex items-center justify-center absolute top-4 right-4 text-red-700 text-3xl text-center w-8 h-8 rounded-md bg-red-400">
+                <span className="flex items-center justify-center absolute top-4 right-4 text-green-700 text-3xl text-center w-8 h-8 rounded-md bg-green-400">
                   <MdCleaningServices className="h-6 w-6" />
                 </span>
               </Card>
