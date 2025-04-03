@@ -1,13 +1,20 @@
-import { React, useState } from "react";
+import { React, useState, useEffect } from "react";
 import { RiCalendarScheduleFill } from "react-icons/ri";
 import { MdHealthAndSafety } from "react-icons/md";
-import { FaStreetView } from "react-icons/fa";
-import { FaLocationDot } from "react-icons/fa6";
+import { FaClipboardList, FaNotesMedical, FaStreetView } from "react-icons/fa";
+import { FaLocationDot, FaUserPen } from "react-icons/fa6";
+import { MdOutlineAccountCircle } from "react-icons/md"; // Tambahkan ikon akun
 import CameraComponent from "./components/CameraComponent";
+import { useNavigate } from "react-router-dom";
+import { RxDropdownMenu } from "react-icons/rx";
+import { CgProfile } from "react-icons/cg";
 
 const Absensi = () => {
   const [image, setImage] = useState(null);
   const [showCamera, setShowCamera] = useState(false); // State untuk mengontrol tampilan kamera
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State untuk dropdown
+  const [isAbsenMasuk, setIsAbsenMasuk] = useState(true); // State untuk status absen masuk
+  const navigate = useNavigate();
 
   const handleCapture = (imageSrc) => {
     setImage(imageSrc); // Simpan gambar yang diambil ke state
@@ -21,121 +28,151 @@ const Absensi = () => {
     setShowCamera(false); // Sembunyikan kamera
   };
 
-  return (
-    <div className="Absensi">
-      {/* Haeder */}
-      <div className="Header left-0 m-8">
-        <span className="flex text-lg">Hallo,</span>
-        <h1 className="flex text-2xl font-semibold">Gugun Jofandi</h1>
-      </div>
-      {/* End Header */}
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen); // Toggle dropdown
+  };
 
-      {/* Card Absensi */}
-      <div className="mt-5 ml-5 mr-5">
-        <div className="block p-5 bg-white border border-gray-200 rounded-xl shadow-lg">
-          <div className="grid grid-cols-2 gap-2 pb-6">
-            <h2 className="flex text-lg font-semibold">Jam Kerja</h2>
-            <div className=" ">Senin, 10 Mar 2025</div>
-          </div>
-          <div className="text-4xl font-bold pb-7">08:00 - 17:00</div>
-          <div>
-            {/* <h1>Sistem Absensi dengan Pengenalan Wajah</h1> */}
-            {!showCamera ? (
+  const handleAbsen = () => {
+    navigate("/ambil-gambar"); // Navigasi ke halaman ambil gambar
+  };
+
+  useEffect(() => {
+    // Cek status absen dari localStorage
+    const statusAbsen = localStorage.getItem("statusAbsen");
+    if (statusAbsen === "pulang") {
+      setIsAbsenMasuk(false);
+    } else {
+      setIsAbsenMasuk(true);
+    }
+  }, []);
+
+  const goToAmbilGambar = () => {
+    navigate("/ambil-gambar");
+  };
+
+  return (
+    <div className="bg-gradient-to-b from-custom-merah to-custom-gelap pb-[900px]">
+      <div className="Absensi">
+        {/* Card Absensi */}
+        <div className="mt-0 ml-0 mr-0">
+          <div className="block p-5 bg-white border border-gray-200 rounded-b-[60px] shadow-lg">
+            {/* Haeder */}
+            <div className="Header left-0 mb-2">
+              {/* Dropdown Menu */}
+              <div className="absolute right-5 mt-0 ">
+                <button
+                  onClick={toggleDropdown}
+                  className="flex items-center bg-white text-black rounded-[20px] hover:bg-gray-100 shadow-md font-semibold py-2 px-4  "
+                >
+                  <RxDropdownMenu className="text-[30px]" />
+                </button>
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 z-50 text-left bg-custom-merah rounded-lg shadow-lg">
+                    <ul className="py-2">
+                      <li className="text-white px-4 py-2 hover:bg-custom-gelap cursor-pointer">
+                        Profile
+                      </li>
+                      <li className="text-white px-4 py-2 hover:bg-custom-gelap cursor-pointer">
+                        Settings
+                      </li>
+                      <li
+                        className="text-white font-bold px-4 py-2 hover:bg-custom-gelap cursor-pointer"
+                        onClick={() => alert("Logout")}
+                      >
+                        Logout
+                      </li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+              <span className="flex text-lg">Hallo,</span>
+
+              <h1 className="flex text-2xl font-semibold">Gugun Jofandi</h1>
+            </div>
+            {/* End Header */}
+            <div className="grid grid-cols-2 gap-2 pb-6">
+              <h2 className="flex text-lg font-semibold">Jam Kerja:</h2>
+              <div className="flex absolute right-5">Senin, 10 Mar 2025</div>
+            </div>
+            <div className="text-4xl font-bold pb-7">08:00 - 17:00</div>
+            <div className="flex justify-center">
               <button
                 type="button"
-                onClick={handleOpenCamera}
-                className="focus:outline-none text-white bg-green-500 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-full text-base font-semibold px-8 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+                className={`flex w-[150px] text-white items-center justify-center ${
+                  isAbsenMasuk
+                    ? "bg-custom-merah hover:bg-custom-gelap"
+                    : "bg-custom-merah hover:bg-custom-gelap"
+                } text-black font-medium rounded-[20px] px-2 py-2 shadow-md`}
+                onClick={handleAbsen}
               >
-                Absen Masuk
+                {isAbsenMasuk ? "Absen Masuk" : "Absen Pulang"}
               </button>
-            ) : (
-              // <button onClick={handleOpenCamera}>Buka Kamera</button>
-              <CameraComponent
-                onCapture={handleCapture}
-                onClose={handleCloseCamera}
-              />
-            )}
-            {image && (
-              <div>
-                <h2>Gambar yang Diambil:</h2>
-                <img
-                  src={image}
-                  alt="Captured"
-                  style={{ transform: "scaleX(-1)" }}
-                />
-              </div>
-            )}
+            </div>
           </div>
-          {/* <button 
-					type="button" 
-					className="focus:outline-none text-white bg-green-500 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-full text-base font-semibold px-8 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-						Absen Masuk
-				</button> */}
         </div>
-      </div>
-      {/* End card abesnsi */}
+        {/* End card abesnsi */}
 
-      {/* Menu Lainnya */}
-      <div className="block m-5 bg-white border border-gray-200 rounded-xl shadow-lg">
-        <div className="grid grid-cols-7 pt-4 pb-4 place-items-center">
-          <div className="col-span-2">
-            <div className="text-[27pt] ml-2 text-blue-500">
+        <div class="flex space-x-1 px-2 py-3 justify-center rounded-[20px]">
+          <button class="flex items-center bg-white hover:bg-gray-300 text-black rounded-full px-3 py-2 shadow-md">
+            <div className="text-[20pt] text-custom-merah pr-1">
               <RiCalendarScheduleFill />
             </div>
-            <p>History</p>
-          </div>
-          <div className="col-span-2">
-            <div className="text-[27pt] ml-3 text-green-600">
-              <MdHealthAndSafety />
+            History
+          </button>
+          <button class="flex items-center bg-white hover:bg-gray-300 text-black rounded-[20px] px-2 py-2 shadow-md">
+            <div className="text-[20pt] text-custom-merah pr-1">
+              <FaNotesMedical />
             </div>
-            <p>Izin/Sakit</p>
-          </div>
-          <div className="col-span-3">
-            <div className="text-[27pt] ml-8 text-red-600">
-              <FaStreetView />
+            Izin/Sakit
+          </button>
+          <button class="flex items-center bg-white hover:bg-gray-300 text-black rounded-[20px] px-2 py-2 shadow-md">
+            <div className="text-[20pt] text-custom-merah pr-1">
+              <FaUserPen />
             </div>
-            <p>Pengajuan Cuti</p>
-          </div>
-        </div>
-      </div>
-      {/* End Menu Lainnya */}
-
-      {/* Presensi */}
-      <div>
-        <span className="Title flex pl-6 text-xl font-semibold">Presensi</span>
-        <div className="block ml-5 mr-5 mt-3 bg-white border border-gray-200 rounded-xl shadow-lg">
-          <p className="pt-2 pl-3 pb-2 flex font-semibold">
-            Senin, 10 Maret 2025
-          </p>
-          <div className="pl-4 grid grid-cols-2">
-            <div className="flex pl-2 pb-4">
-              <p className="text-xl pt-0.5 pr-2 text-red-700">
-                <FaLocationDot />
-              </p>
-              <span className="text-md">PLTG Jeranjang</span>
-            </div>
-            <span className="text-md font-semibold pl-4">Jam Masuk: 07:55</span>
-          </div>
+            Form Cuti
+          </button>
         </div>
 
-        <div className="block ml-5 mr-5 mt-3 bg-white border border-gray-200 rounded-xl shadow-lg">
-          <p className="pt-2 pl-3 pb-2 flex font-semibold">
-            Senin, 10 Maret 2025
-          </p>
-          <div className="pl-4 grid grid-cols-2">
-            <div className="flex pl-2 pb-4">
-              <p className="text-xl pt-0.5 pr-2 text-red-700">
-                <FaLocationDot />
-              </p>
-              <span className="text-md">PLTG Jeranjang</span>
+        <div>
+          <span className="Title flex pl-6 text-xl text-white font-semibold">
+            Presensi
+          </span>
+          <div className="block ml-2 mr-2 mt-3 bg-white border border-gray-200 rounded-[20px] shadow-lg">
+            <p className="pt-2 pl-4 pb-2 flex font-semibold">
+              Senin, 10 Maret 2025
+            </p>
+            <div className="pl-4 grid grid-cols-2">
+              <div className="flex pl-0.5 pb-4">
+                <p className="text-xl pt-0.5 pr-2 text-red-700">
+                  <FaLocationDot />
+                </p>
+                <span className="text-md"></span>
+              </div>
+              <span className="text-md font-semibold absolute right-5">
+                Jam Masuk:
+              </span>
             </div>
-            <span className="text-md font-semibold pl-4">
-              Jam Keluar: 17:05
-            </span>
+          </div>
+
+          <div className="block ml-2 mr-2 mt-3 bg-white border border-gray-200 rounded-[20px] shadow-lg">
+            <p className="pt-2 pl-4 pb-2 flex font-semibold">
+              Senin, 10 Maret 2025
+            </p>
+            <div className="pl-4 grid grid-cols-2">
+              <div className="flex pl-0.5` pb-4">
+                <p className="text-xl pt-0.5 pr-2 text-red-700">
+                  <FaLocationDot />
+                </p>
+                <span className="text-md"></span>
+              </div>
+              <span className="text-md font-semibold absolute right-5">
+                Jam Keluar:
+              </span>
+            </div>
           </div>
         </div>
+        {/* End Presensi */}
       </div>
-      {/* End Presensi */}
     </div>
   );
 };

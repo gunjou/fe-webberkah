@@ -1,18 +1,17 @@
-import React from 'react'
+import React from "react";
 
-import SideMenu from './SideMenu';
-import NavMenu from './NavMenu';
-import Pegawai from './Pegawai';
-import Presensi from './Presensi';
-import Rekapan from './Rekapan';
-import Lembur from './Lembur';
-import PerhitunganGaji from './PerhitunganGaji';
+import SideMenu from "./SideMenu";
+import NavMenu from "./NavMenu";
+import Pegawai from "./Pegawai";
+import Presensi from "./Presensi";
+import Rekapan from "./Rekapan";
+import Lembur from "./Lembur";
+import PerhitunganGaji from "./PerhitunganGaji";
 
-
-const Dashboard = ({type}) => {
+const Dashboard = ({ type }) => {
   let content;
 
-	switch (type) {
+  switch (type) {
     case "profile-pegawai":
       content = <Pegawai />;
       break;
@@ -34,16 +33,16 @@ const Dashboard = ({type}) => {
   }
 
   return (
-    <div className="Dashboard">
+    <div className="Dashboard ml-64 bg-white- min-h-screen">
       {/* Navbar Section */}
       <NavMenu />
       <div className="flex">
         {/* Sidebar section */}
-        <SideMenu className='sticky' />
+        <SideMenu className="sticky" />
         {content}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;
