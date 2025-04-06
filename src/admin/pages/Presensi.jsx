@@ -7,8 +7,8 @@ import { ImCross } from "react-icons/im";
 
 // import NavMenu from './NavMenu'
 // import SideMenu from './SideMenu'
-import { FaCheck, FaHandHoldingMedical, FaPlus } from "react-icons/fa";
-import ModalHadir from "./components/ModalHadir";
+import { FaCheck, FaPlus } from "react-icons/fa";
+import ModalHadir from "../components/ModalHadir";
 
 const Presensi = () => {
   const [openHadir, setOpenHadir] = useState(false);
@@ -26,7 +26,7 @@ const Presensi = () => {
           <div className="title flex text-2xl pt-4 pl-4 font-bold">
             Persensi Semua Pegawai
           </div>
-          <div class="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
+          <div className="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
             <div className="card h-50 w-80">
               <Card
                 href="#"
@@ -102,7 +102,7 @@ const Presensi = () => {
             Persensi Departemen Pegawai
           </div>
 
-          <div class="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
+          <div className="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
             {/* Staff Kantor  */}
             <div className="card h-50 w-80">
               <Card href="#" className="cursor-pointer relative">

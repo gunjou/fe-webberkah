@@ -5,7 +5,6 @@ import {
   FaUserFriends,
   FaClipboardList,
   FaClipboardCheck,
-  FaMoneyCheckAlt,
   FaCalculator,
 } from "react-icons/fa";
 import { HiClipboardDocumentList } from "react-icons/hi2";
