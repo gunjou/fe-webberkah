@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import { React, useEffect, useState } from "react";
 import { Modal, Label, TextInput, Select } from "flowbite-react";
-import { FaPlus, FaTrash } from "react-icons/fa";
+import { FaPause, FaPlus, FaTrash, FaUserPlus } from "react-icons/fa";
 import { GrFormNext, GrFormPrevious } from "react-icons/gr";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -15,6 +15,33 @@ import axios from "axios";
 // import SideMenu from './SideMenu'
 // import NavMenu from './NavMenu'
 
+const kolom = [
+  { id: "nama", label: "Nama Pegawai", minWidth: 100 },
+  { id: "status", label: "Status Pegawai", minWidth: 100 },
+  {
+    id: "username",
+    label: "Username",
+    minWidth: 100,
+  },
+  {
+    id: "password",
+    label: "Password",
+    minWidth: 100,
+  },
+  {
+    id: "gaji_pokok",
+    label: "Gaji Pokok",
+    minWidth: 100,
+  },
+  {
+    id: "aksi",
+    label: "Aksi",
+    minWidth: 50,
+    align: "center",
+    fontWeight: "bold",
+  },
+];
+
 const Pegawai = () => {
   const [openModalAdd, setOpenModalAdd] = useState(false);
   const [openModalEdit, setOpenModalEdit] = useState(false);
@@ -22,13 +49,21 @@ const Pegawai = () => {
   const [loading, setLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
+  const rowsPerPage = 10;
 
-  const [searchTerm, setSearchTerm] = useState(""); //
+  const [searchTerm, setSearchTerm] = useState("");
   const [jenisList, setJenisList] = useState([]);
 
   const [selectedPegawai, setSelectedPegawai] = useState({
     id_karyawan: "",
+    nama: "",
+    jenis: "",
+    username: "",
+    password: "",
+    gaji_pokok: "",
+  });
+
+  const [newPegawai, setNewPegawai] = useState({
     nama: "",
     jenis: "",
     username: "",
@@ -77,8 +112,6 @@ const Pegawai = () => {
       password: selectedPegawai.password,
     };
 
-    // console.log("Payload dikirim:", payload);
-
     axios
       .put(
         `https://api.berkahangsana.online/karyawan/${selectedPegawai.id_karyawan}`,
@@ -103,15 +136,59 @@ const Pegawai = () => {
       });
   };
 
+  const saveAdd = () => {
+    const payloadAdd = {
+      nama: newPegawai.nama,
+      jenis: newPegawai.jenis,
+      username: newPegawai.username,
+      gaji_pokok: newPegawai.gaji_pokok,
+    };
+
+    // console.log("Payload dikirim:", payload);
+
+    axios
+      .post("https://api.berkahangsana.online/karyawan", payloadAdd)
+      .then((res) => {
+        alert("Data karyawan berhasil ditambahkan!");
+        setKaryawan((prev) => [...prev, res.data]);
+        setOpenModalAdd(false);
+        setNewPegawai({
+          nama: "",
+          jenis: "",
+          username: "",
+          password: "",
+          gaji_pokok: "",
+        }); // Reset form
+      })
+      .catch((error) => {
+        console.error(
+          "Error adding data:",
+          error.response?.data || error.message
+        );
+      });
+  };
+
   // Filter data berdasarkan search term
-  const filteredData = karyawan.filter((item) =>
-    item.nama.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = karyawan
+    .filter((item) =>
+      item.nama.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      const aMatches = a.nama
+        .toLowerCase()
+        .startsWith(searchTerm.toLowerCase());
+      const bMatches = b.nama
+        .toLowerCase()
+        .startsWith(searchTerm.toLowerCase());
+      return bMatches - aMatches; // Prioritaskan yang cocok di depan
+    });
 
   // Hitung indeks data yang akan ditampilkan
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
+  const currentRows = searchTerm
+    ? filteredData.slice(0, rowsPerPage) // Tampilkan hanya halaman pertama
+    : filteredData.slice(indexOfFirstRow, indexOfLastRow);
 
   // Fungsi untuk mengganti halaman
   const nextPage = () => {
@@ -127,34 +204,43 @@ const Pegawai = () => {
   };
 
   var detail = "";
-  detail = currentRows.map((item, index) => (
-    <TableRow
-      key={index}
-      sx={{
-        "&:last-child td, &:last-child th": { border: 0 },
-      }}
-    >
-      <TableCell component="th" scope="row" className="capitalize">
-        {item.nama}
-      </TableCell>
-      <TableCell align="left" className="capitalize">
-        {item.jenis}
-      </TableCell>
+  if (currentRows.length === 0) {
+    detail = (
+      <TableRow>
+        <TableCell colSpan={kolom.length} align="center">
+          Tidak ada yang cocok dengan pencarian Anda.
+        </TableCell>
+      </TableRow>
+    );
+  } else {
+    detail = currentRows.map((item, index) => (
+      <TableRow
+        key={index}
+        sx={{
+          "&:last-child td, &:last-child th": { border: 0 },
+        }}
+      >
+        <TableCell component="th" scope="row" className="capitalize">
+          {item.nama}
+        </TableCell>
+        <TableCell align="left" className="capitalize">
+          {item.jenis}
+        </TableCell>
 
-      <TableCell align="left">{item.username}</TableCell>
-      <TableCell align="left">{item.password}</TableCell>
-      <TableCell align="left">{item.gaji_pokok}</TableCell>
-      <TableCell align="center">
-        <span
-          className="font-medium text-white hover:underline dark:text-cyan-500 cursor-pointer bg-custom-merah rounded-[20px] px-6 py-1"
-          onClick={() => handleEdit(item)} // Panggil handleEdit
-        >
-          Edit
-        </span>
-      </TableCell>
-    </TableRow>
-  ));
-
+        <TableCell align="left">{item.username}</TableCell>
+        <TableCell align="left">{item.password}</TableCell>
+        <TableCell align="left">{item.gaji_pokok}</TableCell>
+        <TableCell align="center">
+          <span
+            className="font-medium text-white hover:underline dark:text-cyan-500 cursor-pointer bg-custom-merah rounded-[20px] px-6 py-1"
+            onClick={() => handleEdit(item)} // Panggil handleEdit
+          >
+            Edit
+          </span>
+        </TableCell>
+      </TableRow>
+    ));
+  }
   const handleEdit = (karyawan) => {
     setSelectedPegawai(karyawan);
     setOpenModalEdit(true);
@@ -220,52 +306,33 @@ const Pegawai = () => {
             </div>
             {/* end search box */}
             <div className="overflow-x-auto pl-2">
-              <div className="bg-white rounded-lg shadow-md mr-2">
-                <TableContainer component={Paper}>
-                  <Table sx={{ minWidth: 650 }} aria-label="simple table">
-                    <TableHead className="bg-[#e8ebea]">
-                      <TableRow>
-                        <TableCell className="rounded-l-lg text-black font-bold">
-                          Nama Pegawai
-                        </TableCell>
-                        <TableCell
-                          align="left"
-                          className="text-black font-bold"
-                        >
-                          Status Pegawai
-                        </TableCell>
-
-                        <TableCell
-                          align="left"
-                          className="text-black font-bold"
-                        >
-                          Username
-                        </TableCell>
-                        <TableCell
-                          align="left"
-                          className="text-black font-bold"
-                        >
-                          Password
-                        </TableCell>
-
-                        <TableCell
-                          align="left"
-                          className="text-black font-bold"
-                        >
-                          Gaji Pokok
-                        </TableCell>
-
-                        <TableCell
-                          align="center"
-                          className="rounded-r-lg text-black font-bold"
-                        >
-                          Aksi
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody className="text-red">{detail}</TableBody>
-                  </Table>
-                </TableContainer>
+              <div className="bg-white rounded-lg shadow-md mr-2 overflow-y-auto max-h-[300px] ">
+                <Paper sx={{ width: "100%", overflow: "hidden" }}>
+                  <TableContainer sx={{ maxHeight: 300 }}>
+                    <Table stickyHeader aria-label="sticky table">
+                      <TableHead className="bg-[#e8ebea]">
+                        <TableRow>
+                          {kolom.map((column, index) => (
+                            <TableCell
+                              key={column.id}
+                              align={column.align}
+                              style={{
+                                minWidth: column.minWidth,
+                                backgroundColor: "#4d4d4d", // Ganti warna latar belakang
+                                color: "white", // Ganti warna teks
+                                fontWeight: "bold",
+                                borderRadius: index === 5 ? "0 10px 0 0" : "0",
+                              }}
+                            >
+                              {column.label}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody className="text-red">{detail}</TableBody>
+                    </Table>
+                  </TableContainer>
+                </Paper>
               </div>
               {/* Tombol Next dan Prev dengan keterangan halaman */}
               <div className="flex justify-between items-center mt-4 px-4">
@@ -447,19 +514,73 @@ const Pegawai = () => {
                       <div className="block mb-2">
                         <Label htmlFor="small" value="Nama Pegawai" />
                       </div>
-                      <TextInput id="small" type="text" sizing="sm" />
+                      <TextInput
+                        id="small"
+                        type="text"
+                        sizing="sm"
+                        value={newPegawai.nama}
+                        onChange={(e) =>
+                          setNewPegawai({ ...newPegawai, nama: e.target.value })
+                        }
+                      />
                     </div>
                     <div>
                       <div className="block mb-2">
-                        <Label htmlFor="small" value="Jenis Pegawai" />
+                        <Label htmlFor="jenis" value="Jenis Pegawai" />
                       </div>
-                      <TextInput id="small" type="text" sizing="sm" />
+                      <Select
+                        id="jenis"
+                        sizing="sm"
+                        value={newPegawai.jenis}
+                        onChange={(e) =>
+                          setNewPegawai({
+                            ...newPegawai,
+                            jenis: parseInt(e.target.value),
+                          })
+                        }
+                      >
+                        <option value="">Pilih Jenis Pegawai</option>
+                        {Array.isArray(jenisList) &&
+                          jenisList.map((jenis) => (
+                            <option key={jenis.id_jenis} value={jenis.id_jenis}>
+                              {jenis.jenis}
+                            </option>
+                          ))}
+                      </Select>
                     </div>
                     <div>
                       <div className="block mb-2">
                         <Label htmlFor="small" value="Username" />
                       </div>
-                      <TextInput id="small" type="text" sizing="sm" />
+                      <TextInput
+                        id="small"
+                        type="text"
+                        sizing="sm"
+                        value={newPegawai.username}
+                        onChange={(e) =>
+                          setNewPegawai({
+                            ...newPegawai,
+                            username: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <div className="block mb-2">
+                        <Label htmlFor="small" value="Password" />
+                      </div>
+                      <TextInput
+                        id="small"
+                        type="text"
+                        sizing="sm"
+                        value={newPegawai.password}
+                        onChange={(e) =>
+                          setNewPegawai({
+                            ...newPegawai,
+                            password: e.target.value,
+                          })
+                        }
+                      />
                     </div>
                     <div>
                       <div className="block mb-2">
@@ -470,6 +591,13 @@ const Pegawai = () => {
                         type="text"
                         sizing="sm"
                         placeholder="contoh: 1000000"
+                        value={newPegawai.gaji_pokok}
+                        onChange={(e) =>
+                          setNewPegawai({
+                            ...newPegawai,
+                            gaji_pokok: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </form>
@@ -478,7 +606,7 @@ const Pegawai = () => {
                   <button
                     type="button"
                     className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
-                    onClick={() => setOpenModalAdd(false)}
+                    onClick={saveAdd}
                   >
                     Simpan
                   </button>

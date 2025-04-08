@@ -1,9 +1,10 @@
-import { React, useState } from "react";
+import { React, useState, useEffect } from "react";
 import { Card } from "flowbite-react";
 import { PiOfficeChairBold } from "react-icons/pi";
 import { FaHelmetSafety } from "react-icons/fa6";
 import { MdCleaningServices } from "react-icons/md";
 import { ImCross } from "react-icons/im";
+import axios from "axios";
 
 // import NavMenu from './NavMenu'
 // import SideMenu from './SideMenu'
@@ -14,6 +15,46 @@ const Presensi = () => {
   const [openHadir, setOpenHadir] = useState(false);
   const handleOpenHadir = () => setOpenHadir(true);
   const handleCloseHadir = () => setOpenHadir(false);
+  const [absen, setAbsen] = useState([]);
+  const [karyawan, setKaryawan] = useState([]);
+  const [filteredData, setFilteredData] = useState([]); // Data yang difilter
+  const [searchTerm, setSearchTerm] = useState(""); // Nilai input pencarian
+
+  useEffect(() => {
+    setFilteredData(absen, karyawan); // Reset filteredData ke data asli saat modal dibuka
+    setSearchTerm(""); // Reset nilai pencarian
+  }, [absen, karyawan]);
+
+  useEffect(() => {
+    axios
+      .get("https://api.berkahangsana.online/karyawan")
+      .then((res) => {
+        const sorted = res.data.karyawan
+          .filter((item) => item.nama) // optional: filter kalau nama tidak null
+          .sort((a, b) => a.nama.localeCompare(b.nama));
+
+        setKaryawan(sorted);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    axios
+      .get("https://api.berkahangsana.online/absensi", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((res) => {
+        setAbsen(res.data.absensi);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, []);
 
   return (
     <div className="Presensi">
@@ -40,7 +81,8 @@ const Presensi = () => {
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    93/100
+                    {absen.length}/
+                    {karyawan.filter((item) => item.id_karyawan).length - 2}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -62,7 +104,8 @@ const Presensi = () => {
                   </div>
                   <div className="mt-7 text-left ml-0">
                     <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                      4/100
+                      -/
+                      {karyawan.filter((item) => item.id_karyawan).length - 2}
                     </p>
                     <p className="font-normal text-red-700 dark:text-gray-400">
                       Orang
@@ -84,7 +127,10 @@ const Presensi = () => {
                   </div>
                   <div className="mt-7 text-left ml-0">
                     <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                      3/100
+                      {karyawan.filter((item) => item.id_karyawan).length -
+                        2 -
+                        absen.length}
+                      /{karyawan.filter((item) => item.id_karyawan).length - 2}
                     </p>
                     <p className="font-normal text-red-700 dark:text-gray-400">
                       Orang
@@ -113,7 +159,8 @@ const Presensi = () => {
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    29/30
+                    {absen.filter((item) => item.id_jenis == 4).length}/
+                    {karyawan.filter((item) => item.id_jenis === 4).length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -135,7 +182,8 @@ const Presensi = () => {
 
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    68/70
+                    {absen.filter((item) => item.id_jenis == 5).length}/
+                    {karyawan.filter((item) => item.id_jenis === 5).length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -156,7 +204,7 @@ const Presensi = () => {
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    6/10
+                    -/-
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang

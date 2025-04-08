@@ -89,6 +89,10 @@ const NavMenu = () => {
               Sign out
             </DropdownItem>
           </Dropdown>
+          <div className="text-white">
+            <div className="text-sm font-bold">{namaAdmin}</div>
+            <div className="text-xs">Admin</div>
+          </div>
         </div>
       </Navbar>
     </div>
