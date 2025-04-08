@@ -15,28 +15,41 @@ const style = {
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-
-  // width: 400,
   bgcolor: "background.paper",
   border: "2px solid #000",
-
   boxShadow: 24,
   p: 3,
 };
 
 const columns = [
   {
-    field: "id",
+    field: "no",
     headerName: "No",
     width: 70,
     headerAlign: "center",
     align: "center",
     headerClassName: "font-bold text-black", // Tambahkan class untuk header
+    sortable: false,
+    filterable: false,
+    renderCell: (params) => {
+      const index = params.api.getSortedRowIds().indexOf(params.id);
+      return index + 1;
+    },
   },
+
   {
     field: "nama",
     headerName: "Nama",
     width: 160,
+    renderCell: (params) => {
+      const toTitleCase = (str) =>
+        str.replace(
+          /\w\S*/g,
+          (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
+        );
+
+      return toTitleCase(params.value);
+    },
   },
 
   {
@@ -46,33 +59,31 @@ const columns = [
     headerAlign: "center",
     align: "center",
   },
-  {
-    field: "lokasi_masuk",
-    headerName: "Lokasi Check in",
-    width: 130,
-    headerAlign: "center",
-    align: "left",
-  },
+
   {
     field: "jam_keluar",
     headerName: "Waktu Check out",
     width: 130,
     headerAlign: "center",
     align: "center",
+    renderCell: (params) => params.value || "-",
+  },
+
+  {
+    field: "lokasi_masuk",
+    headerName: "Lokasi Check in",
+    width: 150,
+    headerAlign: "center",
+    align: "left",
   },
 
   {
     field: "lokasi_keluar",
     headerName: "Lokasi Check out",
-    width: 130,
+    width: 150,
     headerAlign: "center",
     align: "left",
-    renderCell: (params) => {
-      if (params.value === null) {
-        return <span>Belum check-out</span>;
-      }
-      return <span>{params.value}</span>;
-    },
+    renderCell: (params) => <span>{params.value || "-"}</span>,
   },
 
   {
@@ -88,6 +99,20 @@ const columns = [
       return <span style={{ color: "green" }}>Tepat Waktu</span>;
     },
   },
+  {
+    field: "status_absen",
+    headerName: "Status",
+    width: 130,
+    headerAlign: "center",
+    align: "center",
+  },
+  {
+    field: "action",
+    headerName: "Action",
+    width: 100,
+    headerAlign: "center",
+    align: "center",
+  },
 ];
 
 const getFormattedDate = () => {
@@ -101,7 +126,7 @@ const getFormattedDate = () => {
   };
   return new Intl.DateTimeFormat("id-ID", options).format(date);
 };
-const paginationModel = { page: 0, pageSize: 25 };
+const paginationModel = { page: 0, pageSize: 50 };
 
 const ModalHadir = ({ open, close }) => {
   const [data, setData] = useState([]); // Data asli
@@ -127,9 +152,18 @@ const ModalHadir = ({ open, close }) => {
         },
       })
       .then((res) => {
-        const sorted = res.data.absensi
-          .filter((item) => item.nama) // optional: filter kalau nama tidak null
-          .sort((a, b) => a.nama.localeCompare(b.nama));
+        const filtered = res.data.absensi.filter((item) => item.nama);
+
+        // Sort berdasarkan jam_masuk (format "HH:mm")
+        const sorted = filtered.sort((a, b) => {
+          const toMinutes = (timeStr) => {
+            if (!timeStr) return Infinity; // Kosong/null dianggap paling akhir
+            const [h, m] = timeStr.split(":").map(Number);
+            return h * 60 + m;
+          };
+          return toMinutes(a.jam_masuk) - toMinutes(b.jam_masuk);
+        });
+
         setData(sorted);
         setLoading(false);
       })
@@ -224,11 +258,19 @@ const ModalHadir = ({ open, close }) => {
               </div>
             </div>
           </Typography>
-          <Paper sx={{ height: 400, width: "100%" }}>
+          <Paper
+            sx={{
+              width: "100%", // biar fleksibel
+              height: 400,
+              overflow: "auto",
+            }}
+          >
             <DataGrid
               rows={filteredData} // Gunakan data yang sudah difilter
               columns={columns}
-              initialState={{ pagination: { paginationModel } }}
+              initialState={{
+                pagination: { paginationModel },
+              }}
             />
           </Paper>
           <button
