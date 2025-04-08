@@ -54,42 +54,53 @@ const AmbilGambar = () => {
   };
 
   const handleSave = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const id_karyawan = localStorage.getItem("id_karyawan");
+    const token = localStorage.getItem("token");
+    const id_karyawan = localStorage.getItem("id_karyawan");
 
-      if (!image || !id_karyawan) {
-        alert("Data tidak lengkap.");
-        return;
-      }
-      // 1. Ambil lokasi
+    if (!image || !id_karyawan) {
+      alert("Data tidak lengkap.");
+      return;
+    }
+
+    try {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
+          try {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
 
-          // Resize image
-          const resizedImage = await resizeImage(image);
-          const blob = await (await fetch(resizedImage)).blob();
+            const resizedImage = await resizeImage(image);
+            const blob = await (await fetch(resizedImage)).blob();
 
-          // Buat formData
-          const formData = new FormData();
-          formData.append("file", blob, "photo.jpg");
-          formData.append("latitude", latitude);
-          formData.append("longitude", longitude);
+            const formData = new FormData();
+            formData.append("file", blob, "photo.jpg");
+            formData.append("latitude", latitude);
+            formData.append("longitude", longitude);
 
-          const endpoint = `/absensi/${id_karyawan}`;
-          const method = mode === "checkin" ? "post" : "put";
+            const endpoint = `/absensi/${id_karyawan}`;
+            const method = mode === "checkin" ? "post" : "put";
 
-          const response = await api[method](endpoint, formData, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
-          });
+            const response = await api[method](endpoint, formData, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "multipart/form-data",
+              },
+            });
 
-          alert(response.data.status || "Check in berhasil!");
-          navigate("/absensi");
+            alert(response.data.status || "Check in berhasil!");
+            navigate("/absensi");
+          } catch (error) {
+            console.error("Gagal kirim data absen:", error);
+
+            const errorMessage =
+              error.response?.data?.message ||
+              error.response?.data?.status ||
+              error.response?.data?.error ||
+              "Gagal check in, silakan coba lagi.";
+
+            alert("Gagal absen: " + errorMessage);
+            setShowCamera(true);
+          }
         },
         (error) => {
           console.error("Gagal mendapatkan lokasi:", error);
@@ -97,14 +108,8 @@ const AmbilGambar = () => {
         }
       );
     } catch (error) {
-      console.error("Gagal check in:", error);
-
-      if (error.response?.data?.status || error.response?.data?.error) {
-        alert(error.response.data.status || error.response.data.error);
-      } else {
-        alert("Gagal check in, silakan coba lagi.");
-      }
-      setShowCamera(true);
+      console.error("Kesalahan tak terduga:", error);
+      alert("Terjadi kesalahan, silakan coba lagi.");
     }
   };
 
