@@ -9,6 +9,7 @@ const AmbilGambar = () => {
   const navigate = useNavigate(); // Initialize useNavigate
   const location = useLocation();
   const mode = location.state?.mode || "checkin"; // default ke checkin
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCapture = (imageSrc) => {
     setImage(imageSrc); // Simpan gambar yang diambil ke state
@@ -62,6 +63,8 @@ const AmbilGambar = () => {
       return;
     }
 
+    setIsLoading(true); // ✅ MULAI loading
+
     try {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -100,16 +103,20 @@ const AmbilGambar = () => {
 
             alert("Gagal absen: " + errorMessage);
             setShowCamera(true);
+          } finally {
+            setIsLoading(false); // ✅ SELESAI loading
           }
         },
         (error) => {
           console.error("Gagal mendapatkan lokasi:", error);
           alert("Gagal mendapatkan lokasi, pastikan izin lokasi diaktifkan.");
+          setIsLoading(false); // ✅ SELESAI loading jika gagal dapat lokasi
         }
       );
     } catch (error) {
       console.error("Kesalahan tak terduga:", error);
       alert("Terjadi kesalahan, silakan coba lagi.");
+      setIsLoading(false); // ✅ SELESAI loading pada error
     }
   };
 
@@ -170,6 +177,18 @@ const AmbilGambar = () => {
                     />
                   </div>
                 )}
+
+                {/* Loading Spinner */}
+                {isLoading && (
+                  <div className="flex flex-col items-center mt-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Memproses absensi...
+                    </p>
+                  </div>
+                )}
+
+                {/* Tombol Ambil Foto / Simpan */}
                 <button
                   onClick={() => {
                     if (image) {
@@ -178,13 +197,16 @@ const AmbilGambar = () => {
                       setShowCamera(true);
                     }
                   }}
+                  disabled={isLoading}
                   className={`flex w-[100px] items-center justify-center ${
                     image
                       ? "bg-green-700"
                       : "bg-custom-merah hover:bg-custom-gelap"
-                  } text-white font-medium rounded-[20px] px-2 py-2 mt-4 shadow-md`}
+                  } text-white font-medium rounded-[20px] px-2 py-2 mt-4 shadow-md ${
+                    isLoading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
-                  {image ? "Simpan" : "Ambil Foto"}
+                  {isLoading ? "Menyimpan..." : image ? "Simpan" : "Ambil Foto"}
                 </button>
               </>
             )}
