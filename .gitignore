@@ -6,6 +6,7 @@ localhost.pem
 /node_modules
 /.pnp
 .pnp.js
+deploy.sh
 
 # testing
 /coverage
