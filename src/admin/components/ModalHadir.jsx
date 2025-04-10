@@ -28,7 +28,7 @@ const columns = [
   {
     field: "no",
     headerName: "No",
-    width: 70,
+    width: 50,
     headerAlign: "center",
     align: "center",
     headerClassName: "font-bold text-black",
@@ -92,14 +92,14 @@ const columns = [
     ),
   },
   {
-    field: "waktu_terlambat",
+    field: "jam_terlambat",
     headerName: "Waktu Terlambat",
     width: 160,
     headerAlign: "center",
     align: "center",
     renderCell: (params) => {
       const value = params.value;
-      if (value === 0)
+      if (value == null)
         return <span style={{ color: "green" }}>Tepat Waktu</span>;
       const jam = Math.floor(value / 60);
       const menit = value % 60;
@@ -251,11 +251,11 @@ const ModalHadir = ({ open, close }) => {
     ];
 
     const tableRows = data.map((row, index) => {
-      const waktuTerlambat = row.waktu_terlambat
-        ? row.waktu_terlambat === 0
+      const waktuTerlambat = row.jam_terlambat
+        ? row.jam_terlambat === null
           ? "Tepat Waktu"
-          : `${Math.floor(row.waktu_terlambat / 60)} jam ${
-              row.waktu_terlambat % 60
+          : `${Math.floor(row.jam_terlambat / 60)} jam ${
+              row.jam_terlambat % 60
             } menit`
         : "-";
 
@@ -291,13 +291,26 @@ const ModalHadir = ({ open, close }) => {
     {
       field: "no",
       headerName: "No",
-      width: 70,
+      width: 50,
       renderCell: (params) => {
         const index = params.api.getSortedRowIds().indexOf(params.id);
         return index + 1;
       },
     },
-    { field: "nama", headerName: "Nama", width: 160 },
+    {
+      field: "nama",
+      headerName: "Nama",
+      width: 160,
+      renderCell: (params) => {
+        const toTitleCase = (str) =>
+          str.replace(
+            /\w\S*/g,
+            (txt) =>
+              txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
+          );
+        return toTitleCase(params.value);
+      },
+    },
     { field: "jam_masuk", headerName: "Check In", width: 130 },
     {
       field: "jam_keluar",
@@ -309,18 +322,18 @@ const ModalHadir = ({ open, close }) => {
     {
       field: "lokasi_keluar",
       headerName: "Lokasi Check out",
-      width: 130,
+      width: 150,
       headerAlign: "center",
       align: "left",
       renderCell: (params) => <span>{params.value || "-"}</span>,
     },
     {
-      field: "waktu_terlambat",
+      field: "jam_terlambat",
       headerName: "Terlambat",
       width: 160,
       renderCell: (params) => {
         const value = params.value;
-        if (value === 0)
+        if (value === null)
           return <span style={{ color: "green" }}>Tepat Waktu</span>;
         const jam = Math.floor(value / 60);
         const menit = value % 60;

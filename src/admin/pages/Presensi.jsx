@@ -22,6 +22,8 @@ const Presensi = () => {
   const [filteredData, setFilteredData] = useState([]); // Data yang difilter
   const [searchTerm, setSearchTerm] = useState(""); // Nilai input pencarian
 
+  console.log(absen);
+
   useEffect(() => {
     setFilteredData(absen, karyawan); // Reset filteredData ke data asli saat modal dibuka
     setSearchTerm(""); // Reset nilai pencarian
@@ -29,7 +31,7 @@ const Presensi = () => {
 
   useEffect(() => {
     api
-      .get("https://api.berkahangsana.online/karyawan")
+      .get("/karyawan")
       .then((res) => {
         const sorted = res.data.karyawan
           .filter((item) => item.nama) // optional: filter kalau nama tidak null
@@ -44,8 +46,8 @@ const Presensi = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    axios
-      .get("https://api.berkahangsana.online/absensi", {
+    api
+      .get("/absensi/hadir", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
