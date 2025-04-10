@@ -42,20 +42,19 @@ const LoginForm = ({ role = "karyawan", onLoginSuccess }) => {
       }
 
       if (onLoginSuccess) {
-        onLoginSuccess();
+        setTimeout(() => {
+          onLoginSuccess();
+        }, 100); // kasih jeda agar localStorage siap
       }
     } catch (err) {
       console.error(err);
-      setError(
-        err.response?.data?.message ||
-          "Login gagal. Periksa username dan password."
-      );
+      setError(err.response?.data?.message || "username atau password salah.");
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-[100dvh] bg-gradient-to-b from-custom-merah to-custom-gelap">
-      <div className="bg-gradient-to-t from-custom-cerah to-white rounded-[30px] shadow-lg mx-6 p-10">
+      <div className="bg-gradient-to-t from-custom-cerah to-white rounded-[30px] shadow-lg mx-6 p-10 max-w-sm w-[350px]">
         <div className="flex justify-center mb-4">
           <img
             src={process.env.PUBLIC_URL + "images/logo_large.png"}
@@ -107,9 +106,13 @@ const LoginForm = ({ role = "karyawan", onLoginSuccess }) => {
             </label>
           </div>
 
-          {error && (
-            <div className="text-center text-red-500 text-sm mb-2">{error}</div>
-          )}
+          <div
+            className={`text-center text-red-500 text-md font-bold mb-2 min-h-[20px] ${
+              error ? "visible" : "invisible"
+            }`}
+          >
+            {error || "Error placeholder"}
+          </div>
 
           <div className="flex justify-center mb-2 pt-3">
             <div className="submit w-[150px] py-2 bg-black text-white font-semibold rounded-[12px] transition duration-300 hover:bg-gray-800 ">

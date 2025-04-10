@@ -33,30 +33,11 @@ const getOrCreateColor = () => {
   return color;
 };
 
-const getTerlambatTime = (jamMasuk) => {
-  if (!jamMasuk) return null;
-
-  const [jam, menit] = jamMasuk.split(":").map(Number);
-
-  // Buat objek Date dari jam masuk dan jam 08:00 WITA
-  const masuk = new Date();
-  masuk.setHours(jam, menit, 0, 0);
-
-  const batasWaktu = new Date();
-  batasWaktu.setHours(8, 0, 0, 0); // 08:00
-
-  const selisihMs = masuk - batasWaktu;
-
-  if (selisihMs > 0) {
-    const selisihMenit = Math.floor(selisihMs / 60000);
-    const jamTerlambat = Math.floor(selisihMenit / 60);
-    const menitTerlambat = selisihMenit % 60;
-    return `${jamTerlambat > 0 ? jamTerlambat + " jam " : ""}${
-      menitTerlambat > 0 ? menitTerlambat + " menit" : ""
-    }`;
-  }
-
-  return null; // Tidak terlambat
+const formatMenitToJamMenit = (menitTotal) => {
+  if (!menitTotal || menitTotal <= 0) return null;
+  const jam = Math.floor(menitTotal / 60);
+  const menit = menitTotal % 60;
+  return `${jam > 0 ? jam + " jam " : ""}${menit > 0 ? menit + " menit" : ""}`;
 };
 
 const Absensi = () => {
@@ -64,8 +45,8 @@ const Absensi = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAbsenMasuk, setIsAbsenMasuk] = useState(true);
   const [dataPresensi, setDataPresensi] = useState(null);
+  const jamTerlambat = formatMenitToJamMenit(dataPresensi?.jam_terlambat);
   const dropdownRef = useRef(null);
-  const waktuTerlambat = getTerlambatTime(dataPresensi?.jam_masuk);
   const navigate = useNavigate();
 
   const getFormattedDate = () => {
@@ -95,10 +76,15 @@ const Absensi = () => {
 
   useEffect(() => {
     const fetchPresensi = async () => {
-      try {
-        const id_karyawan = localStorage.getItem("id_karyawan");
-        const token = localStorage.getItem("token");
+      const id_karyawan = localStorage.getItem("id_karyawan");
+      const token = localStorage.getItem("token");
 
+      if (!id_karyawan || !token) {
+        console.warn("Token atau ID karyawan belum tersedia");
+        return; // jangan lanjut fetch kalau belum siap
+      }
+
+      try {
         const response = await api.get(`/cek_presensi/${id_karyawan}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -120,6 +106,7 @@ const Absensi = () => {
       }
     };
 
+    // Kasih delay dikit atau trigger pakai event tertentu kalau perlu
     fetchPresensi();
   }, []);
 
@@ -139,6 +126,17 @@ const Absensi = () => {
     const statusAbsen = localStorage.getItem("statusAbsen");
     setIsAbsenMasuk(statusAbsen !== "pulang");
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/logout/karyawan");
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.clear();
+      window.location.href = "/login"; // kembali ke halaman login
+    }
+  };
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-custom-merah to-custom-gelap">
@@ -183,8 +181,7 @@ const Absensi = () => {
                         className="text-white font-bold px-4 py-2 hover:bg-custom-gelap cursor-pointer"
                         onClick={() => {
                           if (window.confirm("Apakah anda ingin keluar?")) {
-                            localStorage.clear();
-                            navigate("/login");
+                            handleLogout();
                           }
                         }}
                       >
@@ -224,10 +221,10 @@ const Absensi = () => {
             )}
 
             {/* Peringatan terlambat ditampilkan jika sudah absen masuk dan terlambat */}
-            {dataPresensi?.jam_masuk && waktuTerlambat && (
+            {dataPresensi?.jam_terlambat > 0 && jamTerlambat && (
               <div className="flex justify-center mt-2">
                 <span className="text-sm font-bold text-[#FF0000] px-4 py-1">
-                  Anda terlambat {waktuTerlambat} hari ini!
+                  Anda terlambat {jamTerlambat} hari ini!
                 </span>
               </div>
             )}

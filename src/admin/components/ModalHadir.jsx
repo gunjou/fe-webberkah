@@ -24,6 +24,105 @@ const style = {
   p: 3,
 };
 
+const columns = [
+  {
+    field: "no",
+    headerName: "No",
+    width: 70,
+    headerAlign: "center",
+    align: "center",
+    headerClassName: "font-bold text-black",
+    sortable: false,
+    filterable: false,
+    renderCell: (params) => {
+      const index = params.api.getSortedRowIds().indexOf(params.id);
+      return index + 1;
+    },
+  },
+  {
+    field: "nama",
+    headerName: "Nama",
+    width: 160,
+    renderCell: (params) => {
+      const toTitleCase = (str) =>
+        str.replace(
+          /\w\S*/g,
+          (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
+        );
+      return toTitleCase(params.value);
+    },
+  },
+  {
+    field: "jam_masuk",
+    headerName: "Waktu Check in",
+    width: 130,
+    headerAlign: "center",
+    align: "center",
+  },
+  {
+    field: "jam_keluar",
+    headerName: "Waktu Check out",
+    width: 130,
+    headerAlign: "center",
+    align: "center",
+    renderCell: (params) => params.value || "-",
+  },
+  {
+    field: "lokasi_masuk",
+    headerName: "Lokasi Check in",
+    width: 150,
+    headerAlign: "center",
+    align: "left",
+  },
+  {
+    field: "lokasi_keluar",
+    headerName: "Lokasi Check out",
+    width: 150,
+    headerAlign: "center",
+    renderCell: (params) => (
+      <span
+        style={{
+          display: "block",
+          width: "100%",
+          textAlign: params.value ? "left" : "center",
+        }}
+      >
+        {params.value || "-"}
+      </span>
+    ),
+  },
+  {
+    field: "waktu_terlambat",
+    headerName: "Waktu Terlambat",
+    width: 160,
+    headerAlign: "center",
+    align: "center",
+    renderCell: (params) => {
+      const value = params.value;
+      if (value === 0)
+        return <span style={{ color: "green" }}>Tepat Waktu</span>;
+      const jam = Math.floor(value / 60);
+      const menit = value % 60;
+      const display = jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
+      return <span style={{ color: "red" }}>{display}</span>;
+    },
+  },
+  {
+    field: "status_absen",
+    headerName: "Status",
+    width: 130,
+    headerAlign: "center",
+    align: "center",
+  },
+  {
+    field: "action",
+    headerName: "Action",
+    width: 100,
+    headerAlign: "center",
+    align: "center",
+  },
+];
+
 const getFormattedDate = () => {
   const date = new Date();
   const options = {
@@ -56,7 +155,7 @@ const ModalHadir = ({ open, close }) => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     api
-      .get("/absensi", {
+      .get("/absensi/hadir", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -211,15 +310,8 @@ const ModalHadir = ({ open, close }) => {
       field: "lokasi_keluar",
       headerName: "Lokasi Check out",
       width: 130,
-      width: 150,
       headerAlign: "center",
       align: "left",
-      renderCell: (params) => {
-        if (params.value === null) {
-          return <span>Belum check-out</span>;
-        }
-        return <span>{params.value}</span>;
-      },
       renderCell: (params) => <span>{params.value || "-"}</span>,
     },
     {

@@ -1,4 +1,5 @@
 import "./App.css";
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Shared
@@ -23,6 +24,37 @@ const getRole = () => localStorage.getItem("jenis");
 
 function App() {
   const role = getRole();
+
+  useEffect(() => {
+    const checkTokenValidity = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_API_URL}/protected`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Token invalid or expired");
+        }
+      } catch (error) {
+        localStorage.clear();
+        window.location.href = "/login";
+      }
+    };
+
+    checkTokenValidity();
+  }, []);
 
   return (
     <div className="App">
