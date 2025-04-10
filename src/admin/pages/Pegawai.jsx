@@ -11,6 +11,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import axios from "axios";
+import api from "../../shared/Api";
 
 // import SideMenu from './SideMenu'
 // import NavMenu from './NavMenu'
@@ -72,8 +73,13 @@ const Pegawai = () => {
   });
 
   useEffect(() => {
-    axios
-      .get("https://api.berkahangsana.online/jenis")
+    const token = localStorage.getItem("token");
+    api
+      .get("/jenis", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => {
         setJenisList(res.data.jenis_karyawan);
         // console.log(res.data);
@@ -85,8 +91,13 @@ const Pegawai = () => {
 
   // Fetch data from API
   useEffect(() => {
-    axios
-      .get("https://api.berkahangsana.online/karyawan")
+    const token = localStorage.getItem("token");
+    api
+      .get("/karyawan", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => {
         const sorted = res.data.karyawan
           .filter((item) => item.nama) // optional: filter kalau nama tidak null
@@ -108,15 +119,19 @@ const Pegawai = () => {
   const saveEdit = () => {
     const payload = {
       nama: selectedPegawai.nama,
+      jenis: selectedPegawai.jenis,
       username: selectedPegawai.username,
       password: selectedPegawai.password,
+      gaji_pokok: selectedPegawai.gaji_pokok,
     };
 
-    axios
-      .put(
-        `https://api.berkahangsana.online/karyawan/${selectedPegawai.id_karyawan}`,
-        payload
-      )
+    const token = localStorage.getItem("token");
+    api
+      .put(`karyawan/${selectedPegawai.id_karyawan}`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => {
         alert("Data karyawan berhasil diperbarui!");
         setKaryawan((prev) =>
@@ -141,13 +156,17 @@ const Pegawai = () => {
       nama: newPegawai.nama,
       jenis: newPegawai.jenis,
       username: newPegawai.username,
+      password: newPegawai.password,
       gaji_pokok: newPegawai.gaji_pokok,
     };
 
-    // console.log("Payload dikirim:", payload);
-
-    axios
-      .post("https://api.berkahangsana.online/karyawan", payloadAdd)
+    const token = localStorage.getItem("token");
+    api
+      .post("/karyawan", payloadAdd, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => {
         alert("Data karyawan berhasil ditambahkan!");
         setKaryawan((prev) => [...prev, res.data]);

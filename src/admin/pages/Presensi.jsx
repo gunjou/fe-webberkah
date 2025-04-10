@@ -6,6 +6,8 @@ import { MdCleaningServices } from "react-icons/md";
 import { ImCross } from "react-icons/im";
 import axios from "axios";
 
+import api from "../../shared/Api";
+
 // import NavMenu from './NavMenu'
 // import SideMenu from './SideMenu'
 import { FaCheck, FaPlus } from "react-icons/fa";
@@ -26,7 +28,7 @@ const Presensi = () => {
   }, [absen, karyawan]);
 
   useEffect(() => {
-    axios
+    api
       .get("https://api.berkahangsana.online/karyawan")
       .then((res) => {
         const sorted = res.data.karyawan
@@ -96,7 +98,11 @@ const Presensi = () => {
             </div>
             <div className="card h-50 w-80">
               <div className="card">
-                <Card href="#" className="cursor-pointer relative">
+                <Card
+                  href="#"
+                  onClick={handleOpenHadir}
+                  className="cursor-pointer relative"
+                >
                   <div className="absolute top-4 left-5">
                     <h5 className="text-lg font-normal tracking-tight text-gray-900 dark:text-white">
                       Izin/Sakit
@@ -115,11 +121,16 @@ const Presensi = () => {
                     <FaPlus className="h-6 w-6" />
                   </span>
                 </Card>
+                <ModalHadir open={openHadir} close={handleCloseHadir} />
               </div>
             </div>
             <div className="card h-50 w-80">
               <div className="card">
-                <Card href="#" className="cursor-pointer relative">
+                <Card
+                  href="#"
+                  onClick={handleOpenHadir}
+                  className="cursor-pointer relative"
+                >
                   <div className="absolute top-4 left-5">
                     <h5 className="text-lg font-normal tracking-tight text-gray-900 dark:text-white">
                       Tanpa Keterangan
@@ -140,6 +151,7 @@ const Presensi = () => {
                     <ImCross className="h-6 w-6" />
                   </span>
                 </Card>
+                <ModalHadir open={openHadir} close={handleCloseHadir} />
               </div>
             </div>
           </div>
@@ -151,7 +163,11 @@ const Presensi = () => {
           <div className="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
             {/* Staff Kantor  */}
             <div className="card h-50 w-80">
-              <Card href="#" className="cursor-pointer relative">
+              <Card
+                href="#"
+                onClick={handleOpenHadir}
+                className="cursor-pointer relative"
+              >
                 <div className="absolute top-4 left-5">
                   <h5 className="text-lg font-normal tracking-tight text-gray-900 dark:text-white">
                     Staff Kantor
@@ -170,10 +186,15 @@ const Presensi = () => {
                   <PiOfficeChairBold className="h-6 w-6" />
                 </span>
               </Card>
+              <ModalHadir open={openHadir} close={handleCloseHadir} />
             </div>
             {/* Pegawai Lapangan */}
             <div className="card h-50 w-80">
-              <Card href="#" className="cursor-pointer relative">
+              <Card
+                href="#"
+                onClick={handleOpenHadir}
+                className="cursor-pointer relative"
+              >
                 <div className="absolute top-4 left-5">
                   <h5 className="text-lg font-normal tracking-tight text-gray-900 dark:text-white">
                     Pegawai Lapangan
@@ -196,7 +217,11 @@ const Presensi = () => {
             </div>
             {/* Cleaning Services */}
             <div className="card h-50 w-80">
-              <Card href="#" className="cursor-pointer relative">
+              <Card
+                href="#"
+                onClick={handleOpenHadir}
+                className="cursor-pointer relative"
+              >
                 <div className="absolute top-4 left-5">
                   <h5 className="text-lg font-normal tracking-tight text-gray-900 dark:text-white">
                     Cleaning Services
@@ -214,6 +239,7 @@ const Presensi = () => {
                   <MdCleaningServices className="h-6 w-6" />
                 </span>
               </Card>
+              <ModalHadir open={openHadir} close={handleCloseHadir} />
             </div>
           </div>
         </div>
