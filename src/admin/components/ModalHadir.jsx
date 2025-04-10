@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-
+import * as XLSX from "xlsx";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
-import { DataGrid } from "@mui/x-data-grid";
 import Paper from "@mui/material/Paper";
-import * as XLSX from "xlsx";
-import { FaFileExcel, FaTimes } from "react-icons/fa";
+import { DataGrid } from "@mui/x-data-grid";
+import { FaFileExcel } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
+import api from "../../shared/Api";
 
 const style = {
   position: "absolute",
@@ -28,7 +27,7 @@ const columns = [
     width: 70,
     headerAlign: "center",
     align: "center",
-    headerClassName: "font-bold text-black", // Tambahkan class untuk header
+    headerClassName: "font-bold text-black",
     sortable: false,
     filterable: false,
     renderCell: (params) => {
@@ -36,7 +35,6 @@ const columns = [
       return index + 1;
     },
   },
-
   {
     field: "nama",
     headerName: "Nama",
@@ -47,11 +45,9 @@ const columns = [
           /\w\S*/g,
           (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
         );
-
       return toTitleCase(params.value);
     },
   },
-
   {
     field: "jam_masuk",
     headerName: "Waktu Check in",
@@ -59,7 +55,6 @@ const columns = [
     headerAlign: "center",
     align: "center",
   },
-
   {
     field: "jam_keluar",
     headerName: "Waktu Check out",
@@ -68,7 +63,6 @@ const columns = [
     align: "center",
     renderCell: (params) => params.value || "-",
   },
-
   {
     field: "lokasi_masuk",
     headerName: "Lokasi Check in",
@@ -76,27 +70,37 @@ const columns = [
     headerAlign: "center",
     align: "left",
   },
-
   {
     field: "lokasi_keluar",
     headerName: "Lokasi Check out",
     width: 150,
     headerAlign: "center",
-    align: "left",
-    renderCell: (params) => <span>{params.value || "-"}</span>,
+    renderCell: (params) => (
+      <span
+        style={{
+          display: "block",
+          width: "100%",
+          textAlign: params.value ? "left" : "center",
+        }}
+      >
+        {params.value || "-"}
+      </span>
+    ),
   },
-
   {
     field: "waktu_terlambat",
     headerName: "Waktu Terlambat",
-    width: 130,
+    width: 160,
     headerAlign: "center",
-    align: "left",
+    align: "center",
     renderCell: (params) => {
-      if (params.value !== null) {
-        return <span style={{ color: "red" }}>{params.value}</span>;
-      }
-      return <span style={{ color: "green" }}>Tepat Waktu</span>;
+      const value = params.value;
+      if (value === 0)
+        return <span style={{ color: "green" }}>Tepat Waktu</span>;
+      const jam = Math.floor(value / 60);
+      const menit = value % 60;
+      const display = jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
+      return <span style={{ color: "red" }}>{display}</span>;
     },
   },
   {
@@ -126,44 +130,38 @@ const getFormattedDate = () => {
   };
   return new Intl.DateTimeFormat("id-ID", options).format(date);
 };
+
 const paginationModel = { page: 0, pageSize: 50 };
 
 const ModalHadir = ({ open, close }) => {
-  const [data, setData] = useState([]); // Data asli
-  const [absen, setAbsen] = useState([]);
-  const [filteredData, setFilteredData] = useState([]); // Data yang difilter
-  const [searchTerm, setSearchTerm] = useState(""); // Nilai input pencarian
+  const [data, setData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (open) {
-      setFilteredData(data); // Reset filteredData ke data asli saat modal dibuka
-      setSearchTerm(""); // Reset nilai pencarian
+      setFilteredData(data);
+      setSearchTerm("");
     }
   }, [open, data]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    axios
-      .get("https://api.berkahangsana.online/absensi", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    api
+      .get("/absensi", {
+        headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
         const filtered = res.data.absensi.filter((item) => item.nama);
-
-        // Sort berdasarkan jam_masuk (format "HH:mm")
         const sorted = filtered.sort((a, b) => {
           const toMinutes = (timeStr) => {
-            if (!timeStr) return Infinity; // Kosong/null dianggap paling akhir
+            if (!timeStr) return Infinity;
             const [h, m] = timeStr.split(":").map(Number);
             return h * 60 + m;
           };
           return toMinutes(a.jam_masuk) - toMinutes(b.jam_masuk);
         });
-
         setData(sorted);
         setLoading(false);
       })
@@ -173,75 +171,55 @@ const ModalHadir = ({ open, close }) => {
       });
   }, []);
 
-  console.log(data);
-  // Fungsi untuk menangani perubahan input pencarian
   const handleSearch = (event) => {
     const value = event.target.value.toLowerCase();
     setSearchTerm(value);
-
-    // Filter data berdasarkan nama
     const filtered = data.filter((item) =>
       item.nama.toLowerCase().includes(value)
     );
     setFilteredData(filtered);
   };
-  // Fungsi untuk mengunduh data sebagai file Excel
+
   const downloadExcel = () => {
-    // Tampilkan konfirmasi kepada pengguna
-    const confirmDownload = window.confirm(
-      "Apakah Anda yakin ingin mengunduh data sebagai file Excel?"
-    );
-    if (confirmDownload) {
-      // Buat worksheet dari data absen
+    if (
+      window.confirm(
+        "Apakah Anda yakin ingin mengunduh data sebagai file Excel?"
+      )
+    ) {
       const worksheet = XLSX.utils.json_to_sheet(data);
-      // Buat workbook dan tambahkan worksheet
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
-      // Ekspor file Excel
       XLSX.writeFile(workbook, "rekapan_presensi.xlsx");
     }
   };
 
   return (
     <div className="ModalHadir">
-      {/* Modal Semua Pegawai Hadir */}
-      <Modal
-        open={open}
-        onClose={close}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
+      <Modal open={open} onClose={close}>
         <Box sx={style}>
-          {/* Tombol silang untuk menutup modal */}
           <button
             type="button"
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
             onClick={close}
           >
             <IoClose size={30} />
           </button>
-          <Typography
-            id="modal-modal-title"
-            variant="h6"
-            component="h2"
-            className="pb-3"
-          >
+
+          <Typography variant="h6" component="h2" className="pb-3">
             List Pegawai Hadir
             <div className="flex justify-between items-center text-sm">
               <span>{getFormattedDate()}</span>
               <div className="relative">
                 <input
                   type="text"
-                  id="table-search-users"
-                  value={searchTerm} // Bind nilai input dengan state
-                  onChange={handleSearch} // Panggil fungsi handleSearch saat input berubah
-                  className="block p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-[20px] w-80 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  className="block p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-[20px] w-80 bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Search"
                 />
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <svg
-                    className="w-4 h-4 text-gray-500 dark:text-gray-400"
-                    aria-hidden="true"
+                    className="w-4 h-4 text-gray-500"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 20 20"
@@ -258,24 +236,19 @@ const ModalHadir = ({ open, close }) => {
               </div>
             </div>
           </Typography>
-          <Paper
-            sx={{
-              width: "100%", // biar fleksibel
-              height: 400,
-              overflow: "auto",
-            }}
-          >
+
+          <Paper sx={{ width: "100%", height: 400, overflow: "auto" }}>
             <DataGrid
-              rows={filteredData} // Gunakan data yang sudah difilter
+              rows={filteredData}
               columns={columns}
-              initialState={{
-                pagination: { paginationModel },
-              }}
+              initialState={{ pagination: { paginationModel } }}
+              loading={loading}
             />
           </Paper>
+
           <button
             type="button"
-            className="flex items-center text-[12px] bg-green-500 mr-4 mt-4 text-white hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-[20px] px-4 py-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+            className="flex items-center text-[12px] bg-green-500 mr-4 mt-4 text-white hover:bg-green-700 rounded-[20px] px-4 py-2"
             onClick={downloadExcel}
           >
             <span className="text-xs pr-2">
@@ -285,7 +258,6 @@ const ModalHadir = ({ open, close }) => {
           </button>
         </Box>
       </Modal>
-      {/* End Modal Semua Pegawai Hadir */}
     </div>
   );
 };
