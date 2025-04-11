@@ -123,6 +123,14 @@ const columns = [
   },
 ];
 
+const toTitleCase = (str) => {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 const getFormattedDate = () => {
   const date = new Date();
   const options = {
@@ -251,22 +259,24 @@ const ModalHadir = ({ open, close }) => {
     ];
 
     const tableRows = data.map((row, index) => {
-      const waktuTerlambat = row.jam_terlambat
-        ? row.jam_terlambat === null
-          ? "Tepat Waktu"
-          : `${Math.floor(row.jam_terlambat / 60)} jam ${
-              row.jam_terlambat % 60
-            } menit`
-        : "-";
+      const waktuTerlambat = row.jam_terlambat;
+
+      let keteranganTerlambat = "-";
+      if (waktuTerlambat !== null) {
+        const jam = Math.floor(waktuTerlambat / 60);
+        const menit = waktuTerlambat % 60;
+        keteranganTerlambat =
+          jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
+      }
 
       return [
         index + 1,
-        row.nama,
+        toTitleCase(row.nama),
         row.jam_masuk || "-",
         row.jam_keluar || "-",
         row.lokasi_masuk || "-",
         row.lokasi_keluar || "-",
-        waktuTerlambat,
+        keteranganTerlambat,
         row.status_absen || "-",
       ];
     });
@@ -284,7 +294,7 @@ const ModalHadir = ({ open, close }) => {
       },
     });
 
-    doc.save("rekapan_presensi.pdf");
+    doc.save(`rekapan_presensi_${dateStr}.pdf`);
   };
 
   const columns = [
@@ -311,35 +321,61 @@ const ModalHadir = ({ open, close }) => {
         return toTitleCase(params.value);
       },
     },
-    { field: "jam_masuk", headerName: "Check In", width: 130 },
+
+    {
+      field: "jam_masuk",
+      headerName: "Check In",
+      width: 130,
+      align: "center",
+      headerAlign: "center",
+    },
     {
       field: "jam_keluar",
       headerName: "Check Out",
       width: 130,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => params.value || "-",
     },
-    { field: "lokasi_masuk", headerName: "Lokasi In", width: 150 },
+    {
+      field: "lokasi_masuk",
+      headerName: "Lokasi Check in",
+      width: 150,
+      headerAlign: "left",
+      align: "left",
+    },
     {
       field: "lokasi_keluar",
       headerName: "Lokasi Check out",
       width: 150,
-      headerAlign: "center",
-      align: "left",
-      renderCell: (params) => <span>{params.value || "-"}</span>,
+      headerAlign: "left",
+      renderCell: (params) => (
+        <span
+          style={{
+            display: "block",
+            width: "100%",
+            textAlign: params.value ? "left" : "center",
+          }}
+        >
+          {params.value || "-"}
+        </span>
+      ),
     },
     {
       field: "jam_terlambat",
-      headerName: "Terlambat",
+      headerName: "Waktu Terlambat",
       width: 160,
+      headerAlign: "center",
+      align: "center",
       renderCell: (params) => {
         const value = params.value;
         if (value === null)
           return <span style={{ color: "green" }}>Tepat Waktu</span>;
         const jam = Math.floor(value / 60);
         const menit = value % 60;
-        return (
-          <span style={{ color: "red" }}>{`${jam} jam ${menit} menit`}</span>
-        );
+        const display =
+          jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
+        return <span style={{ color: "red" }}>{display}</span>;
       },
     },
     { field: "status_absen", headerName: "Status", width: 130 },
