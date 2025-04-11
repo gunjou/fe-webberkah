@@ -117,6 +117,14 @@ const Pegawai = () => {
   }
 
   const saveEdit = () => {
+    if (!selectedPegawai.id_karyawan) {
+      alert("ID karyawan tidak valid!");
+      return;
+    }
+    if (!selectedPegawai.jenis) {
+      alert("Jenis pegawai tidak boleh kosong!");
+      return;
+    }
     const payload = {
       nama: selectedPegawai.nama,
       jenis: selectedPegawai.jenis,

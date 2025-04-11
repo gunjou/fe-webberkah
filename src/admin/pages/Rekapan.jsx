@@ -22,7 +22,7 @@ const kolom = [
   { id: "jam_keluar", label: "Jam Keluar", minWidth: 100 },
   { id: "lokasi_masuk", label: "Lokasi Masuk", minWidth: 100 },
   { id: "lokasi_keluar", label: "Lokasi Keluar", minWidth: 100 },
-  { id: "waktu_terlambat", label: "Waktu Terlambat", minWidth: 100 },
+  { id: "jam_terlambat", label: "Waktu Terlambat", minWidth: 100 },
 ];
 
 const formatTerlambat = (menit) => {
@@ -41,11 +41,13 @@ const Rekapan = () => {
   const rowsPerPage = 25;
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     api
-      .get("/absensi", {
+      .get("/absensi/hadir", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -118,7 +120,6 @@ const Rekapan = () => {
     if (!confirmDownload) return;
 
     const header = kolom.map((k) => k.label);
-
     const rows = absen.map((item, indeks) => [
       indeks + 1,
       item.nama || "-",
@@ -126,15 +127,53 @@ const Rekapan = () => {
       item.jam_keluar || "-",
       item.lokasi_masuk || "-",
       item.lokasi_keluar || "-",
-      item.waktu_terlambat === 0
-        ? "Tepat waktu"
-        : formatTerlambat(item.waktu_terlambat),
+      item.jam_terlambat === null ? "-" : formatTerlambat(item.jam_terlambat),
     ]);
 
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
     XLSX.writeFile(workbook, "rekapan_presensi.xlsx");
+  };
+
+  const downloadPDF = () => {
+    const confirmDownload = window.confirm(
+      "Apakah Anda yakin ingin mengunduh data sebagai file PDF?"
+    );
+    if (!confirmDownload) return;
+
+    const doc = new jsPDF();
+    const title = "Rekapan Presensi";
+    const dateStr = getFormattedDate();
+
+    doc.text(title, 14, 15);
+    doc.text(dateStr, 14, 22);
+
+    const tableHead = kolom.map((k) => k.label);
+    const tableRows = absen.map((row, index) => [
+      index + 1,
+      row.nama || "-",
+      row.jam_masuk || "-",
+      row.jam_keluar || "-",
+      row.lokasi_masuk || "-",
+      row.lokasi_keluar || "-",
+      row.jam_terlambat === null ? "-" : formatTerlambat(row.jam_terlambat),
+    ]);
+
+    doc.autoTable({
+      head: [tableHead],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: {
+        fillColor: [139, 0, 0],
+        textColor: [255, 255, 255],
+        halign: "center",
+        valign: "middle",
+      },
+    });
+
+    doc.save(`rekapan_presensi_${dateStr}.pdf`);
   };
 
   const detail =
@@ -168,61 +207,17 @@ const Rekapan = () => {
               : item.lokasi_keluar}
           </TableCell>
           <TableCell align="left">
-            {item.waktu_terlambat === 0 ? (
-              <span style={{ color: "green", fontWeight: "bold" }}>
-                Tepat waktu
-              </span>
+            {item.jam_terlambat === null ? (
+              <span style={{ color: "green", fontWeight: "bold" }}>-</span>
             ) : (
               <span style={{ color: "red", fontWeight: "bold" }}>
-                {formatTerlambat(item.waktu_terlambat)}
+                {formatTerlambat(item.jam_terlambat)}
               </span>
             )}
           </TableCell>
         </TableRow>
       ))
     );
-
-  const downloadPDF = () => {
-    const confirmDownload = window.confirm(
-      "Apakah Anda yakin ingin mengunduh data sebagai file PDF?"
-    );
-    if (!confirmDownload) return;
-
-    const doc = new jsPDF();
-    const title = "Rekapan Presensi";
-    const dateStr = getFormattedDate();
-
-    doc.text(title, 14, 15);
-    doc.text(dateStr, 14, 22);
-
-    const tableHead = kolom.map((k) => k.label);
-
-    const tableRows = absen.map((row, index) => [
-      row.nama || "-",
-      row.jam_masuk || "-",
-      row.jam_keluar || "-",
-      row.lokasi_masuk || "-",
-      row.lokasi_keluar || "-",
-      row.waktu_terlambat === 0
-        ? "Tepat waktu"
-        : formatTerlambat(row.waktu_terlambat),
-    ]);
-
-    doc.autoTable({
-      head: [tableHead],
-      body: tableRows,
-      startY: 30,
-      styles: { fontSize: 8 },
-      headStyles: {
-        fillColor: [139, 0, 0],
-        textColor: [255, 255, 255],
-        halign: "center",
-        valign: "middle",
-      },
-    });
-
-    doc.save("rekapan_presensi.pdf");
-  };
 
   return (
     <div className="Rekapan">
@@ -231,56 +226,68 @@ const Rekapan = () => {
           <div className="title flex text-2xl pt-4 pl-4 font-bold">
             Rekapan Presensi
           </div>
-          <div className="tabel rounded-[20px] mt-4 mr-4 ml-4 px-2 shadow-md bg-white w-full h-full">
-            <div className="ml-2 mb-6 pt-4 flex items-center justify-between">
-              <span className="flex text-lg pl-2 font-semibold mr-[300px]">
-                {getFormattedDate()}
-              </span>
-              <div className="relative">
-                <input
-                  type="text"
-                  className="block p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-[20px] w-60 h-9 bg-gray-50"
-                  placeholder="Search"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-gray-500"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                  >
-                    <path
-                      d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
+          <div className="tabel rounded-[20px] mt-2 mr-4 ml-4 px-2 shadow-md bg-white w-full h-full">
+            <div className="ml-2 mb-6 pt-4 flex items-start justify-start gap-4 flex-wrap">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">
+                  {getFormattedDate()}
+                </span>
+                <div className="flex gap-2 mt-2">
+                  <div className="flex items-center text-sm gap-1">
+                    <label htmlFor="startDate">Dari:</label>
+                    <input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="border rounded px-2 py-1 text-sm"
                     />
-                  </svg>
+                  </div>
+                  <div className="flex items-center text-sm gap-1">
+                    <label htmlFor="endDate">Sampai:</label>
+                    <input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="border rounded px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center ml-4 justify-end space-x-2 flex-wrap w-full">
+                    <input
+                      type="text"
+                      className="block p-2 text-sm text-gray-900 border border-gray-300 rounded-[20px] w-60 h-9 bg-gray-50"
+                      placeholder="Cari"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+
+                    <button
+                      type="button"
+                      className="flex items-center text-[12px] bg-green-500 text-white hover:bg-green-700 rounded-[20px] px-4 py-2"
+                      onClick={downloadExcel}
+                    >
+                      <span className="text-xs pr-2">
+                        <FaFileExcel />
+                      </span>
+                      Unduh Excel
+                    </button>
+                    <button
+                      type="button"
+                      className="flex items-center text-[12px] bg-red-700 text-white hover:bg-red-500 rounded-[20px] px-4 py-2"
+                      onClick={downloadPDF}
+                    >
+                      <span className="text-xs pr-2">
+                        <FaFilePdf />
+                      </span>
+                      Unduh PDF
+                    </button>
+                  </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="flex items-center text-[12px] bg-green-500 text-white hover:bg-green-700 rounded-[20px] px-4 py-2"
-                onClick={downloadExcel}
-              >
-                <span className="text-xs pr-2">
-                  <FaFileExcel />
-                </span>
-                Unduh Data
-              </button>
-              <button
-                type="button"
-                className="flex items-center text-[12px] bg-red-700 text-white hover:bg-red-500 rounded-[20px] px-4 py-2"
-                onClick={downloadPDF}
-              >
-                <span className="text-xs pr-2">
-                  <FaFilePdf />
-                </span>
-                Unduh PDF
-              </button>
             </div>
 
-            <div className="overflow-x-auto pl-2">
+            <div className="overflow-x-auto mt-2 pl-2">
               <div className="bg-white rounded-lg shadow-md mr-2 overflow-y-auto overflow-x-auto ">
                 <Paper sx={{ width: "100%", overflow: "hidden" }}>
                   <TableContainer sx={{ maxHeight: 300 }}>
@@ -315,7 +322,8 @@ const Rekapan = () => {
                   </TableContainer>
                 </Paper>
               </div>
-              <div className="flex justify-between items-center mt-4 px-4">
+
+              <div className="flex justify-between items-center mt-2 px-4">
                 <span className="text-sm text-gray-500">
                   Showing {indexOfFirstRow + 1}-
                   {Math.min(indexOfLastRow, absen.length)} of {absen.length}
@@ -341,6 +349,8 @@ const Rekapan = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Move buttons below pagination */}
             </div>
           </div>
         </div>

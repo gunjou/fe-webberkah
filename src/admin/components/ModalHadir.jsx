@@ -145,7 +145,7 @@ const getFormattedDate = () => {
 
 const paginationModel = { page: 0, pageSize: 50 };
 
-const ModalHadir = ({ open, close }) => {
+const ModalHadir = ({ open, close, type }) => {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -154,21 +154,42 @@ const ModalHadir = ({ open, close }) => {
   const [lokasiList, setLokasiList] = useState([]);
 
   useEffect(() => {
-    if (open) {
-      setFilteredData(data);
-      setSearchTerm("");
-    }
-  }, [open, data]);
-
-  useEffect(() => {
     const token = localStorage.getItem("token");
+
+    let endpoint = "";
+    let filterData = (data) => data;
+
+    if (type === "hadir") {
+      endpoint = "/absensi/hadir";
+    } else if (type === "izin_sakit") {
+      endpoint = "/absensi/hadir";
+      filterData = (data) =>
+        data.filter((item) =>
+          ["izin", "sakit"].includes(item.status_absen?.toLowerCase())
+        );
+    } else if (type === "tanpa_keterangan") {
+      endpoint = "/absensi/tidak_hadir";
+    } else if (type === "staff") {
+      endpoint = "/absensi/hadir";
+      filterData = (data) => data.filter((item) => item.id_jenis === 4);
+    } else if (type === "pegawai_lapangan") {
+      endpoint = "/absensi/hadir";
+      filterData = (data) => data.filter((item) => item.id_jenis === 5);
+    } else if (type === "cleaning_services") {
+      endpoint = "/absensi/hadir";
+      filterData = (data) => data.filter((item) => item.id_jenis === 6);
+    }
+
+    setLoading(true);
     api
-      .get("/absensi/hadir", {
+      .get(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        const filtered = res.data.absensi.filter((item) => item.nama);
-        const sorted = filtered.sort((a, b) => {
+        const hasil = filterData(res.data.absensi || []).filter(
+          (item) => item.nama
+        );
+        const sorted = hasil.sort((a, b) => {
           const toMinutes = (timeStr) => {
             if (!timeStr) return Infinity;
             const [h, m] = timeStr.split(":").map(Number);
@@ -177,20 +198,14 @@ const ModalHadir = ({ open, close }) => {
           return toMinutes(a.jam_masuk) - toMinutes(b.jam_masuk);
         });
         setData(sorted);
+        setFilteredData(sorted);
         setLoading(false);
       })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
+      .catch((err) => {
+        console.error("Gagal fetch data:", err);
         setLoading(false);
       });
-
-    api
-      .get("/lokasi", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => setLokasiList(res.data.lokasi))
-      .catch((err) => console.error("Gagal mengambil lokasi:", err));
-  }, []);
+  }, [type]);
 
   const handleSearch = (event) => {
     const value = event.target.value.toLowerCase();
@@ -408,6 +423,19 @@ const ModalHadir = ({ open, close }) => {
     },
   ];
 
+  const getTitleByType = (tipe) => {
+    switch (tipe) {
+      case "hadir":
+        return "List Pegawai Hadir";
+      case "izin_sakit":
+        return "List Pegawai Izin/Sakit";
+      case "tanpa_keterangan":
+        return "List Pegawai Tanpa Keterangan";
+      default:
+        return "List Presensi";
+    }
+  };
+
   return (
     <div className="ModalHadir">
       <Modal open={open} onClose={close}>
@@ -417,7 +445,7 @@ const ModalHadir = ({ open, close }) => {
           </button>
 
           <Typography variant="h6" component="h2" className="pb-3">
-            List Pegawai Hadir
+            {getTitleByType(type)}
             <div className="flex justify-between items-center text-sm">
               <span>{getFormattedDate()}</span>
               <input

@@ -15,13 +15,17 @@ import ModalHadir from "../components/ModalHadir";
 
 const Presensi = () => {
   const [openHadir, setOpenHadir] = useState(false);
-  const handleOpenHadir = () => setOpenHadir(true);
+  const handleOpenHadir = (type) => {
+    setModalType(type);
+    setOpenHadir(true);
+  };
+
   const handleCloseHadir = () => setOpenHadir(false);
   const [absen, setAbsen] = useState([]);
   const [karyawan, setKaryawan] = useState([]);
   const [filteredData, setFilteredData] = useState([]); // Data yang difilter
   const [searchTerm, setSearchTerm] = useState(""); // Nilai input pencarian
-
+  const [modalType, setModalType] = useState("hadir");
   console.log(absen);
 
   useEffect(() => {
@@ -75,7 +79,7 @@ const Presensi = () => {
             <div className="card h-50 w-80">
               <Card
                 href="#"
-                onClick={handleOpenHadir}
+                onClick={() => handleOpenHadir("hadir")}
                 className="cursor-pointer relative"
               >
                 <div className="absolute top-4 left-5">
@@ -85,8 +89,7 @@ const Presensi = () => {
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    {absen.length}/
-                    {karyawan.filter((item) => item.id_karyawan).length - 2}
+                    {absen.length}/{karyawan.length - 2}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -102,7 +105,7 @@ const Presensi = () => {
               <div className="card">
                 <Card
                   href="#"
-                  onClick={handleOpenHadir}
+                  onClick={() => handleOpenHadir("izin_sakit")}
                   className="cursor-pointer relative"
                 >
                   <div className="absolute top-4 left-5">
@@ -112,8 +115,14 @@ const Presensi = () => {
                   </div>
                   <div className="mt-7 text-left ml-0">
                     <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                      -/
-                      {karyawan.filter((item) => item.id_karyawan).length - 2}
+                      {
+                        absen.filter(
+                          (item) =>
+                            item.nama_status === "Izin" ||
+                            item.nama_status === "Sakit"
+                        ).length
+                      }
+                      /{karyawan.length - 2}
                     </p>
                     <p className="font-normal text-red-700 dark:text-gray-400">
                       Orang
@@ -123,14 +132,13 @@ const Presensi = () => {
                     <FaPlus className="h-6 w-6" />
                   </span>
                 </Card>
-                <ModalHadir open={openHadir} close={handleCloseHadir} />
               </div>
             </div>
             <div className="card h-50 w-80">
               <div className="card">
                 <Card
                   href="#"
-                  onClick={handleOpenHadir}
+                  onClick={() => handleOpenHadir("tanpa_keterangan")}
                   className="cursor-pointer relative"
                 >
                   <div className="absolute top-4 left-5">
@@ -140,10 +148,8 @@ const Presensi = () => {
                   </div>
                   <div className="mt-7 text-left ml-0">
                     <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                      {karyawan.filter((item) => item.id_karyawan).length -
-                        2 -
-                        absen.length}
-                      /{karyawan.filter((item) => item.id_karyawan).length - 2}
+                      {karyawan.length - 2 - absen.length}/
+                      {karyawan.filter((item) => item.id_karyawan).length - 2}
                     </p>
                     <p className="font-normal text-red-700 dark:text-gray-400">
                       Orang
@@ -153,7 +159,6 @@ const Presensi = () => {
                     <ImCross className="h-6 w-6" />
                   </span>
                 </Card>
-                <ModalHadir open={openHadir} close={handleCloseHadir} />
               </div>
             </div>
           </div>
@@ -167,7 +172,7 @@ const Presensi = () => {
             <div className="card h-50 w-80">
               <Card
                 href="#"
-                onClick={handleOpenHadir}
+                onClick={() => handleOpenHadir("staff")}
                 className="cursor-pointer relative"
               >
                 <div className="absolute top-4 left-5">
@@ -188,13 +193,12 @@ const Presensi = () => {
                   <PiOfficeChairBold className="h-6 w-6" />
                 </span>
               </Card>
-              <ModalHadir open={openHadir} close={handleCloseHadir} />
             </div>
             {/* Pegawai Lapangan */}
             <div className="card h-50 w-80">
               <Card
                 href="#"
-                onClick={handleOpenHadir}
+                onClick={() => handleOpenHadir("pegawai_lapangan")}
                 className="cursor-pointer relative"
               >
                 <div className="absolute top-4 left-5">
@@ -221,7 +225,7 @@ const Presensi = () => {
             <div className="card h-50 w-80">
               <Card
                 href="#"
-                onClick={handleOpenHadir}
+                onClick={() => handleOpenHadir("cleaning_services")}
                 className="cursor-pointer relative"
               >
                 <div className="absolute top-4 left-5">
@@ -231,7 +235,8 @@ const Presensi = () => {
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    -/-
+                    {absen.filter((item) => item.id_jenis == 6).length}/
+                    {karyawan.filter((item) => item.id_jenis === 6).length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -241,11 +246,11 @@ const Presensi = () => {
                   <MdCleaningServices className="h-6 w-6" />
                 </span>
               </Card>
-              <ModalHadir open={openHadir} close={handleCloseHadir} />
             </div>
           </div>
         </div>
       </div>
+      <ModalHadir open={openHadir} close={handleCloseHadir} type={modalType} />
     </div>
   );
 };
