@@ -240,7 +240,7 @@ const Rekapan = () => {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="border rounded px-2 py-1 text-sm"
+                      className="border rounded-[20px] px-2 py-1 text-sm"
                     />
                   </div>
                   <div className="flex items-center text-sm gap-1">
@@ -250,7 +250,7 @@ const Rekapan = () => {
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="border rounded px-2 py-1 text-sm"
+                      className="border rounded-[20px] px-2 py-1 text-sm"
                     />
                   </div>
                   <div className="flex items-center ml-4 justify-end space-x-2 flex-wrap w-full">

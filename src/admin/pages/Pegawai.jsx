@@ -269,7 +269,11 @@ const Pegawai = () => {
     ));
   }
   const handleEdit = (karyawan) => {
-    setSelectedPegawai(karyawan);
+    const jenisObj = jenisList.find((j) => j.jenis === karyawan.jenis);
+    setSelectedPegawai({
+      ...karyawan,
+      jenis: jenisObj ? jenisObj.id_jenis : "", // pastikan nilainya ID
+    });
     setOpenModalEdit(true);
   };
 
