@@ -232,30 +232,30 @@ const Absensi = () => {
           </div>
         </div>
 
-        <div className="flex space-x-1 px-2 py-5 justify-center rounded-[20px]">
+        <div className="flex space-x-3 px-2 py-5 justify-center rounded-[20px]">
           <button
             onClick={() => navigate("/m-develop")}
-            className="flex items-center bg-white hover:bg-gray-300 text-black rounded-full px-3 py-2 shadow-md"
+            className="flex items-center text-sm font-semibold bg-white hover:bg-gray-300 text-black rounded-[20px] px-3 py-2 shadow-md"
           >
-            <div className="text-[10pt] text-custom-merah pr-1">
+            <div className="text-sm text-custom-merah pr-1">
               <RiCalendarScheduleFill />
             </div>
             History
           </button>
           <button
             onClick={() => navigate("/m-develop")}
-            className="flex items-center bg-white hover:bg-gray-300 text-black rounded-[20px] px-2 py-2 shadow-md"
+            className="flex items-center text-sm font-semibold bg-white hover:bg-gray-300 text-black rounded-[20px] px-3 py-2 shadow-md"
           >
-            <div className="text-[10pt] text-custom-merah pr-1">
+            <div className="text-sm text-custom-merah pr-1">
               <FaNotesMedical />
             </div>
             Izin/Sakit
           </button>
           <button
             onClick={() => navigate("/m-develop")}
-            className="flex items-center bg-white hover:bg-gray-300 text-black rounded-[20px] px-2 py-2 shadow-md"
+            className="flex items-center text-sm font-semibold bg-white hover:bg-gray-300 text-black rounded-[20px] px-3 py-2 shadow-md"
           >
-            <div className="text-[10pt] text-custom-merah pr-1">
+            <div className="text-sm text-custom-merah pr-1">
               <FaUserEdit />
             </div>
             Form Cuti
@@ -269,14 +269,6 @@ const Absensi = () => {
           <div className="block ml-2 mr-2 mt-3 bg-white border border-gray-200 rounded-[20px] shadow-lg relative">
             <div className="pt-2 pl-4 pb-2 pr-4 flex justify-between items-center font-semibold">
               <span>{getFormattedDate()}</span>
-              <button
-                onClick={() => alert("Hapus data absensi masuk")}
-                className="flex items-center absolute right-7  text-custom-merah hover:text-red-700"
-                title="Hapus"
-              >
-                <IoTrashBin className="mr-1" />
-                Hapus
-              </button>
             </div>
             <div className="pl-4 grid grid-cols-2">
               <div className="flex pl-0.5 pb-2">
@@ -300,7 +292,7 @@ const Absensi = () => {
             <div className="pt-2 pl-4 pb-2 pr-4 flex justify-between items-center font-semibold">
               <span>{getFormattedDate()}</span>
               <button
-                onClick={() => alert("Hapus data absensi keluar")}
+                onClick={() => alert("masih dalam tahap pengembangan")}
                 className="flex items-center absolute right-7 text-custom-merah hover:text-red-700"
                 title="Hapus"
               >

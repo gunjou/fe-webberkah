@@ -17,6 +17,7 @@ import api from "../../shared/Api";
 // import NavMenu from './NavMenu'
 
 const kolom = [
+  { id: "no", label: "No", minWidth: 10 },
   { id: "nama", label: "Nama Pegawai", minWidth: 100 },
   { id: "status", label: "Status Pegawai", minWidth: 100 },
   {
@@ -48,12 +49,11 @@ const Pegawai = () => {
   const [openModalEdit, setOpenModalEdit] = useState(false);
   const [karyawan, setKaryawan] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
-
   const [searchTerm, setSearchTerm] = useState("");
   const [jenisList, setJenisList] = useState([]);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   const [selectedPegawai, setSelectedPegawai] = useState({
     id_karyawan: "",
@@ -195,20 +195,27 @@ const Pegawai = () => {
       });
   };
 
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedData = [...karyawan].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    const valueA = a[sortConfig.key] || "";
+    const valueB = b[sortConfig.key] || "";
+    if (valueA < valueB) return sortConfig.direction === "asc" ? -1 : 1;
+    if (valueA > valueB) return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
+  });
+
   // Filter data berdasarkan search term
-  const filteredData = karyawan
-    .filter((item) =>
-      item.nama.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      const aMatches = a.nama
-        .toLowerCase()
-        .startsWith(searchTerm.toLowerCase());
-      const bMatches = b.nama
-        .toLowerCase()
-        .startsWith(searchTerm.toLowerCase());
-      return bMatches - aMatches; // Prioritaskan yang cocok di depan
-    });
+  const filteredData = sortedData.filter((item) =>
+    item.nama.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Hitung indeks data yang akan ditampilkan
   const indexOfLastRow = currentPage * rowsPerPage;
@@ -241,12 +248,9 @@ const Pegawai = () => {
     );
   } else {
     detail = currentRows.map((item, index) => (
-      <TableRow
-        key={index}
-        sx={{
-          "&:last-child td, &:last-child th": { border: 0 },
-        }}
-      >
+      <TableRow key={index}>
+        <TableCell>{index + 1}</TableCell>
+
         <TableCell component="th" scope="row" className="capitalize">
           {item.nama}
         </TableCell>
@@ -346,16 +350,22 @@ const Pegawai = () => {
                           {kolom.map((column, index) => (
                             <TableCell
                               key={column.id}
+                              onClick={() => handleSort(column.id)}
                               align={column.align}
                               style={{
                                 minWidth: column.minWidth,
                                 backgroundColor: "#4d4d4d", // Ganti warna latar belakang
                                 color: "white", // Ganti warna teks
                                 fontWeight: "bold",
-                                borderRadius: index === 5 ? "0 10px 0 0" : "0",
+                                borderRadius: index === 6 ? "0 10px 0 0" : "0",
                               }}
                             >
                               {column.label}
+                              {sortConfig.key === column.id && (
+                                <span style={{ marginLeft: 4 }}>
+                                  {sortConfig.direction === "asc" ? " ▲" : " ▼"}
+                                </span>
+                              )}
                             </TableCell>
                           ))}
                         </TableRow>

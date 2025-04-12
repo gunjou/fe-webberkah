@@ -24,105 +24,6 @@ const style = {
   p: 3,
 };
 
-const columns = [
-  {
-    field: "no",
-    headerName: "No",
-    width: 50,
-    headerAlign: "center",
-    align: "center",
-    headerClassName: "font-bold text-black",
-    sortable: false,
-    filterable: false,
-    renderCell: (params) => {
-      const index = params.api.getSortedRowIds().indexOf(params.id);
-      return index + 1;
-    },
-  },
-  {
-    field: "nama",
-    headerName: "Nama",
-    width: 160,
-    renderCell: (params) => {
-      const toTitleCase = (str) =>
-        str.replace(
-          /\w\S*/g,
-          (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
-        );
-      return toTitleCase(params.value);
-    },
-  },
-  {
-    field: "jam_masuk",
-    headerName: "Waktu Check in",
-    width: 130,
-    headerAlign: "center",
-    align: "center",
-  },
-  {
-    field: "jam_keluar",
-    headerName: "Waktu Check out",
-    width: 130,
-    headerAlign: "center",
-    align: "center",
-    renderCell: (params) => params.value || "-",
-  },
-  {
-    field: "lokasi_masuk",
-    headerName: "Lokasi Check in",
-    width: 150,
-    headerAlign: "center",
-    align: "left",
-  },
-  {
-    field: "lokasi_keluar",
-    headerName: "Lokasi Check out",
-    width: 150,
-    headerAlign: "center",
-    renderCell: (params) => (
-      <span
-        style={{
-          display: "block",
-          width: "100%",
-          textAlign: params.value ? "left" : "center",
-        }}
-      >
-        {params.value || "-"}
-      </span>
-    ),
-  },
-  {
-    field: "jam_terlambat",
-    headerName: "Waktu Terlambat",
-    width: 160,
-    headerAlign: "center",
-    align: "center",
-    renderCell: (params) => {
-      const value = params.value;
-      if (value == null)
-        return <span style={{ color: "green" }}>Tepat Waktu</span>;
-      const jam = Math.floor(value / 60);
-      const menit = value % 60;
-      const display = jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
-      return <span style={{ color: "red" }}>{display}</span>;
-    },
-  },
-  {
-    field: "status_absen",
-    headerName: "Status",
-    width: 130,
-    headerAlign: "center",
-    align: "center",
-  },
-  {
-    field: "action",
-    headerName: "Action",
-    width: 100,
-    headerAlign: "center",
-    align: "center",
-  },
-];
-
 const toTitleCase = (str) => {
   return str
     .toLowerCase()
@@ -242,10 +143,41 @@ const ModalHadir = ({ open, close, type }) => {
         "Apakah Anda yakin ingin mengunduh data sebagai file Excel?"
       )
     ) {
-      const worksheet = XLSX.utils.json_to_sheet(data);
+      const columnsToExport = getColumns(type)
+        .map((col) => col.field)
+        .filter((field) => field !== "action");
+
+      const worksheetData = filteredData.map((row, index) => {
+        const newRow = {};
+        columnsToExport.forEach((field) => {
+          if (field === "no") {
+            newRow["No"] = index + 1;
+          } else if (field === "nama") {
+            newRow["Nama"] = toTitleCase(row.nama);
+          } else if (field === "jam_terlambat") {
+            const val = row.jam_terlambat;
+            if (val == null) {
+              newRow["Waktu Terlambat"] = "-";
+            } else {
+              const jam = Math.floor(val / 60);
+              const menit = val % 60;
+              newRow["Waktu Terlambat"] =
+                jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
+            }
+          } else {
+            newRow[
+              getColumns(type).find((col) => col.field === field).headerName
+            ] = row[field] || "-";
+          }
+        });
+        return newRow;
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
-      XLSX.writeFile(workbook, "rekapan_presensi.xlsx");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Presensi");
+
+      XLSX.writeFile(workbook, `rekapan_presensi_${type}.xlsx`);
     }
   };
 
@@ -262,38 +194,24 @@ const ModalHadir = ({ open, close, type }) => {
     doc.text(title, 14, 15);
     doc.text(dateStr, 14, 22);
 
-    const tableColumn = [
-      "No",
-      "Nama",
-      "Check In",
-      "Check Out",
-      "Lokasi In",
-      "Lokasi Out",
-      "Terlambat",
-      "Status",
-    ];
+    const columnsConfig = getColumns(type).filter(
+      (col) => col.field !== "action"
+    );
 
-    const tableRows = data.map((row, index) => {
-      const waktuTerlambat = row.jam_terlambat;
-
-      let keteranganTerlambat = "-";
-      if (waktuTerlambat !== null) {
-        const jam = Math.floor(waktuTerlambat / 60);
-        const menit = waktuTerlambat % 60;
-        keteranganTerlambat =
-          jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
-      }
-
-      return [
-        index + 1,
-        toTitleCase(row.nama),
-        row.jam_masuk || "-",
-        row.jam_keluar || "-",
-        row.lokasi_masuk || "-",
-        row.lokasi_keluar || "-",
-        keteranganTerlambat,
-        row.status_absen || "-",
-      ];
+    const tableColumn = columnsConfig.map((col) => col.headerName);
+    const tableRows = filteredData.map((row, index) => {
+      return columnsConfig.map((col) => {
+        const field = col.field;
+        if (field === "no") return index + 1;
+        if (field === "nama") return toTitleCase(row.nama);
+        if (field === "jam_terlambat") {
+          if (row.jam_terlambat == null) return "-";
+          const jam = Math.floor(row.jam_terlambat / 60);
+          const menit = row.jam_terlambat % 60;
+          return jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
+        }
+        return row[field] || "-";
+      });
     });
 
     doc.autoTable({
@@ -309,119 +227,135 @@ const ModalHadir = ({ open, close, type }) => {
       },
     });
 
-    doc.save(`rekapan_presensi_${dateStr}.pdf`);
+    doc.save(`rekapan_presensi_${type}_${dateStr}.pdf`);
   };
 
-  const columns = [
-    {
-      field: "no",
-      headerName: "No",
-      width: 50,
-      renderCell: (params) => {
-        const index = params.api.getSortedRowIds().indexOf(params.id);
-        return index + 1;
+  const getColumns = (type) => {
+    const baseColumns = [
+      {
+        field: "no",
+        headerName: "No",
+        width: 10,
+        renderCell: (params) => {
+          const index = params.api.getSortedRowIds().indexOf(params.id);
+          return index + 1;
+        },
       },
-    },
-    {
-      field: "nama",
-      headerName: "Nama",
-      width: 160,
-      renderCell: (params) => {
-        const toTitleCase = (str) =>
-          str.replace(
-            /\w\S*/g,
-            (txt) =>
-              txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
-          );
-        return toTitleCase(params.value);
+      {
+        field: "nama",
+        headerName: "Nama",
+        width: 160,
+        renderCell: (params) => {
+          const toTitleCase = (str) =>
+            str.replace(
+              /\w\S*/g,
+              (txt) =>
+                txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
+            );
+          return toTitleCase(params.value);
+        },
       },
-    },
+      {
+        field: "status_absen",
+        headerName: "Status",
+        width: 130,
+        align: "center",
+        headerAlign: "center",
+      },
+      {
+        field: "action",
+        headerName: "Action",
+        width: 130,
+        headerAlign: "center",
+        align: "center",
+        renderCell: (params) => (
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleEdit(params.row)}
+              className="flex items-center text-blue-500 hover:text-blue-700"
+              title="Edit"
+            >
+              <BiSolidEdit className="mr-1" />
+              Edit
+            </button>
+            <button
+              className="flex items-center text-red-500 hover:text-red-700"
+              title="Delete"
+            >
+              <IoTrashBin className="mr-1" />
+              Delete
+            </button>
+          </div>
+        ),
+      },
+    ];
 
-    {
-      field: "jam_masuk",
-      headerName: "Check In",
-      width: 130,
-      align: "center",
-      headerAlign: "center",
-    },
-    {
-      field: "jam_keluar",
-      headerName: "Check Out",
-      width: 130,
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params) => params.value || "-",
-    },
-    {
-      field: "lokasi_masuk",
-      headerName: "Lokasi Check in",
-      width: 150,
-      headerAlign: "left",
-      align: "left",
-    },
-    {
-      field: "lokasi_keluar",
-      headerName: "Lokasi Check out",
-      width: 150,
-      headerAlign: "left",
-      renderCell: (params) => (
-        <span
-          style={{
-            display: "block",
-            width: "100%",
-            textAlign: params.value ? "left" : "center",
-          }}
-        >
-          {params.value || "-"}
-        </span>
-      ),
-    },
-    {
-      field: "jam_terlambat",
-      headerName: "Waktu Terlambat",
-      width: 160,
-      headerAlign: "center",
-      align: "center",
-      renderCell: (params) => {
-        const value = params.value;
-        if (value === null)
-          return <span style={{ color: "green" }}>Tepat Waktu</span>;
-        const jam = Math.floor(value / 60);
-        const menit = value % 60;
-        const display =
-          jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
-        return <span style={{ color: "red" }}>{display}</span>;
-      },
-    },
-    { field: "status_absen", headerName: "Status", width: 130 },
-    {
-      field: "action",
-      headerName: "Action",
-      width: 130,
-      headerAlign: "center",
-      align: "center",
-      renderCell: (params) => (
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => handleEdit(params.row)}
-            className="flex items-center text-blue-500 hover:text-blue-700"
-            title="Edit"
-          >
-            <BiSolidEdit className="mr-1" />
-            Edit
-          </button>
-          <button
-            //onClick={() => handleDelete(params.row.id)}
-            className="flex items-center text-red-500 hover:text-red-700"
-            title="Delete"
-          >
-            <IoTrashBin className="mr-1" />
-            Delete
-          </button>
-        </div>
-      ),
-    },
-  ];
+    // Tambahkan kolom lain jika bukan 'tanpa_keterangan'
+    if (type !== "tanpa_keterangan" && type !== "izin_sakit") {
+      return [
+        ...baseColumns.slice(0, 2),
+        {
+          field: "jam_masuk",
+          headerName: "Check In",
+          width: 90,
+          align: "center",
+          headerAlign: "center",
+        },
+        {
+          field: "jam_keluar",
+          headerName: "Check Out",
+          width: 90,
+          align: "center",
+          headerAlign: "center",
+          renderCell: (params) => params.value || "-",
+        },
+        {
+          field: "lokasi_masuk",
+          headerName: "Lokasi Check in",
+          width: 150,
+          headerAlign: "left",
+          align: "left",
+        },
+        {
+          field: "lokasi_keluar",
+          headerName: "Lokasi Check out",
+          width: 150,
+          headerAlign: "left",
+          renderCell: (params) => (
+            <span
+              style={{
+                display: "block",
+                width: "100%",
+                textAlign: params.value ? "left" : "center",
+              }}
+            >
+              {params.value || "-"}
+            </span>
+          ),
+        },
+        {
+          field: "jam_terlambat",
+          headerName: "Waktu Terlambat",
+          width: 130,
+          headerAlign: "center",
+          align: "center",
+          renderCell: (params) => {
+            const value = params.value;
+            if (value === null)
+              return <span style={{ color: "green" }}>Tepat Waktu</span>;
+            const jam = Math.floor(value / 60);
+            const menit = value % 60;
+            const display =
+              jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
+            return <span style={{ color: "red" }}>{display}</span>;
+          },
+        },
+        ...baseColumns.slice(2),
+      ];
+    }
+
+    return baseColumns;
+  };
 
   const getTitleByType = (tipe) => {
     switch (tipe) {
@@ -461,7 +395,7 @@ const ModalHadir = ({ open, close, type }) => {
           <Paper sx={{ width: "100%", height: 400, overflow: "auto" }}>
             <DataGrid
               rows={filteredData}
-              columns={columns}
+              columns={getColumns(type)}
               initialState={{ pagination: { paginationModel } }}
               loading={loading}
             />
