@@ -26,8 +26,8 @@ const kolom = [
     minWidth: 100,
   },
   {
-    id: "password",
-    label: "Password",
+    id: "token",
+    label: "Token",
     minWidth: 100,
   },
   {
@@ -100,6 +100,7 @@ const Pegawai = () => {
       })
       .then((res) => {
         const sorted = res.data.karyawan
+
           .filter((item) => item.nama) // optional: filter kalau nama tidak null
           .sort((a, b) => a.nama.localeCompare(b.nama));
 
@@ -259,7 +260,7 @@ const Pegawai = () => {
         </TableCell>
 
         <TableCell align="left">{item.username}</TableCell>
-        <TableCell align="left">{item.password}</TableCell>
+        <TableCell align="left">{item.token}</TableCell>
         <TableCell align="left">{item.gaji_pokok}</TableCell>
         <TableCell align="center">
           <span

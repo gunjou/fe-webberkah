@@ -26,7 +26,17 @@ const Presensi = () => {
   const [filteredData, setFilteredData] = useState([]); // Data yang difilter
   const [searchTerm, setSearchTerm] = useState(""); // Nilai input pencarian
   const [modalType, setModalType] = useState("hadir");
-  console.log(absen);
+
+  const getFormattedDate = () => {
+    const date = new Date();
+    return new Intl.DateTimeFormat("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "Asia/Makassar",
+    }).format(date);
+  };
 
   useEffect(() => {
     setFilteredData(absen, karyawan); // Reset filteredData ke data asli saat modal dibuka
@@ -74,6 +84,9 @@ const Presensi = () => {
         <div>
           <div className="title flex text-2xl pt-4 pl-4 font-bold">
             Persensi Semua Pegawai
+          </div>
+          <div className="title flex text-lg pl-4 font-normal">
+            {getFormattedDate()}
           </div>
           <div className="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
             <div className="card h-50 w-80">
@@ -166,7 +179,9 @@ const Presensi = () => {
           <div className="title flex text-2xl pt-4 pl-4 font-bold">
             Persensi Departemen Pegawai
           </div>
-
+          <div className="title flex text-lg pl-4 font-normal">
+            {getFormattedDate()}
+          </div>
           <div className="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
             {/* Staff Kantor  */}
             <div className="card h-50 w-80">

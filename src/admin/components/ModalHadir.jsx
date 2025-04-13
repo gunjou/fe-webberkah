@@ -12,6 +12,11 @@ import { IoClose, IoTrashBin } from "react-icons/io5";
 import api from "../../shared/Api";
 
 import { BiSolidEdit } from "react-icons/bi";
+import Pegawai from "../pages/Pegawai";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 const style = {
   position: "absolute",
@@ -53,6 +58,11 @@ const ModalHadir = ({ open, close, type }) => {
   const [loading, setLoading] = useState(true);
   const [editData, setEditData] = useState(null);
   const [lokasiList, setLokasiList] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+
+  const formatDateParam = (dateObj) => {
+    return dayjs(dateObj).format("DD-MM-YYYY");
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -60,25 +70,29 @@ const ModalHadir = ({ open, close, type }) => {
     let endpoint = "";
     let filterData = (data) => data;
 
-    if (type === "hadir") {
-      endpoint = "/absensi/hadir";
+    const formattedDate = formatDateParam(selectedDate);
+
+    if (
+      type === "hadir" ||
+      type === "staff" ||
+      type === "pegawai_lapangan" ||
+      type === "cleaning_services"
+    ) {
+      endpoint = `/absensi/hadir?tanggal=${formattedDate}`;
+      if (type === "staff")
+        filterData = (data) => data.filter((item) => item.id_jenis === 4);
+      else if (type === "pegawai_lapangan")
+        filterData = (data) => data.filter((item) => item.id_jenis === 5);
+      else if (type === "cleaning_services")
+        filterData = (data) => data.filter((item) => item.id_jenis === 6);
     } else if (type === "izin_sakit") {
-      endpoint = "/absensi/hadir";
+      endpoint = `/absensi/hadir?tanggal=${formattedDate}`;
       filterData = (data) =>
         data.filter((item) =>
           ["izin", "sakit"].includes(item.status_absen?.toLowerCase())
         );
     } else if (type === "tanpa_keterangan") {
-      endpoint = "/absensi/tidak_hadir";
-    } else if (type === "staff") {
-      endpoint = "/absensi/hadir";
-      filterData = (data) => data.filter((item) => item.id_jenis === 4);
-    } else if (type === "pegawai_lapangan") {
-      endpoint = "/absensi/hadir";
-      filterData = (data) => data.filter((item) => item.id_jenis === 5);
-    } else if (type === "cleaning_services") {
-      endpoint = "/absensi/hadir";
-      filterData = (data) => data.filter((item) => item.id_jenis === 6);
+      endpoint = `/absensi/tidak_hadir?tanggal=${formattedDate}`;
     }
 
     setLoading(true);
@@ -106,7 +120,7 @@ const ModalHadir = ({ open, close, type }) => {
         console.error("Gagal fetch data:", err);
         setLoading(false);
       });
-  }, [type]);
+  }, [type, selectedDate]);
 
   const handleSearch = (event) => {
     const value = event.target.value.toLowerCase();
@@ -121,7 +135,7 @@ const ModalHadir = ({ open, close, type }) => {
     if (window.confirm("Yakin ingin menghapus data ini?")) {
       const token = localStorage.getItem("token");
       api
-        .delete(`/absensi/${id}`, {
+        .put(`/absensi/delete/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then(() => {
@@ -138,6 +152,7 @@ const ModalHadir = ({ open, close, type }) => {
   };
 
   const downloadExcel = () => {
+    const dateStr = getFormattedDate();
     if (
       window.confirm(
         "Apakah Anda yakin ingin mengunduh data sebagai file Excel?"
@@ -156,14 +171,17 @@ const ModalHadir = ({ open, close, type }) => {
             newRow["Nama"] = toTitleCase(row.nama);
           } else if (field === "jam_terlambat") {
             const val = row.jam_terlambat;
-            if (val == null) {
-              newRow["Waktu Terlambat"] = "-";
-            } else {
-              const jam = Math.floor(val / 60);
-              const menit = val % 60;
-              newRow["Waktu Terlambat"] =
-                jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
-            }
+            newRow["Waktu Terlambat"] =
+              val == null
+                ? "-"
+                : `${Math.floor(val / 60)} jam ${val % 60} menit`;
+          } else if (field === "jenis_pegawai") {
+            const jenisMap = {
+              4: "Staff",
+              5: "Pegawai Lapangan",
+              6: "Cleaning Services",
+            };
+            newRow["Jenis Pegawai"] = jenisMap[row.id_jenis] || "Lainnya"; // Add this line
           } else {
             newRow[
               getColumns(type).find((col) => col.field === field).headerName
@@ -177,7 +195,7 @@ const ModalHadir = ({ open, close, type }) => {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Presensi");
 
-      XLSX.writeFile(workbook, `rekapan_presensi_${type}.xlsx`);
+      XLSX.writeFile(workbook, `rekapan_presensi_${type}_${dateStr}.xlsx`);
     }
   };
 
@@ -197,7 +215,6 @@ const ModalHadir = ({ open, close, type }) => {
     const columnsConfig = getColumns(type).filter(
       (col) => col.field !== "action"
     );
-
     const tableColumn = columnsConfig.map((col) => col.headerName);
     const tableRows = filteredData.map((row, index) => {
       return columnsConfig.map((col) => {
@@ -205,10 +222,17 @@ const ModalHadir = ({ open, close, type }) => {
         if (field === "no") return index + 1;
         if (field === "nama") return toTitleCase(row.nama);
         if (field === "jam_terlambat") {
-          if (row.jam_terlambat == null) return "-";
+          if (row.jam_terlambat === null) return "-";
           const jam = Math.floor(row.jam_terlambat / 60);
           const menit = row.jam_terlambat % 60;
           return jam > 0 ? `${jam} jam ${menit} menit` : `${menit} menit`;
+        } else if (field === "jenis_pegawai") {
+          const jenisMap = {
+            4: "Staff",
+            5: "Pegawai Lapangan",
+            6: "Cleaning Services",
+          };
+          return jenisMap[row.id_jenis] || "Lainnya"; // Add this line
         }
         return row[field] || "-";
       });
@@ -269,7 +293,7 @@ const ModalHadir = ({ open, close, type }) => {
         headerAlign: "center",
         align: "center",
         renderCell: (params) => (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-center space-x-2 w-full">
             <button
               onClick={() => handleEdit(params.row)}
               className="flex items-center text-blue-500 hover:text-blue-700"
@@ -278,13 +302,16 @@ const ModalHadir = ({ open, close, type }) => {
               <BiSolidEdit className="mr-1" />
               Edit
             </button>
-            <button
-              className="flex items-center text-red-500 hover:text-red-700"
-              title="Delete"
-            >
-              <IoTrashBin className="mr-1" />
-              Delete
-            </button>
+            {type !== "tanpa_keterangan" && (
+              <button
+                onClick={() => handleDelete(params.row.id)}
+                className="flex items-center text-red-500 hover:text-red-700"
+                title="Delete"
+              >
+                <IoTrashBin className="mr-1" />
+                Delete
+              </button>
+            )}
           </div>
         ),
       },
@@ -353,14 +380,29 @@ const ModalHadir = ({ open, close, type }) => {
         ...baseColumns.slice(2),
       ];
     }
-
-    return baseColumns;
+    return [
+      ...baseColumns.slice(0, 2),
+      {
+        field: "jenis_pegawai",
+        headerName: "Jenis Pegawai",
+        width: 160,
+        renderCell: (params) => {
+          const jenisMap = {
+            4: "Staff",
+            5: "Pegawai Lapangan",
+            6: "Cleaning Services",
+          };
+          return jenisMap[params.row.id_jenis] || "Lainnya";
+        },
+      },
+      ...baseColumns.slice(2),
+    ];
   };
 
   const getTitleByType = (tipe) => {
     switch (tipe) {
       case "hadir":
-        return "List Pegawai Hadir";
+        return `List Pegawai Hadir`;
       case "izin_sakit":
         return "List Pegawai Izin/Sakit";
       case "tanpa_keterangan":
@@ -380,14 +422,28 @@ const ModalHadir = ({ open, close, type }) => {
 
           <Typography variant="h6" component="h2" className="pb-3">
             {getTitleByType(type)}
-            <div className="flex justify-between items-center text-sm">
-              <span>{getFormattedDate()}</span>
+            <div className="flex justify-between items-center text-sm mt-2">
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Pilih Tanggal"
+                  value={selectedDate}
+                  onChange={(newVal) => setSelectedDate(newVal)}
+                  format="DD-MM-YYYY"
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      sx: { minWidth: 180 },
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+
               <input
                 type="text"
                 value={searchTerm}
                 onChange={handleSearch}
                 className="border rounded-[20px] px-3 py-1 w-80"
-                placeholder="Cari"
+                placeholder="Search"
               />
             </div>
           </Typography>
@@ -433,29 +489,51 @@ const ModalHadir = ({ open, close, type }) => {
               Edit Data Presensi
             </Typography>
             <div className="space-y-3">
-              <div>
-                <label className="text-sm">Jam Masuk</label>
-                <input
-                  type="text"
-                  className="w-full border p-2 rounded"
-                  value={editData.jam_masuk}
-                  onChange={(e) =>
-                    setEditData({ ...editData, jam_masuk: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="text-sm">Jam Keluar</label>
-                <input
-                  type="text"
-                  className="w-full border p-2 rounded"
-                  value={editData.jam_keluar || ""}
-                  onChange={(e) =>
-                    setEditData({ ...editData, jam_keluar: e.target.value })
-                  }
-                />
-              </div>
+              {type === "tanpa_keterangan" || type === "izin_sakit" ? (
+                <div>
+                  <label className="text-sm">Status Absen</label>
+                  <select
+                    className="w-full border p-2 rounded"
+                    value={editData.status_absen || ""}
+                    onChange={
+                      (e) => alert("dalam tahap pengembangan")
+                      //setEditData({ ...editData, status_absen: e.target.value })
+                    }
+                  >
+                    <option value="">-- Pilih Status --</option>
+                    <option value="izin">Izin</option>
+                    <option value="sakit">Sakit</option>
+                    <option value="perjalanan_dinas">Perjalanan Dinas</option>
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-sm">Jam Masuk</label>
+                    <input
+                      type="text"
+                      className="w-full border p-2 rounded"
+                      value={editData.jam_masuk}
+                      onChange={(e) =>
+                        setEditData({ ...editData, jam_masuk: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm">Jam Keluar</label>
+                    <input
+                      type="text"
+                      className="w-full border p-2 rounded"
+                      value={editData.jam_keluar || ""}
+                      onChange={(e) =>
+                        setEditData({ ...editData, jam_keluar: e.target.value })
+                      }
+                    />
+                  </div>
+                </>
+              )}
             </div>
+
             <div className="mt-4 flex justify-end space-x-2">
               <button
                 onClick={() => setEditData(null)}
@@ -467,7 +545,7 @@ const ModalHadir = ({ open, close, type }) => {
                 onClick={() => {
                   const token = localStorage.getItem("token");
                   api
-                    .put(`/absensi/${editData.id}`, editData, {
+                    .put(`/absensi/edit/${editData.id}`, editData, {
                       headers: { Authorization: `Bearer ${token}` },
                     })
                     .then(() => {
