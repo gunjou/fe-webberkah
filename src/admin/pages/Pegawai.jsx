@@ -50,7 +50,7 @@ const Pegawai = () => {
   const [karyawan, setKaryawan] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const rowsPerPage = 50;
   const [searchTerm, setSearchTerm] = useState("");
   const [jenisList, setJenisList] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -250,7 +250,7 @@ const Pegawai = () => {
   } else {
     detail = currentRows.map((item, index) => (
       <TableRow key={index}>
-        <TableCell>{index + 1}</TableCell>
+        <TableCell>{indexOfFirstRow + index + 1}</TableCell>
 
         <TableCell component="th" scope="row" className="capitalize">
           {item.nama}
@@ -389,7 +389,7 @@ const Pegawai = () => {
                 <div className="flex items-center pb-3 px-4">
                   <button
                     type="button"
-                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-l-[20px] text-xs px-4 py-2 border border-black"
+                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-l-[20px] text-[10px] px-2 py-1 border border-black"
                     onClick={prevPage}
                     disabled={currentPage === 1}
                   >
@@ -397,7 +397,7 @@ const Pegawai = () => {
                   </button>
                   <button
                     type="button"
-                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-r-[20px] text-xs px-4 py-2 border border-black"
+                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-r-[20px] text-[10px] px-2 py-1 border border-black"
                     onClick={nextPage}
                     disabled={
                       currentPage === Math.ceil(karyawan.length / rowsPerPage)

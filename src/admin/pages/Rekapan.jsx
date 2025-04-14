@@ -42,7 +42,7 @@ const Rekapan = () => {
   const [absen, setAbsen] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 25;
+  const rowsPerPage = 50;
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [startDate, setStartDate] = useState("");
@@ -138,6 +138,34 @@ const Rekapan = () => {
     }).format(date);
   };
 
+  const formatTanggal = (dateStr) => {
+    const [year, month, day] = dateStr.split("-");
+    const bulan = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    return `${day}_${bulan[parseInt(month, 10) - 1]}_${year}`;
+  };
+
+  const toTitleCase = (str) => {
+    if (!str) return "-";
+    return str
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
   const downloadExcel = () => {
     const confirmDownload = window.confirm(
       "Apakah Anda yakin ingin mengunduh data sebagai file Excel?"
@@ -147,8 +175,9 @@ const Rekapan = () => {
     const header = kolom.map((k) => k.label);
     const rows = filteredData.map((item, indeks) => [
       indeks + 1,
-      item.nama || "-",
-      item.jenis || "-",
+      toTitleCase(item.nama),
+      toTitleCase(item.jenis),
+
       item.jumlah_hadir || "-",
       item.jumlah_izin || "-",
       item.jumlah_sakit || "-",
@@ -173,7 +202,9 @@ const Rekapan = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
     XLSX.writeFile(
       workbook,
-      `rekapan_presensi_${startDate}_sampai_${endDate}.xlsx`
+      `rekapan_presensi_${formatTanggal(startDate)}_sampai_${formatTanggal(
+        endDate
+      )}.xlsx`
     );
   };
 
@@ -183,18 +214,21 @@ const Rekapan = () => {
     );
     if (!confirmDownload) return;
 
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: "landscape" });
     const title = "Rekapan Presensi";
-    const dateStr = `${startDate} Sampai ${endDate}`;
-
+    const dateStr = `${formatTanggal(startDate)} Sampai ${formatTanggal(
+      endDate
+    )}`;
+    doc.setFontSize(14);
     doc.text(title, 14, 15);
+    doc.setFontSize(10);
     doc.text(dateStr, 14, 22);
 
     const tableHead = kolom.map((k) => k.label);
     const tableRows = filteredData.map((row, index) => [
       index + 1,
-      row.nama || "-",
-      row.jenis || "-",
+      toTitleCase(row.nama),
+      toTitleCase(row.jenis),
       row.jumlah_hadir || "-",
       row.jumlah_izin || "-",
       row.jumlah_sakit || "-",
@@ -227,7 +261,11 @@ const Rekapan = () => {
       },
     });
 
-    doc.save(`rekapan_presensi_${startDate}_sampai_${endDate}.pdf`);
+    doc.save(
+      `rekapan_presensi_${formatTanggal(startDate)}_sampai_${formatTanggal(
+        endDate
+      )}.pdf`
+    );
   };
 
   const detail =
@@ -240,7 +278,7 @@ const Rekapan = () => {
     ) : (
       currentRows.map((item, index) => (
         <TableRow key={index}>
-          <TableCell>{index + 1}</TableCell>
+          <TableCell>{indexOfFirstRow + index + 1}</TableCell>
           <TableCell className="capitalize">{item.nama}</TableCell>
           <TableCell className="capitalize">{item.jenis}</TableCell>
           <TableCell align="left">
@@ -304,7 +342,7 @@ const Rekapan = () => {
             <div className="ml-2 mb-6 pt-4 flex items-start justify-start gap-4 flex-wrap">
               <div className="flex flex-col">
                 <span className="text-sm font-semibold">
-                  Detail Rekapan Presensi Pegawai Berkah Angsana
+                  Detail Rekapan Absensi Pegawai Berkah Angsana
                 </span>
                 <div className="flex gap-2 mt-2">
                   <div className="flex items-center text-sm gap-1">
@@ -511,7 +549,7 @@ const Rekapan = () => {
                 <div className="flex items-center pb-3 px-4">
                   <button
                     type="button"
-                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 rounded-l-[20px] text-xs px-4 py-2 border border-black"
+                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-l-[20px] text-[10px] px-2 py-1 border border-black"
                     onClick={prevPage}
                     disabled={currentPage === 1}
                   >
@@ -519,7 +557,7 @@ const Rekapan = () => {
                   </button>
                   <button
                     type="button"
-                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 rounded-r-[20px] text-xs px-4 py-2 border border-black"
+                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-r-[20px] text-[10px] px-2 py-1 border border-black"
                     onClick={nextPage}
                     disabled={
                       currentPage === Math.ceil(absen.length / rowsPerPage)

@@ -211,6 +211,8 @@ const ModalHadir = ({ open, close, type }) => {
 
     doc.text(title, 14, 15);
     doc.text(dateStr, 14, 22);
+    doc.setFontSize(14);
+    doc.setFontSize(10);
 
     const columnsConfig = getColumns(type).filter(
       (col) => col.field !== "action"

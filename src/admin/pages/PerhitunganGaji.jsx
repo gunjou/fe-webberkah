@@ -16,14 +16,14 @@ import api from "../../shared/Api";
 
 const kolom = [
   { id: "no", label: "No", minWidth: 20 },
-  { id: "nama", label: "Nama", minWidth: 60 },
+  { id: "nama", label: "Nama", minWidth: 40 },
   { id: "tipe", label: "Status", minWidth: 20 },
-  { id: "jumlah_hadir", label: "Hadir", minWidth: 30 },
-  { id: "jumlah_izin", label: "Izin", minWidth: 30 },
-  { id: "jumlah_sakit", label: "Sakit", minWidth: 30 },
-  { id: "jumlah_alpha", label: "Alpha", minWidth: 30 },
-  { id: "jumlah_setengah_hari", label: "½ Hari", minWidth: 30 },
-  { id: "total_jam_kerja", label: "Jam Kerja", minWidth: 40 },
+  { id: "jumlah_hadir", label: "Hadir", minWidth: 20 },
+  { id: "jumlah_izin", label: "Izin", minWidth: 20 },
+  { id: "jumlah_sakit", label: "Sakit", minWidth: 20 },
+  { id: "jumlah_alpha", label: "Alpha", minWidth: 20 },
+  { id: "jumlah_setengah_hari", label: "½Hari", minWidth: 20 },
+  { id: "total_jam_kerja", label: "Kerja", minWidth: 40 },
   { id: "total_jam_kerja_normal", label: "Normal", minWidth: 40 },
   { id: "total_jam_terlambat", label: "Terlambat", minWidth: 40 },
   { id: "total_jam_kurang", label: "Bolos", minWidth: 40 },
@@ -47,7 +47,7 @@ const PerhitunganGaji = () => {
   const [absen, setAbsen] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 25;
+  const rowsPerPage = 50;
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [startDate, setStartDate] = useState("");
@@ -143,6 +143,33 @@ const PerhitunganGaji = () => {
     }).format(date);
   };
 
+  const formatTanggal = (dateStr) => {
+    const [year, month, day] = dateStr.split("-");
+    const bulan = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    return `${day}_${bulan[parseInt(month, 10) - 1]}_${year}`;
+  };
+  const toTitleCase = (str) => {
+    if (!str) return "-";
+    return str
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
   const downloadExcel = () => {
     const confirmDownload = window.confirm(
       "Apakah Anda yakin ingin mengunduh data sebagai file Excel?"
@@ -152,8 +179,8 @@ const PerhitunganGaji = () => {
     const header = kolom.map((k) => k.label);
     const rows = filteredData.map((item, indeks) => [
       indeks + 1,
-      item.nama || "-",
-      item.tipe || "-",
+      toTitleCase(item.nama),
+      toTitleCase(item.tipe),
       item.jumlah_hadir || "-",
       item.jumlah_izin || "-",
       item.jumlah_sakit || "-",
@@ -196,16 +223,20 @@ const PerhitunganGaji = () => {
     const doc = new jsPDF({ orientation: "landscape" });
 
     const title = "Rekapan Presensi";
-    const dateStr = `${startDate} Sampai ${endDate}`;
+    const dateStr = `${formatTanggal(startDate)} Sampai ${formatTanggal(
+      endDate
+    )}`;
 
+    doc.setFontSize(14);
     doc.text(title, 14, 15);
+    doc.setFontSize(10);
     doc.text(dateStr, 14, 22);
 
     const tableHead = kolom.map((k) => k.label);
     const tableRows = filteredData.map((row, index) => [
       index + 1,
-      row.nama || "-",
-      row.tipe || "-",
+      toTitleCase(row.nama),
+      toTitleCase(row.tipes),
       row.jumlah_hadir || "-",
       row.jumlah_izin || "-",
       row.jumlah_sakit || "-",
@@ -256,7 +287,7 @@ const PerhitunganGaji = () => {
     ) : (
       currentRows.map((item, index) => (
         <TableRow key={index}>
-          <TableCell>{index + 1}</TableCell>
+          <TableCell>{indexOfFirstRow + index + 1}</TableCell>
           <TableCell className="capitalize">{item.nama}</TableCell>
           <TableCell className="capitalize">{item.tipe}</TableCell>
           <TableCell align="left">
@@ -582,7 +613,7 @@ const PerhitunganGaji = () => {
                 <div className="flex items-center pb-3 px-4">
                   <button
                     type="button"
-                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 rounded-l-[20px] text-xs px-4 py-2 border border-black"
+                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-l-[20px] text-[10px] px-2 py-1 border border-black"
                     onClick={prevPage}
                     disabled={currentPage === 1}
                   >
@@ -590,7 +621,7 @@ const PerhitunganGaji = () => {
                   </button>
                   <button
                     type="button"
-                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 rounded-r-[20px] text-xs px-4 py-2 border border-black"
+                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-r-[20px] text-[10px] px-2 py-1 border border-black"
                     onClick={nextPage}
                     disabled={
                       currentPage === Math.ceil(absen.length / rowsPerPage)
