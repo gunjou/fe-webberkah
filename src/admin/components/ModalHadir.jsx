@@ -17,6 +17,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import axios from "axios";
 
 const style = {
   position: "absolute",
@@ -135,13 +136,15 @@ const ModalHadir = ({ open, close, type }) => {
     if (window.confirm("Yakin ingin menghapus data ini?")) {
       const token = localStorage.getItem("token");
       api
-        .put(`/absensi/delete/${id}`, {
+        .delete(`/absensi/delete/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then(() => {
           const updated = data.filter((d) => d.id !== id);
           setData(updated);
           setFilteredData(updated);
+          alert("Data berhasil dihapus!");
+          window.location.reload();
         })
         .catch((err) => console.error("Gagal menghapus:", err));
     }
@@ -306,7 +309,7 @@ const ModalHadir = ({ open, close, type }) => {
             </button>
             {type !== "tanpa_keterangan" && (
               <button
-                onClick={() => handleDelete(params.row.id)}
+                onClick={() => handleDelete(params.row.id_absensi)}
                 className="flex items-center text-red-500 hover:text-red-700"
                 title="Delete"
               >
@@ -546,22 +549,39 @@ const ModalHadir = ({ open, close, type }) => {
               <button
                 onClick={() => {
                   const token = localStorage.getItem("token");
-                  api
-                    .put(`/absensi/edit/${editData.id}`, editData, {
+
+                  const payload = {
+                    ...editData,
+                    jam_keluar:
+                      editData.jam_keluar === "" ? null : editData.jam_keluar,
+                  };
+
+                  console.log("Edit payload:", payload);
+
+                  axios
+                    .put(`/absensi/edit/${editData.id_absensi}`, payload, {
                       headers: { Authorization: `Bearer ${token}` },
                     })
                     .then(() => {
                       const updated = data.map((d) =>
-                        d.id === editData.id ? editData : d
+                        d.id_absensi === editData.id_absensi ? payload : d
                       );
                       setData(updated);
                       setFilteredData(updated);
                       setEditData(null);
                       alert("Data berhasil diperbarui!");
+                      window.location.reload();
                     })
                     .catch((err) => {
-                      console.error("Gagal update:", err);
-                      alert("Terjadi kesalahan saat menyimpan perubahan.");
+                      console.error(
+                        "Gagal update:",
+                        err.response?.data || err.message
+                      );
+                      alert(
+                        err.response?.data?.message ||
+                          err.response?.data?.status ||
+                          "Terjadi kesalahan saat menyimpan perubahan."
+                      );
                     });
                 }}
                 className="px-4 py-2 rounded bg-blue-500 text-white"
