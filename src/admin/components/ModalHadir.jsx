@@ -16,7 +16,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import axios from "axios";
 
 const style = {
   position: "absolute",
@@ -556,7 +555,7 @@ const ModalHadir = ({ open, close, type }) => {
 
                   // console.log("Edit payload:", payload);
 
-                  axios
+                  api
                     .put(`/absensi/edit/${editData.id_absensi}`, payload, {
                       headers: { Authorization: `Bearer ${token}` },
                     })
