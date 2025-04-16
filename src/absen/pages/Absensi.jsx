@@ -5,7 +5,7 @@ import { FaLocationDot } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import api from "../../shared/Api";
 import { Avatar } from "@mui/material";
-import { IoClose, IoTrashBin } from "react-icons/io5";
+import { IoTrashBin } from "react-icons/io5";
 
 const toTitleCase = (str) => {
   return str
@@ -136,6 +136,21 @@ const Absensi = () => {
     } finally {
       localStorage.clear();
       window.location.href = "/login"; // kembali ke halaman login
+    }
+  };
+
+  const handleDelete = (id_absensi) => {
+    if (window.confirm("Yakin ingin menghapus jam keluar ini?")) {
+      const token = localStorage.getItem("token");
+      api
+        .put(`/absensi/delete_jam_masuk/${id_absensi}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then(() => {
+          alert("Data berhasil dihapus!");
+          window.location.reload();
+        })
+        .catch((err) => console.error("Gagal menghapus:", err));
     }
   };
 
@@ -292,7 +307,9 @@ const Absensi = () => {
             <div className="pt-2 pl-4 pb-2 pr-4 flex justify-between items-center font-semibold">
               <span>{getFormattedDate()}</span>
               <button
-                onClick={() => alert("masih dalam tahap pengembangan")}
+                onClick={() => {
+                  handleDelete(dataPresensi.id_absensi);
+                }}
                 className="flex items-center absolute right-7 text-custom-merah hover:text-red-700"
                 title="Hapus"
               >

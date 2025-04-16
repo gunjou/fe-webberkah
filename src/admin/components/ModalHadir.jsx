@@ -12,7 +12,6 @@ import { IoClose, IoTrashBin } from "react-icons/io5";
 import api from "../../shared/Api";
 
 import { BiSolidEdit } from "react-icons/bi";
-import Pegawai from "../pages/Pegawai";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -58,7 +57,6 @@ const ModalHadir = ({ open, close, type }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [editData, setEditData] = useState(null);
-  const [lokasiList, setLokasiList] = useState([]);
   const [selectedDate, setSelectedDate] = useState(dayjs());
 
   const formatDateParam = (dateObj) => {
@@ -556,7 +554,7 @@ const ModalHadir = ({ open, close, type }) => {
                       editData.jam_keluar === "" ? null : editData.jam_keluar,
                   };
 
-                  console.log("Edit payload:", payload);
+                  // console.log("Edit payload:", payload);
 
                   axios
                     .put(`/absensi/edit/${editData.id_absensi}`, payload, {
