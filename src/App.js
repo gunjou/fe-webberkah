@@ -18,6 +18,7 @@ import PerhitunganGaji from "./admin/pages/PerhitunganGaji";
 import Absensi from "./absen/pages/Absensi";
 import AmbilGambar from "./absen/pages/AmbilGambar";
 import InDevelopMobile from "./absen/pages/InDevelopMobile";
+import History from "./absen/pages/History";
 
 // Fungsi pengecekan role dari localStorage
 const getRole = () => localStorage.getItem("jenis");
@@ -81,6 +82,7 @@ function App() {
             <>
               <Route path="/absensi" element={<Absensi />} />
               <Route path="/ambil-gambar" element={<AmbilGambar />} />
+              <Route path="/history" element={<History />} />
               <Route path="/m-develop" element={<InDevelopMobile />} />
             </>
           )}

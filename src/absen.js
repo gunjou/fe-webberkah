@@ -6,6 +6,7 @@ import InDevelopMobile from "./absen/pages/InDevelopMobile";
 import NotFound from "./shared/NotFound";
 import LoginKaryawan from "./absen/pages/LoginKaryawan";
 import PrivateRoute from "./absen/components/PrivateRoute";
+import History from "./absen/pages/History";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           />
           <Route path="/login" element={<LoginKaryawan />} />
           <Route path="/ambil-gambar" element={<AmbilGambar />} />
+          <Route path="/history" element={<History />} />
           <Route path="/m-develop" element={<InDevelopMobile />} />
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<Navigate to="/404" />} />

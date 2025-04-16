@@ -249,7 +249,7 @@ const Absensi = () => {
 
         <div className="flex space-x-3 px-2 py-5 justify-center rounded-[20px]">
           <button
-            onClick={() => navigate("/m-develop")}
+            onClick={() => navigate("/history")}
             className="flex items-center text-sm font-semibold bg-white hover:bg-gray-300 text-black rounded-[20px] px-3 py-2 shadow-md"
           >
             <div className="text-sm text-custom-merah pr-1">
