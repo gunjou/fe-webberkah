@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../shared/Api";
 import { Avatar } from "@mui/material";
 import { IoTrashBin } from "react-icons/io5";
+import { FaPersonDigging } from "react-icons/fa6";
 
 const toTitleCase = (str) => {
   return str
@@ -267,13 +268,13 @@ const Absensi = () => {
             Izin/Sakit
           </button>
           <button
-            onClick={() => navigate("/m-develop")}
+            onClick={() => alert("Masih dalam tahap pengembangan!")}
             className="flex items-center text-sm font-semibold bg-white hover:bg-gray-300 text-black rounded-[20px] px-3 py-2 shadow-md"
           >
             <div className="text-sm text-custom-merah pr-1">
-              <FaUserEdit />
+              <FaPersonDigging />
             </div>
-            Form Cuti
+            Lembur
           </button>
         </div>
 

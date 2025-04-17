@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import PropTypes from "prop-types";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
@@ -10,7 +12,19 @@ import dayjs from "dayjs";
 import api from "../../shared/Api";
 import { FiArrowLeft } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import { FaFilePdf } from "react-icons/fa";
 
+const getFormattedDate = () => {
+  const date = new Date();
+  const options = {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Makassar",
+  };
+  return new Intl.DateTimeFormat("id-ID", options).format(date);
+};
 function CustomTabPanel(props) {
   const { children, value, index, ...other } = props;
 
@@ -52,6 +66,8 @@ const History = () => {
   const [dataHistory, setDataHistory] = useState(null);
   const [value, setValue] = React.useState(0);
   const [selectedDate, setSelectedDate] = React.useState(dayjs());
+  const [dataKaryawan, setDataKaryawan] = useState(dayjs());
+  const [listDataKaryawan, setListDataKaryawan] = useState(dayjs());
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -86,6 +102,64 @@ const History = () => {
     fetchPresensi();
   }, [selectedDate]);
 
+  useEffect(() => {
+    const fetchRekapanKaryawan = async () => {
+      const token = localStorage.getItem("token");
+
+      try {
+        const start = selectedDate.startOf("month").format("DD-MM-YYYY");
+        const end = selectedDate.endOf("month").format("DD-MM-YYYY");
+
+        const response = await api.get(
+          `/rekapan-person?start=${start}&end=${end}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("Rekapan Response:", response.data.data_karyawan);
+
+        setDataKaryawan(response.data.data_karyawan);
+      } catch (error) {
+        console.error("Gagal mengambil data rekapan karyawan:", error);
+        setDataKaryawan(null); // biar nggak nunggu loading terus
+      }
+    };
+
+    fetchRekapanKaryawan();
+  }, [selectedDate]);
+
+  useEffect(() => {
+    const fetchListRekapanKaryawan = async () => {
+      const token = localStorage.getItem("token");
+
+      try {
+        const start = selectedDate.startOf("month").format("DD-MM-YYYY");
+        const end = selectedDate.endOf("month").format("DD-MM-YYYY");
+
+        const response = await api.get(
+          `/list-rekapan-person?start=${start}&end=${end}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("Rekapan Response:", response.data.data_absensi);
+
+        setListDataKaryawan(response.data.data_absensi);
+      } catch (error) {
+        console.error("Gagal mengambil list data rekapan karyawan:", error);
+        setListDataKaryawan(null); // biar nggak nunggu loading terus
+      }
+    };
+
+    fetchListRekapanKaryawan();
+  }, [selectedDate]);
+
   const formatMenitToJamMenit = (menit) => {
     const jam = Math.floor(menit / 60);
     const sisaMenit = menit % 60;
@@ -105,6 +179,73 @@ const History = () => {
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(angka);
+  };
+
+  const downloadPDF = () => {
+    const nama = localStorage.getItem("nama");
+    const confirmDownload = window.confirm(
+      "Apakah Anda yakin ingin mengunduh data sebagai file PDF?"
+    );
+    if (!confirmDownload) return;
+
+    const doc = new jsPDF();
+    const title = "Rekapan Presensi";
+    const dateStr = getFormattedDate(); // misalnya: April 2025
+
+    doc.setFontSize(14);
+    doc.text(title, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Periode: ${dateStr}`, 14, 22);
+
+    const tableColumn = [
+      "No",
+      "Tanggal",
+      "Nama",
+      "Tipe Pegawai",
+      "Status",
+      "Jam Masuk",
+      "Jam Keluar",
+      "Terlambat",
+      "Jam Kurang",
+      "Total Jam Kerja",
+      "Lokasi Masuk",
+      "Lokasi Keluar",
+    ];
+
+    const tableRows = listDataKaryawan.map((row, index) => [
+      index + 1,
+      new Date(row.tanggal).toLocaleDateString("id-ID", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      row.nama || "-",
+      row.tipe || "-",
+      row.nama_status || "-",
+      row.jam_masuk || "-",
+      row.jam_keluar || "-",
+      row.jam_terlambat || "-",
+      row.jam_kurang || "-",
+      row.total_jam_kerja || "-",
+      row.lokasi_masuk || "-",
+      row.lokasi_keluar || "-",
+    ]);
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: {
+        fillColor: [139, 0, 0],
+        textColor: [255, 255, 255],
+        halign: "center",
+        valign: "middle",
+      },
+    });
+
+    doc.save(`rekapan_presensi_${nama}.pdf`);
   };
 
   return (
@@ -368,7 +509,147 @@ const History = () => {
           </div>
         </CustomTabPanel>
         <CustomTabPanel value={value} index={2}>
-          <div className="overflow-x-auto pb-7">Rekapan</div>
+          {dataKaryawan ? (
+            <div className="overflow-x-auto pb-7">
+              <table className="min-w-full text-left text-white border-separate border-spacing-y-1 text-sm">
+                <tbody>
+                  <tr>
+                    <td>Nama</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {dataKaryawan.nama}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Periode</td>
+                    <td className="font-semibold">
+                      <ul className="list-none pl-0">
+                        <li>
+                          :{"  "}
+                          {selectedDate.startOf("month").format("DD MMM YYYY")}
+                        </li>
+                        <li>
+                          :{"  "}
+                          {selectedDate.endOf("month").format("DD MMM YYYY")}
+                        </li>
+                      </ul>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Total Hadir</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {dataKaryawan.jumlah_hadir} hari
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Total Dinas Luar</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {dataKaryawan.dinas_luar} hari
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Izin / Sakit</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {dataKaryawan.jumlah_izin +
+                        dataKaryawan.jumlah_sakit}{" "}
+                      hari
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Alpha</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {dataKaryawan.jumlah_alpha} hari
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Jam Kerja</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {formatMenitToJamMenit(dataKaryawan.total_jam_kerja)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Jam Normal</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {formatMenitToJamMenit(
+                        dataKaryawan.total_jam_kerja_normal
+                      )}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Jam Terlambat</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {formatMenitToJamMenit(dataKaryawan.total_jam_terlambat)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Jam Kurang</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {formatMenitToJamMenit(dataKaryawan.total_jam_kurang)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Gaji Pokok</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {formatRupiah(dataKaryawan.gaji_pokok)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Gaji Harian</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {formatRupiah(dataKaryawan.gaji_per_hari)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Hari Dibayar</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {dataKaryawan.hari_dibayar} hari
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Potongan</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>-
+                      {formatRupiah(dataKaryawan.potongan)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Total Gaji Bersih</td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {formatRupiah(dataKaryawan.gaji_bersih)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colSpan={2} className="text-center pt-4">
+                      <button
+                        type="button"
+                        className="flex items-center justify-center mx-auto text-[12px] bg-red-700 text-white hover:bg-red-500 rounded-[20px] px-4 py-2"
+                        onClick={downloadPDF}
+                      >
+                        <span className="text-xs pr-2">
+                          <FaFilePdf />
+                        </span>
+                        Unduh PDF
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-center text-sm">Loading atau tidak ada data.</p>
+          )}
         </CustomTabPanel>
       </div>
     </div>
