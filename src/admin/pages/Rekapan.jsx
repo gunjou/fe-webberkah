@@ -17,7 +17,7 @@ import api from "../../shared/Api";
 const kolom = [
   { id: "no", label: "No", minWidth: 30 },
   { id: "nama", label: "Nama Pegawai", minWidth: 80 },
-  { id: "jenis", label: "Status", minWidth: 60 },
+  { id: "jenis", label: "Jenis Pegawai", minWidth: 60 },
   { id: "jumlah_hadir", label: "Hadir", minWidth: 40 },
   { id: "jumlah_izin", label: "Izin", minWidth: 40 },
   { id: "jumlah_sakit", label: "Sakit", minWidth: 40 },
@@ -138,8 +138,14 @@ const Rekapan = () => {
     }).format(date);
   };
 
-  const formatTanggal = (dateStr) => {
+  const formatTanggalSlash = (dateStr) => {
     const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
+  const getDateLabel = (startDate, endDate) => {
+    const [startYear, startMonth, startDay] = startDate.split("-");
+    const [endYear, endMonth, endDay] = endDate.split("-");
     const bulan = [
       "Januari",
       "Februari",
@@ -154,7 +160,58 @@ const Rekapan = () => {
       "November",
       "Desember",
     ];
-    return `${day}_${bulan[parseInt(month, 10) - 1]}_${year}`;
+    const sameMonth = startMonth === endMonth && startYear === endYear;
+
+    const isFullMonth =
+      startDay === "01" &&
+      endDay ===
+        new Date(endYear, parseInt(endMonth), 0)
+          .getDate()
+          .toString()
+          .padStart(2, "0");
+
+    if (sameMonth && isFullMonth) {
+      return `Bulan ${bulan[parseInt(startMonth, 10) - 1]} ${startYear}`;
+    } else {
+      return `${formatTanggalSlash(startDate)} - ${formatTanggalSlash(
+        endDate
+      )}`;
+    }
+  };
+
+  const getFileName = (startDate, endDate) => {
+    const [startYear, startMonth, startDay] = startDate.split("-");
+    const [endYear, endMonth, endDay] = endDate.split("-");
+    const bulan = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    // Cek apakah berada di bulan dan tahun yang sama
+    const sameMonth = startMonth === endMonth && startYear === endYear;
+    // Cek apakah range mencakup keseluruhan bulan (1 sampai tanggal terakhir)
+    const isFullMonth =
+      startDay === "01" &&
+      endDay ===
+        new Date(endYear, parseInt(endMonth), 0)
+          .getDate()
+          .toString()
+          .padStart(2, "0");
+
+    if (sameMonth && isFullMonth) {
+      return `Rekapan Presensi Bulan ${bulan[parseInt(startMonth) - 1]}`;
+    } else {
+      return `Rekapan Presensi ${startDay}-${startMonth}-${startYear} sampai ${endDay}-${endMonth}-${endYear}`;
+    }
   };
 
   const toTitleCase = (str) => {
@@ -200,12 +257,7 @@ const Rekapan = () => {
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
-    XLSX.writeFile(
-      workbook,
-      `rekapan_presensi_${formatTanggal(startDate)}_sampai_${formatTanggal(
-        endDate
-      )}.xlsx`
-    );
+    XLSX.writeFile(workbook, `${getFileName(startDate, endDate)}.xlsx`);
   };
 
   const downloadPDF = () => {
@@ -216,9 +268,8 @@ const Rekapan = () => {
 
     const doc = new jsPDF({ orientation: "landscape" });
     const title = "Rekapan Presensi";
-    const dateStr = `${formatTanggal(startDate)} Sampai ${formatTanggal(
-      endDate
-    )}`;
+    const dateStr = getDateLabel(startDate, endDate);
+
     doc.setFontSize(14);
     doc.text(title, 14, 15);
     doc.setFontSize(10);
@@ -256,16 +307,26 @@ const Rekapan = () => {
       headStyles: {
         fillColor: [139, 0, 0],
         textColor: [255, 255, 255],
-        halign: "center",
-        valign: "middle",
+        valign: "middle", // biarkan valign tetap
+        // tidak set halign di sini, karena akan diatur per kolom lewat columnStyles
+      },
+      columnStyles: {
+        0: { halign: "center" }, // No
+        1: { halign: "left" }, // Nama Pegawai
+        2: { halign: "left" }, // Jenis Pegawai
+        3: { halign: "center" }, // Hadir
+        4: { halign: "center" }, // Izin
+        5: { halign: "center" }, // Sakit
+        6: { halign: "center" }, // Alpha
+        7: { halign: "center" }, // 1/2 Hari
+        8: { halign: "left" }, // Kerja
+        9: { halign: "center" }, // Normal
+        10: { halign: "left" }, // Terlambat
+        11: { halign: "left" }, // Bolos
       },
     });
 
-    doc.save(
-      `rekapan_presensi_${formatTanggal(startDate)}_sampai_${formatTanggal(
-        endDate
-      )}.pdf`
-    );
+    doc.save(`${getFileName(startDate, endDate)}.pdf`);
   };
 
   const detail =
@@ -428,11 +489,13 @@ const Rekapan = () => {
                                 color: "white",
                                 fontWeight: "bold",
                                 fontSize: "12px",
-                                padding: "6px 12px",
+                                padding: "6px",
                                 cursor: "pointer",
                                 whiteSpace: "nowrap",
-                                textAlign: "left",
+                                textAlign: "center",
                                 borderRadius: index === 11 ? "0 10px 0 0" : "0",
+                                border: "1px solid #4d4d4d",
+                                boxSizing: "border-box",
                               }}
                             >
                               {column.label}
@@ -479,31 +542,31 @@ const Rekapan = () => {
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "6px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_hadir || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "6px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_izin || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "6px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_sakit || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "6px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_alpha || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "6px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_setengah_hari || "-"}
                               </TableCell>

@@ -181,6 +181,15 @@ const History = () => {
     }).format(angka);
   };
 
+  const toTitleCase = (str) => {
+    if (!str) return "-";
+    return str
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
   const downloadPDF = () => {
     const nama = localStorage.getItem("nama");
     const confirmDownload = window.confirm(
@@ -245,7 +254,7 @@ const History = () => {
       },
     });
 
-    doc.save(`rekapan_presensi_${nama}.pdf`);
+    doc.save(`Rekapan Presensi ${toTitleCase(nama)}.pdf`);
   };
 
   return (
@@ -517,22 +526,21 @@ const History = () => {
                     <td>Nama</td>
                     <td className="flex font-semibold">
                       <p className="pr-2">:</p>
-                      {dataKaryawan.nama}
+                      {toTitleCase(dataKaryawan.nama)}
                     </td>
                   </tr>
                   <tr>
                     <td>Periode</td>
-                    <td className="font-semibold">
-                      <ul className="list-none pl-0">
-                        <li>
-                          :{"  "}
-                          {selectedDate.startOf("month").format("DD MMM YYYY")}
-                        </li>
-                        <li>
-                          :{"  "}
-                          {selectedDate.endOf("month").format("DD MMM YYYY")}
-                        </li>
-                      </ul>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {selectedDate.startOf("month").format("DD MMM YYYY")} -
+                    </td>
+                  </tr>
+                  <tr>
+                    <td> </td>
+                    <td className="flex font-semibold">
+                      <p className="pr-2">:</p>
+                      {selectedDate.endOf("month").format("DD MMM YYYY")}
                     </td>
                   </tr>
                   <tr>
@@ -619,7 +627,7 @@ const History = () => {
                   <tr>
                     <td>Potongan</td>
                     <td className="flex font-semibold">
-                      <p className="pr-2">:</p>-
+                      <p className="pr-2">:</p>-{" "}
                       {formatRupiah(dataKaryawan.potongan)}
                     </td>
                   </tr>

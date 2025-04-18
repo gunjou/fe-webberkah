@@ -23,15 +23,15 @@ const kolom = [
   { id: "jumlah_sakit", label: "Sakit", minWidth: 20 },
   { id: "jumlah_alpha", label: "Alpha", minWidth: 20 },
   { id: "jumlah_setengah_hari", label: "½Hari", minWidth: 20 },
+  { id: "dinas_luar", label: "Dinas", minWidth: 40 },
   { id: "total_jam_kerja", label: "Kerja", minWidth: 40 },
   { id: "total_jam_kerja_normal", label: "Normal", minWidth: 40 },
-  { id: "total_jam_terlambat", label: "Terlambat", minWidth: 40 },
-  { id: "total_jam_kurang", label: "Bolos", minWidth: 40 },
-  { id: "dinas_luar", label: "Dinas", minWidth: 40 },
-  { id: "gaji_bersih", label: "Bersih", minWidth: 50 },
+  // { id: "total_jam_terlambat", label: "Terlambat", minWidth: 40 },
+  { id: "total_jam_kurang", label: "Jam Kurang", minWidth: 40 },
   { id: "gaji_kotor", label: "Kotor", minWidth: 50 },
-  { id: "gaji_per_hari", label: "/Hari", minWidth: 40 },
-  { id: "hari_dibayar", label: "Bayar", minWidth: 20 },
+  { id: "potongan", label: "potongan", minWidth: 40 },
+  { id: "gaji_bersih", label: "Bersih", minWidth: 50 },
+  // { id: "hari_dibayar", label: "Bayar", minWidth: 20 },
 ];
 
 const formatTerlambat = (menit) => {
@@ -73,6 +73,19 @@ const PerhitunganGaji = () => {
         setLoading(false);
       });
   };
+
+  const totalGaji = absen.reduce(
+    (acc, item) => {
+      if (item.tipe === "pegawai tetap") {
+        acc.tetap += item.gaji_bersih;
+      } else if (item.tipe === "pegawai tidak tetap") {
+        acc.tidaktetap += item.gaji_bersih;
+      }
+      acc.total += item.gaji_bersih;
+      return acc;
+    },
+    { tetap: 0, tidaktetap: 0, total: 0 }
+  );
 
   useEffect(() => {
     const today = new Date();
@@ -132,19 +145,25 @@ const PerhitunganGaji = () => {
     }
   };
 
-  const getFormattedDate = () => {
-    const date = new Date();
-    return new Intl.DateTimeFormat("id-ID", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      timeZone: "Asia/Makassar",
-    }).format(date);
+  // const getFormattedDate = () => {
+  //   const date = new Date();
+  //   return new Intl.DateTimeFormat("id-ID", {
+  //     weekday: "long",
+  //     day: "numeric",
+  //     month: "long",
+  //     year: "numeric",
+  //     timeZone: "Asia/Makassar",
+  //   }).format(date);
+  // };
+
+  const formatTanggalSlash = (dateStr) => {
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
   };
 
-  const formatTanggal = (dateStr) => {
-    const [year, month, day] = dateStr.split("-");
+  const getDateLabel = (startDate, endDate) => {
+    const [startYear, startMonth, startDay] = startDate.split("-");
+    const [endYear, endMonth, endDay] = endDate.split("-");
     const bulan = [
       "Januari",
       "Februari",
@@ -159,8 +178,68 @@ const PerhitunganGaji = () => {
       "November",
       "Desember",
     ];
-    return `${day}_${bulan[parseInt(month, 10) - 1]}_${year}`;
+    const sameMonth = startMonth === endMonth && startYear === endYear;
+
+    const isFullMonth =
+      startDay === "01" &&
+      endDay ===
+        new Date(endYear, parseInt(endMonth), 0)
+          .getDate()
+          .toString()
+          .padStart(2, "0");
+
+    if (sameMonth && isFullMonth) {
+      return `Bulan ${bulan[parseInt(startMonth, 10) - 1]} ${startYear}`;
+    } else {
+      return `${formatTanggalSlash(startDate)} - ${formatTanggalSlash(
+        endDate
+      )}`;
+    }
   };
+
+  const getFileName = (startDate, endDate) => {
+    const [startYear, startMonth, startDay] = startDate.split("-");
+    const [endYear, endMonth, endDay] = endDate.split("-");
+    const bulan = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    // Cek apakah berada di bulan dan tahun yang sama
+    const sameMonth = startMonth === endMonth && startYear === endYear;
+    // Cek apakah range mencakup keseluruhan bulan (1 sampai tanggal terakhir)
+    const isFullMonth =
+      startDay === "01" &&
+      endDay ===
+        new Date(endYear, parseInt(endMonth), 0)
+          .getDate()
+          .toString()
+          .padStart(2, "0");
+
+    if (sameMonth && isFullMonth) {
+      return `Rekapan Gaji Bulan ${bulan[parseInt(startMonth) - 1]}`;
+    } else {
+      return `Rekapan Gaji ${startDay}-${startMonth}-${startYear} sampai ${endDay}-${endMonth}-${endYear}`;
+    }
+  };
+
+  const formatRupiah = (angka) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(angka);
+  };
+
   const toTitleCase = (str) => {
     if (!str) return "-";
     return str
@@ -186,6 +265,7 @@ const PerhitunganGaji = () => {
       item.jumlah_sakit || "-",
       item.jumlah_alpha || "-",
       item.jumlah_setengah_hari || "-",
+      item.dinas_luar || "-",
       item.total_jam_kerja === null
         ? "-"
         : formatTerlambat(item.total_jam_kerja),
@@ -193,25 +273,21 @@ const PerhitunganGaji = () => {
         ? "-"
         : formatTerlambat(item.total_jam_kerja_normal),
       item.total_jam_terlambat === null
-        ? "-"
-        : formatTerlambat(item.total_jam_terlambat),
-      item.total_jam_kurang === null
-        ? "-"
+        ? //   ? "-"
+          //   : formatTerlambat(item.total_jam_terlambat),
+          // item.total_jam_kurang === null
+          "-"
         : formatTerlambat(item.total_jam_kurang),
-      item.dinas_luar || "-",
-      item.gaji_bersih || "-",
-      item.gaji_kotor || "-",
-      item.gaji_per_hari || "-",
-      item.hari_dibayar || "-",
+      formatRupiah(item.gaji_kotor) || "-",
+      formatRupiah(item.potongan) || "-",
+      formatRupiah(item.gaji_bersih) || "-",
+      // item.hari_dibayar || "-",
     ]);
 
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
-    XLSX.writeFile(
-      workbook,
-      `rekapan_presensi_${startDate}_sampai_${endDate}.xlsx`
-    );
+    XLSX.writeFile(workbook, `${getFileName(startDate, endDate)}.xlsx`);
   };
 
   const downloadPDF = () => {
@@ -223,9 +299,7 @@ const PerhitunganGaji = () => {
     const doc = new jsPDF({ orientation: "landscape" });
 
     const title = "Rekapan Presensi";
-    const dateStr = `${formatTanggal(startDate)} Sampai ${formatTanggal(
-      endDate
-    )}`;
+    const dateStr = getDateLabel(startDate, endDate);
 
     doc.setFontSize(14);
     doc.text(title, 14, 15);
@@ -236,7 +310,7 @@ const PerhitunganGaji = () => {
     const tableRows = filteredData.map((row, index) => [
       index + 1,
       toTitleCase(row.nama),
-      toTitleCase(row.tipes),
+      toTitleCase(row.tipe),
       row.jumlah_hadir || "-",
       row.jumlah_izin || "-",
       row.jumlah_sakit || "-",
@@ -244,21 +318,21 @@ const PerhitunganGaji = () => {
       row.jumlah_setengah_hari === null
         ? "-"
         : formatTerlambat(row.jumlah_setengah_hari),
+      row.dinas_luar || "-",
       row.total_jam_kerja === null ? "-" : formatTerlambat(row.total_jam_kerja),
       row.total_jam_kerja_normal === null
         ? "-"
         : formatTerlambat(row.total_jam_kerja_normal),
       row.total_jam_terlambat === null
-        ? "-"
-        : formatTerlambat(row.total_jam_terlambat),
-      row.total_jam_kurang === null
-        ? "-"
+        ? //   ? "-"
+          //   : formatTerlambat(row.total_jam_terlambat),
+          // row.total_jam_kurang === null
+          "-"
         : formatTerlambat(row.total_jam_kurang),
-      row.dinas_luar || "-",
-      row.gaji_bersih || "-",
-      row.gaji_kotor || "-",
-      row.gaji_per_hari || "-",
-      row.hari_dibayar || "-",
+      formatRupiah(row.gaji_kotor) || "-",
+      formatRupiah(row.potongan) || "-",
+      formatRupiah(row.gaji_bersih) || "-",
+      // row.hari_dibayar || "-",
     ]);
 
     doc.autoTable({
@@ -269,101 +343,132 @@ const PerhitunganGaji = () => {
       headStyles: {
         fillColor: [139, 0, 0],
         textColor: [255, 255, 255],
-        halign: "center",
         valign: "middle",
+        // halign: "center",
+      },
+      columnStyles: {
+        0: { halign: "center" }, // No
+        1: { halign: "left" }, // Nama
+        2: { halign: "left" }, // Jenis
+        3: { halign: "center" }, // Hadir
+        4: { halign: "center" }, // Izin
+        5: { halign: "center" }, // Sakit
+        6: { halign: "center" }, // Alpha
+        7: { halign: "center" }, // 1/2 Hari
+        8: { halign: "center" }, // Dinas
+        9: { halign: "left" }, // Kerja
+        10: { halign: "center" }, // Normal
+        11: { halign: "left" }, // Terlambat
+        12: { halign: "left" }, // Bolos
       },
     });
 
-    doc.save(`rekapan_gaji_${startDate}_sampai_${endDate}.pdf`);
+    let y = doc.lastAutoTable.finalY + 14; // Ambil posisi Y terakhir tabel, lalu tambahkan spasi
+
+    const labels = [
+      "Total Gaji Pegawai Tetap",
+      "Total Gaji Pegawai Tidak Tetap",
+      "Total Gaji Semua Pegawai",
+    ];
+
+    const values = [
+      formatRupiah(totalGaji.tetap),
+      formatRupiah(totalGaji.tidaktetap),
+      formatRupiah(totalGaji.total),
+    ];
+
+    labels.forEach((label, index) => {
+      doc.setFont("helvetica", "normal");
+      doc.text(label, 14, y + index * 6);
+      doc.setFont("helvetica", "bold");
+      doc.text(`: ${values[index]}`, 75, y + index * 6); // Geser nilai agar rata ke kanan
+    });
+
+    doc.save(`${getFileName(startDate, endDate)}.pdf`);
   };
 
-  const detail =
-    currentRows.length === 0 ? (
-      <TableRow>
-        <TableCell colSpan={kolom.length} align="center">
-          Tidak ada yang cocok dengan pencarian Anda.
+  currentRows.length === 0 ? (
+    <TableRow>
+      <TableCell colSpan={kolom.length} align="center">
+        Tidak ada yang cocok dengan pencarian Anda.
+      </TableCell>
+    </TableRow>
+  ) : (
+    currentRows.map((item, index) => (
+      <TableRow key={index}>
+        <TableCell align="center">{indexOfFirstRow + index + 1}</TableCell>
+        <TableCell className="capitalize">{item.nama}</TableCell>
+        <TableCell className="capitalize">{item.tipe}</TableCell>
+        <TableCell align="center">
+          {item.jumlah_hadir === "0" || !item.jumlah_hadir
+            ? "-"
+            : item.jumlah_hadir}
         </TableCell>
-      </TableRow>
-    ) : (
-      currentRows.map((item, index) => (
-        <TableRow key={index}>
-          <TableCell>{indexOfFirstRow + index + 1}</TableCell>
-          <TableCell className="capitalize">{item.nama}</TableCell>
-          <TableCell className="capitalize">{item.tipe}</TableCell>
-          <TableCell align="left">
-            {item.jumlah_hadir === "0" || !item.jumlah_hadir
-              ? "-"
-              : item.jumlah_hadir}
-          </TableCell>
-          <TableCell align="left">
-            {item.jumlah_izin === "0" || !item.jumlah_izin
-              ? "-"
-              : item.jumlah_izin}
-          </TableCell>
-          <TableCell align="left">
-            {item.jumlah_sakit === "0" || !item.jumlah_sakit
-              ? "-"
-              : item.jumlah_sakit}
-          </TableCell>
-          <TableCell align="left">
-            {item.jumlah_alpha === "0" || !item.jumlah_alpha
-              ? "-"
-              : item.jumlah_alpha}
-          </TableCell>
-          <TableCell align="left">
-            {item.jumlah_setengah_hari === "0" || !item.jumlah_setengah_hari
-              ? "-"
-              : item.jumlah_setengah_hari}
-          </TableCell>
-          <TableCell align="left">
-            {item.total_jam_kerja === "0" || !item.total_jam_kerja
-              ? "-"
-              : item.total_jam_kerja}
-          </TableCell>
-          <TableCell align="left">
-            {item.total_jam_kerja_normal === "0" || !item.total_jam_kerja_normal
-              ? "-"
-              : item.total_jam_kerja_normal}
-          </TableCell>
+        <TableCell align="center">
+          {item.jumlah_izin === "0" || !item.jumlah_izin
+            ? "-"
+            : item.jumlah_izin}
+        </TableCell>
+        <TableCell align="center">
+          {item.jumlah_sakit === "0" || !item.jumlah_sakit
+            ? "-"
+            : item.jumlah_sakit}
+        </TableCell>
+        <TableCell align="center">
+          {item.jumlah_alpha === "0" || !item.jumlah_alpha
+            ? "-"
+            : item.jumlah_alpha}
+        </TableCell>
+        <TableCell align="center">
+          {item.jumlah_setengah_hari === "0" || !item.jumlah_setengah_hari
+            ? "-"
+            : item.jumlah_setengah_hari}
+        </TableCell>
+        <TableCell align="left">
+          {item.dinas_luar === "0" || !item.dinas_luar ? "-" : item.dinas_luar}
+        </TableCell>
+        <TableCell align="left">
+          {item.total_jam_kerja === "0" || !item.total_jam_kerja
+            ? "-"
+            : item.total_jam_kerja}
+        </TableCell>
+        <TableCell align="center">
+          {item.total_jam_kerja_normal === "0" || !item.total_jam_kerja_normal
+            ? "-"
+            : item.total_jam_kerja_normal}
+        </TableCell>
 
-          <TableCell align="left">
-            {item.total_jam_terlambat === "0" || !item.total_jam_terlambat
-              ? "-"
-              : item.total_jam_terlambat}
-          </TableCell>
-          <TableCell align="left">
-            {item.total_jam_kurang === "0" || !item.total_jam_kurang
-              ? "-"
-              : item.total_jam_kurang}
-          </TableCell>
-          <TableCell align="left">
-            {item.dinas_luar === "0" || !item.dinas_luar
-              ? "-"
-              : item.dinas_luar}
-          </TableCell>
-          <TableCell align="left">
-            {item.gaji_bersih === "0" || !item.gaji_bersih
-              ? "-"
-              : item.gaji_bersih}
-          </TableCell>
-          <TableCell align="left">
-            {item.gaji_kotor === "0" || !item.gaji_kotor
-              ? "-"
-              : item.gaji_kotor}
-          </TableCell>
-          <TableCell align="left">
-            {item.gaji_per_hari === "0" || !item.gaji_per_hari
-              ? "-"
-              : item.gaji_per_hari}
-          </TableCell>
-          <TableCell align="left">
-            {item.hari_dibayar === "0" || !item.hari_dibayar
-              ? "-"
-              : item.hari_dibayar}
-          </TableCell>
-        </TableRow>
-      ))
-    );
+        {/* <TableCell align="left">
+          {item.total_jam_terlambat === "0" || !item.total_jam_terlambat
+            ? "-"
+            : item.total_jam_terlambat}
+        </TableCell> */}
+        <TableCell align="left">
+          {item.total_jam_kurang === "0" || !item.total_jam_kurang
+            ? "-"
+            : item.total_jam_kurang}
+        </TableCell>
+        <TableCell align="left">
+          {item.gaji_kotor === "0" || !item.gaji_kotor ? "-" : item.gaji_kotor}
+        </TableCell>
+        <TableCell align="left">
+          {item.potongan === "0" || !item.potongan
+            ? "-"
+            : formatRupiah(item.potongan)}
+        </TableCell>
+        <TableCell align="left">
+          {item.gaji_bersih === "0" || !item.gaji_bersih
+            ? "-"
+            : formatRupiah(item.gaji_bersih)}
+        </TableCell>
+        {/* <TableCell align="center">
+          {item.hari_dibayar === "0" || !item.hari_dibayar
+            ? "-"
+            : item.hari_dibayar}
+        </TableCell> */}
+      </TableRow>
+    ))
+  );
 
   return (
     <div className="Perhitungan Gaji">
@@ -513,33 +618,39 @@ const PerhitunganGaji = () => {
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_hadir || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_izin || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_sakit || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_alpha || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
-                                align="left"
+                                align="center"
                               >
                                 {item.jumlah_setengah_hari || "-"}
+                              </TableCell>
+                              <TableCell
+                                sx={{ fontSize: "12px", padding: "4px" }}
+                                align="center"
+                              >
+                                {item.dinas_luar || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
@@ -549,17 +660,17 @@ const PerhitunganGaji = () => {
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
-                                align="left"
+                                align="center"
                               >
                                 {formatTerlambat(item.total_jam_kerja_normal) ||
                                   "-"}
                               </TableCell>
-                              <TableCell
+                              {/* <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="left"
                               >
                                 {formatTerlambat(item.total_jam_terlambat)}
-                              </TableCell>
+                              </TableCell> */}
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="left"
@@ -570,32 +681,26 @@ const PerhitunganGaji = () => {
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="left"
                               >
-                                {item.dinas_luar || "-"}
+                                {formatRupiah(item.gaji_kotor) || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="left"
                               >
-                                {item.gaji_bersih || "-"}
+                                {formatRupiah(item.potongan) || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="left"
                               >
-                                {item.gaji_kotor || "-"}
+                                {formatRupiah(item.gaji_bersih) || "-"}
                               </TableCell>
-                              <TableCell
-                                sx={{ fontSize: "12px", padding: "4px" }}
-                                align="left"
-                              >
-                                {item.gaji_per_hari || "-"}
-                              </TableCell>
-                              <TableCell
+                              {/* <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="left"
                               >
                                 {item.hari_dibayar || "-"}
-                              </TableCell>
+                              </TableCell> */}
                             </TableRow>
                           ))
                         )}

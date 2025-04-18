@@ -1,8 +1,9 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import { React, useEffect, useState } from "react";
 import { Modal, Label, TextInput, Select } from "flowbite-react";
-import { FaPause, FaPlus, FaTrash, FaUserPlus } from "react-icons/fa";
+import { FaPlus, FaTrash } from "react-icons/fa";
 import { GrFormNext, GrFormPrevious } from "react-icons/gr";
+import { TbReload } from "react-icons/tb";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -10,7 +11,6 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-import axios from "axios";
 import api from "../../shared/Api";
 
 // import SideMenu from './SideMenu'
@@ -19,15 +19,16 @@ import api from "../../shared/Api";
 const kolom = [
   { id: "no", label: "No", minWidth: 10 },
   { id: "nama", label: "Nama Pegawai", minWidth: 100 },
-  { id: "status", label: "Status Pegawai", minWidth: 100 },
+  { id: "jenis", label: "Jenis Pegawai", minWidth: 100 },
+  { id: "tipe", label: "Tipe Pegawai", minWidth: 100 },
   {
     id: "username",
     label: "Username",
     minWidth: 100,
   },
   {
-    id: "token",
-    label: "Token",
+    id: "kode_pemulihan",
+    label: "Kode Pemulihan",
     minWidth: 100,
   },
   {
@@ -53,24 +54,53 @@ const Pegawai = () => {
   const rowsPerPage = 50;
   const [searchTerm, setSearchTerm] = useState("");
   const [jenisList, setJenisList] = useState([]);
+  const [tipeList, setTipeList] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   const [selectedPegawai, setSelectedPegawai] = useState({
     id_karyawan: "",
     nama: "",
     jenis: "",
+    tipe: "",
     username: "",
-    password: "",
+    kode_pemulihan: "",
     gaji_pokok: "",
   });
 
   const [newPegawai, setNewPegawai] = useState({
     nama: "",
     jenis: "",
+    tipe: "",
     username: "",
-    password: "",
+    kode_pemulihan: "",
     gaji_pokok: "",
   });
+
+  const formatRupiah = (angka) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(angka);
+  };
+
+  const generateRandomString = (length = 6) => {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    return Array.from(
+      { length },
+      () => chars[Math.floor(Math.random() * chars.length)]
+    ).join("");
+  };
+
+  useEffect(() => {
+    if (openModalAdd) {
+      setNewPegawai((prev) => ({
+        ...prev,
+        kode_pemulihan: generateRandomString(6),
+      }));
+    }
+  }, [openModalAdd]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -86,6 +116,23 @@ const Pegawai = () => {
       })
       .catch((err) => {
         console.error("Gagal mengambil data jenis pegawai:", err);
+      });
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    api
+      .get("/tipe", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((res) => {
+        console.log(res.data.tipe_karyawan);
+        setTipeList(res.data.tipe_karyawan);
+      })
+      .catch((err) => {
+        console.error("Gagal mengambil data tipe pegawai:", err);
       });
   }, []);
 
@@ -129,8 +176,9 @@ const Pegawai = () => {
     const payload = {
       nama: selectedPegawai.nama,
       jenis: selectedPegawai.jenis,
+      tipe: selectedPegawai.tipe,
       username: selectedPegawai.username,
-      password: selectedPegawai.password,
+      // kode_pemulihan: selectedPegawai.kode_pemulihan,
       gaji_pokok: selectedPegawai.gaji_pokok,
     };
 
@@ -142,7 +190,6 @@ const Pegawai = () => {
         },
       })
       .then((res) => {
-        alert("Data karyawan berhasil diperbarui!");
         setKaryawan((prev) =>
           prev.map((item) =>
             item.id_karyawan === selectedPegawai.id_karyawan
@@ -150,7 +197,9 @@ const Pegawai = () => {
               : item
           )
         );
+        alert("Data karyawan berhasil diperbarui!");
         setOpenModalEdit(false);
+        window.location.reload();
       })
       .catch((error) => {
         console.error(
@@ -160,12 +209,54 @@ const Pegawai = () => {
       });
   };
 
+  const hapusPegawai = () => {
+    const konfirmasi = window.confirm(
+      `Apakah Anda yakin ingin menghapus ${selectedPegawai.nama}?`
+    );
+    if (!konfirmasi) return; // jika user klik Cancel, fungsi berhenti di sini
+    if (!selectedPegawai.id_karyawan) {
+      alert("ID karyawan tidak valid!");
+      return;
+    }
+    if (!selectedPegawai.jenis) {
+      alert("Jenis pegawai tidak boleh kosong!");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    api
+      .put(`/karyawan/delete/${selectedPegawai.id_karyawan}`, null, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((res) => {
+        setKaryawan((prev) =>
+          prev.map((item) =>
+            item.id_karyawan === selectedPegawai.id_karyawan
+              ? { ...item }
+              : item
+          )
+        );
+        alert("Data karyawan berhasil dihapus!");
+        setOpenModalEdit(false);
+        window.location.reload();
+      })
+      .catch((error) => {
+        console.error(
+          "Error hapus data:",
+          error.response?.data || error.message
+        );
+      });
+  };
+
   const saveAdd = () => {
     const payloadAdd = {
       nama: newPegawai.nama,
       jenis: newPegawai.jenis,
+      tipe: newPegawai.tipe,
       username: newPegawai.username,
-      password: newPegawai.password,
+      kode_pemulihan: newPegawai.kode_pemulihan,
       gaji_pokok: newPegawai.gaji_pokok,
     };
 
@@ -177,16 +268,19 @@ const Pegawai = () => {
         },
       })
       .then((res) => {
-        alert("Data karyawan berhasil ditambahkan!");
         setKaryawan((prev) => [...prev, res.data]);
         setOpenModalAdd(false);
         setNewPegawai({
           nama: "",
           jenis: "",
+          tipe: "",
           username: "",
-          password: "",
+          kode_pemulihan: "",
           gaji_pokok: "",
         }); // Reset form
+
+        alert("Data karyawan berhasil ditambahkan!");
+        window.location.reload();
       })
       .catch((error) => {
         console.error(
@@ -258,10 +352,13 @@ const Pegawai = () => {
         <TableCell align="left" className="capitalize">
           {item.jenis}
         </TableCell>
+        <TableCell align="left" className="capitalize">
+          {item.tipe}
+        </TableCell>
 
         <TableCell align="left">{item.username}</TableCell>
-        <TableCell align="left">{item.token}</TableCell>
-        <TableCell align="left">{item.gaji_pokok}</TableCell>
+        <TableCell align="left">{item.kode_pemulihan}</TableCell>
+        <TableCell align="left">{formatRupiah(item.gaji_pokok)}</TableCell>
         <TableCell align="center">
           <span
             className="font-medium text-white hover:underline dark:text-cyan-500 cursor-pointer bg-custom-merah rounded-[20px] px-6 py-1"
@@ -348,27 +445,35 @@ const Pegawai = () => {
                     <Table stickyHeader aria-label="sticky table">
                       <TableHead className="bg-[#e8ebea]">
                         <TableRow>
-                          {kolom.map((column, index) => (
-                            <TableCell
-                              key={column.id}
-                              onClick={() => handleSort(column.id)}
-                              align={column.align}
-                              style={{
-                                minWidth: column.minWidth,
-                                backgroundColor: "#4d4d4d", // Ganti warna latar belakang
-                                color: "white", // Ganti warna teks
-                                fontWeight: "bold",
-                                borderRadius: index === 6 ? "0 10px 0 0" : "0",
-                              }}
-                            >
-                              {column.label}
-                              {sortConfig.key === column.id && (
-                                <span style={{ marginLeft: 4 }}>
-                                  {sortConfig.direction === "asc" ? " ▲" : " ▼"}
-                                </span>
-                              )}
-                            </TableCell>
-                          ))}
+                          {kolom.map((column, index) => {
+                            const isFirst = index === 0;
+                            const isLast = index === kolom.length - 1;
+                            return (
+                              <TableCell
+                                key={column.id}
+                                onClick={() => handleSort(column.id)}
+                                align={column.align}
+                                style={{
+                                  minWidth: column.minWidth,
+                                  backgroundColor: "#4d4d4d",
+                                  color: "white",
+                                  fontWeight: "bold",
+                                  borderTopLeftRadius: isFirst ? "10px" : "0",
+                                  borderTopRightRadius: isLast ? "10px" : "0",
+                                  border: "1px solid #4d4d4d", // <- ini yang penting
+                                }}
+                              >
+                                {column.label}
+                                {sortConfig.key === column.id && (
+                                  <span style={{ marginLeft: 4 }}>
+                                    {sortConfig.direction === "asc"
+                                      ? " ▲"
+                                      : " ▼"}
+                                  </span>
+                                )}
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
                       </TableHead>
                       <TableBody className="text-red">{detail}</TableBody>
@@ -461,6 +566,30 @@ const Pegawai = () => {
                     </div>
                     <div>
                       <div className="block mb-2">
+                        <Label htmlFor="tipe" value="Tipe Pegawai" />
+                      </div>
+                      <Select
+                        id="tipe"
+                        sizing="sm"
+                        value={selectedPegawai.tipe}
+                        onChange={(e) =>
+                          setSelectedPegawai({
+                            ...selectedPegawai,
+                            tipe: parseInt(e.target.value),
+                          })
+                        }
+                      >
+                        <option value="">Pilih Tipe Pegawai</option>
+                        {Array.isArray(tipeList) &&
+                          tipeList.map((tipe) => (
+                            <option key={tipe.id_tipe} value={tipe.id_tipe}>
+                              {tipe.tipe}
+                            </option>
+                          ))}
+                      </Select>
+                    </div>
+                    <div>
+                      <div className="block mb-2">
                         <Label htmlFor="small" value="Username" />
                       </div>
                       <TextInput
@@ -476,23 +605,23 @@ const Pegawai = () => {
                         }
                       />
                     </div>
-                    <div>
+                    {/* <div>
                       <div className="block mb-2">
-                        <Label htmlFor="small" value="Password" />
+                        <Label htmlFor="small" value="kode_pemulihan" />
                       </div>
                       <TextInput
-                        id="password"
+                        id="kode_pemulihan"
                         type="text"
                         sizing="sm"
-                        value={selectedPegawai.password}
+                        value={selectedPegawai.kode_pemulihan}
                         onChange={(e) =>
                           setSelectedPegawai({
                             ...selectedPegawai,
-                            password: e.target.value,
+                            kode_pemulihan: e.target.value,
                           })
                         }
                       />
-                    </div>
+                    </div> */}
                     <div>
                       <div className="block mb-2">
                         <Label htmlFor="small" value="Gaji Pokok" />
@@ -533,7 +662,7 @@ const Pegawai = () => {
                       <button
                         type="button"
                         className="flex focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-3 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
-                        onClick={() => setOpenModalAdd(false)}
+                        onClick={hapusPegawai}
                       >
                         <span className="text-lg pr-2">
                           <FaTrash />
@@ -592,6 +721,30 @@ const Pegawai = () => {
                     </div>
                     <div>
                       <div className="block mb-2">
+                        <Label htmlFor="tipe" value="Tipe Pegawai" />
+                      </div>
+                      <Select
+                        id="tipe"
+                        sizing="sm"
+                        value={newPegawai.tipe}
+                        onChange={(e) =>
+                          setNewPegawai({
+                            ...newPegawai,
+                            tipe: parseInt(e.target.value),
+                          })
+                        }
+                      >
+                        <option value="">Pilih Tipe Pegawai</option>
+                        {Array.isArray(tipeList) &&
+                          tipeList.map((tipe) => (
+                            <option key={tipe.id_tipe} value={tipe.id_tipe}>
+                              {tipe.tipe}
+                            </option>
+                          ))}
+                      </Select>
+                    </div>
+                    <div>
+                      <div className="block mb-2">
                         <Label htmlFor="small" value="Username" />
                       </div>
                       <TextInput
@@ -609,21 +762,41 @@ const Pegawai = () => {
                     </div>
                     <div>
                       <div className="block mb-2">
-                        <Label htmlFor="small" value="Password" />
+                        <Label
+                          htmlFor="kode_pemulihan"
+                          value="Kode Pemulihan"
+                        />
                       </div>
-                      <TextInput
-                        id="small"
-                        type="text"
-                        sizing="sm"
-                        value={newPegawai.password}
-                        onChange={(e) =>
-                          setNewPegawai({
-                            ...newPegawai,
-                            password: e.target.value,
-                          })
-                        }
-                      />
+                      <div className="relative">
+                        <TextInput
+                          id="kode_pemulihan"
+                          type="text"
+                          sizing="sm"
+                          value={newPegawai.kode_pemulihan}
+                          onChange={(e) =>
+                            setNewPegawai({
+                              ...newPegawai,
+                              kode_pemulihan: e.target.value,
+                            })
+                          }
+                          className="pr-10" // beri ruang untuk icon di kanan
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewPegawai({
+                              ...newPegawai,
+                              kode_pemulihan: generateRandomString(6),
+                            })
+                          }
+                          className="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-gray-800"
+                          title="Generate kode_pemulihan baru"
+                        >
+                          <TbReload className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
+
                     <div>
                       <div className="block mb-2">
                         <Label htmlFor="small" value="Gaji Pokok" />

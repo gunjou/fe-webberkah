@@ -12,9 +12,6 @@ import { IoClose, IoTrashBin } from "react-icons/io5";
 import api from "../../shared/Api";
 
 import { BiSolidEdit } from "react-icons/bi";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 
 const style = {
@@ -50,13 +47,12 @@ const getFormattedDate = () => {
 
 const paginationModel = { page: 0, pageSize: 50 };
 
-const ModalHadir = ({ open, close, type }) => {
+const ModalHadir = ({ open, close, type, selectedDate }) => {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [editData, setEditData] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(dayjs());
 
   const formatDateParam = (dateObj) => {
     return dayjs(dateObj).format("DD-MM-YYYY");
@@ -425,21 +421,6 @@ const ModalHadir = ({ open, close, type }) => {
           <Typography variant="h6" component="h2" className="pb-3">
             {getTitleByType(type)}
             <div className="flex justify-between items-center text-sm mt-2">
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Pilih Tanggal"
-                  value={selectedDate}
-                  onChange={(newVal) => setSelectedDate(newVal)}
-                  format="DD-MM-YYYY"
-                  slotProps={{
-                    textField: {
-                      size: "small",
-                      sx: { minWidth: 180 },
-                    },
-                  }}
-                />
-              </LocalizationProvider>
-
               <input
                 type="text"
                 value={searchTerm}

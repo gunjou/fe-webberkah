@@ -4,7 +4,10 @@ import { PiOfficeChairBold } from "react-icons/pi";
 import { FaHelmetSafety } from "react-icons/fa6";
 import { MdCleaningServices } from "react-icons/md";
 import { ImCross } from "react-icons/im";
-import axios from "axios";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 import api from "../../shared/Api";
 
@@ -26,6 +29,7 @@ const Presensi = () => {
   const [filteredData, setFilteredData] = useState([]); // Data yang difilter
   const [searchTerm, setSearchTerm] = useState(""); // Nilai input pencarian
   const [modalType, setModalType] = useState("hadir");
+  const [selectedDate, setSelectedDate] = useState(dayjs());
 
   const getFormattedDate = () => {
     const date = new Date();
@@ -38,10 +42,14 @@ const Presensi = () => {
     }).format(date);
   };
 
+  const formatDateParam = (dateObj) => {
+    return dayjs(dateObj).format("DD-MM-YYYY");
+  };
+
   useEffect(() => {
-    setFilteredData(absen, karyawan); // Reset filteredData ke data asli saat modal dibuka
+    setFilteredData(absen); // Reset filteredData ke data asli saat modal dibuka
     setSearchTerm(""); // Reset nilai pencarian
-  }, [absen, karyawan]);
+  }, [absen]);
 
   useEffect(() => {
     api
@@ -60,19 +68,21 @@ const Presensi = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const formattedDate = formatDateParam(selectedDate);
     api
-      .get("/absensi/hadir", {
+      .get(`/absensi/hadir?tanggal=${formattedDate}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => {
-        setAbsen(res.data.absensi);
+        // console.log(res.data.absensi);
+        setAbsen(res.data.absensi); // ini akan update semua count length secara otomatis
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
       });
-  }, []);
+  }, [selectedDate]);
 
   return (
     <div className="Presensi">
@@ -85,8 +95,21 @@ const Presensi = () => {
           <div className="title flex text-2xl pt-4 pl-4 font-bold">
             Persensi Semua Pegawai
           </div>
-          <div className="title flex text-lg pl-4 font-normal">
-            {getFormattedDate()}
+          <div className="p-3 pl-4">
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Pilih Tanggal"
+                value={selectedDate}
+                onChange={(newVal) => setSelectedDate(newVal)}
+                format="DD-MM-YYYY"
+                slotProps={{
+                  textField: {
+                    size: "small",
+                    sx: { minWidth: 180 },
+                  },
+                }}
+              />
+            </LocalizationProvider>
           </div>
           <div className="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
             <div className="card h-50 w-80">
@@ -102,7 +125,7 @@ const Presensi = () => {
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    {absen.length}/{karyawan.length - 2}
+                    {absen.length}/{karyawan.length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -112,7 +135,7 @@ const Presensi = () => {
                   <FaCheck className="h-6 w-6" />
                 </span>
               </Card>
-              <ModalHadir open={openHadir} close={handleCloseHadir} />
+              {/* <ModalHadir open={openHadir} close={handleCloseHadir} /> */}
             </div>
             <div className="card h-50 w-80">
               <div className="card">
@@ -135,7 +158,7 @@ const Presensi = () => {
                             item.nama_status === "Sakit"
                         ).length
                       }
-                      /{karyawan.length - 2}
+                      /{karyawan.length}
                     </p>
                     <p className="font-normal text-red-700 dark:text-gray-400">
                       Orang
@@ -161,8 +184,8 @@ const Presensi = () => {
                   </div>
                   <div className="mt-7 text-left ml-0">
                     <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                      {karyawan.length - 2 - absen.length}/
-                      {karyawan.filter((item) => item.id_karyawan).length - 2}
+                      {karyawan.length - absen.length}/
+                      {karyawan.filter((item) => item.id_karyawan).length}
                     </p>
                     <p className="font-normal text-red-700 dark:text-gray-400">
                       Orang
@@ -179,9 +202,6 @@ const Presensi = () => {
           <div className="title flex text-2xl pt-4 pl-4 font-bold">
             Persensi Departemen Pegawai
           </div>
-          <div className="title flex text-lg pl-4 font-normal">
-            {getFormattedDate()}
-          </div>
           <div className="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
             {/* Staff Kantor  */}
             <div className="card h-50 w-80">
@@ -197,7 +217,7 @@ const Presensi = () => {
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    {absen.filter((item) => item.id_jenis == 4).length}/
+                    {absen.filter((item) => item.id_jenis === 4).length}/
                     {karyawan.filter((item) => item.id_jenis === 4).length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
@@ -224,7 +244,7 @@ const Presensi = () => {
 
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    {absen.filter((item) => item.id_jenis == 5).length}/
+                    {absen.filter((item) => item.id_jenis === 5).length}/
                     {karyawan.filter((item) => item.id_jenis === 5).length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
@@ -250,7 +270,7 @@ const Presensi = () => {
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    {absen.filter((item) => item.id_jenis == 6).length}/
+                    {absen.filter((item) => item.id_jenis === 6).length}/
                     {karyawan.filter((item) => item.id_jenis === 6).length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
@@ -265,7 +285,12 @@ const Presensi = () => {
           </div>
         </div>
       </div>
-      <ModalHadir open={openHadir} close={handleCloseHadir} type={modalType} />
+      <ModalHadir
+        open={openHadir}
+        close={handleCloseHadir}
+        type={modalType}
+        selectedDate={selectedDate}
+      />
     </div>
   );
 };
