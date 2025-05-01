@@ -184,13 +184,13 @@ const Absensi = () => {
                     <ul className="py-2">
                       <li
                         className="text-white px-4 py-2 hover:bg-custom-gelap cursor-pointer"
-                        onClick={() => navigate("/m-develop")}
+                        onClick={() => navigate("/profile")}
                       >
                         Profile
                       </li>
                       <li
                         className="text-white px-4 py-2 hover:bg-custom-gelap cursor-pointer"
-                        onClick={() => navigate("/m-develop")}
+                        onClick={() => navigate("/settings")}
                       >
                         Settings
                       </li>
@@ -259,7 +259,7 @@ const Absensi = () => {
             History
           </button>
           <button
-            onClick={() => navigate("/m-develop")}
+            onClick={() => navigate("/form-izin-sakit")}
             className="flex items-center text-sm font-semibold bg-white hover:bg-gray-300 text-black rounded-[20px] px-3 py-2 shadow-md"
           >
             <div className="text-sm text-custom-merah pr-1">
@@ -268,7 +268,7 @@ const Absensi = () => {
             Izin/Sakit
           </button>
           <button
-            onClick={() => alert("Masih dalam tahap pengembangan!")}
+            onClick={() => navigate("/form-lembur")}
             className="flex items-center text-sm font-semibold bg-white hover:bg-gray-300 text-black rounded-[20px] px-3 py-2 shadow-md"
           >
             <div className="text-sm text-custom-merah pr-1">

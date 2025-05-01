@@ -19,6 +19,12 @@ import Absensi from "./absen/pages/Absensi";
 import AmbilGambar from "./absen/pages/AmbilGambar";
 import InDevelopMobile from "./absen/pages/InDevelopMobile";
 import History from "./absen/pages/History";
+import Settings from "./absen/pages/Settings";
+import FormIzinSakit from "./absen/pages/FormIzinSakit";
+import Profile from "./absen/pages/Profile";
+import Tentang from "./absen/pages/Tentang";
+import UbahPassword from "./absen/pages/UbahPassword";
+import FormLembur from "./absen/pages/FormLembur";
 
 // Fungsi pengecekan role dari localStorage
 const getRole = () => localStorage.getItem("jenis");
@@ -84,6 +90,12 @@ function App() {
               <Route path="/ambil-gambar" element={<AmbilGambar />} />
               <Route path="/history" element={<History />} />
               <Route path="/m-develop" element={<InDevelopMobile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/form-izin-sakit" element={<FormIzinSakit />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/tentang" element={<Tentang />} />
+              <Route path="/ubah-password" element={<UbahPassword />} />
+              <Route path="/form-lembur" element={<FormLembur />} />
             </>
           )}
 
