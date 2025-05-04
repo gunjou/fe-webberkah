@@ -32,19 +32,23 @@ const Tentang = () => {
       </div>
       <h1 className="text-2xl font-bold mt-10">Tentang</h1>
       <p className="mt-4 px-10 text-justify">
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Pariatur
-        deleniti dolorum voluptas rem ratione aperiam nemo voluptate labore
-        consectetur! Optio molestiae eligendi deserunt sequi fuga sed iusto
-        temporibus fugiat laborum! Lorem ipsum dolor sit amet consectetur,
-        adipisicing elit. Necessitatibus minus provident, praesentium at
-        officiis suscipit asperiores natus ducimus. Aliquam cupiditate rerum
-        doloribus pariatur, beatae corrupti perspiciatis excepturi aspernatur
-        hic quod!
+        PT. Berkah Angsana Teknik adalah perusahaan yang bergerak di bidang
+        pelaksanaan jasa konstruksi dan merupakan anggota resmi dari asosiasi
+        GAPENSI. Berlokasi di Dusun Perampuan Barat, Desa Perampuan, Kecamatan
+        Labuapi, Kabupaten Lombok Barat, Indonesia, perusahaan ini dikenal
+        memiliki reputasi baik dalam menyediakan layanan konstruksi berkualitas
+        tinggi.
       </p>
       <p className="mt-4 px-10 text-justify">
-        Lorem ipsum dolor sit, amet consectetur adipisicing elit. Sed excepturi
-        atque quos asperiores cum eveniet id nihil totam quod. Rem aspernatur
-        culpa sunt? Nostrum quas tempora sunt porro quod. Numquam.
+        Sebagai badan usaha berbentuk Perseroan Terbatas (PT), PT. Berkah
+        Angsana Teknik berkomitmen untuk memberikan hasil terbaik dalam setiap
+        proyek yang dijalankan. Perusahaan kami menjunjung tinggi
+        profesionalisme dan kualitas kerja, sejalan dengan standar yang telah
+        ditetapkan oleh GAPENSI.
+      </p>
+      <p className="mt-4 px-10 text-justify">
+        PT. Berkah Angsana Teknik terus berupaya menjadi mitra terpercaya dalam
+        mendukung pembangunan dan pengembangan infrastruktur di Indonesia.
       </p>
       <p className="mt-4 px-10 text-left">------------</p>
       <p className="px-10 text-left font-bold">Berkah Angsana</p>

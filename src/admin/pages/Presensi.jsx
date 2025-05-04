@@ -92,10 +92,7 @@ const Presensi = () => {
         {/* <SideMenu /> */}
         {/* Dashboard Presensi */}
         <div>
-          <div className="title flex text-2xl pt-4 pl-4 font-bold">
-            Persensi Semua Pegawai
-          </div>
-          <div className="p-3 pl-4">
+          <div className="pt-5 pl-4">
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 label="Pilih Tanggal"
@@ -110,6 +107,9 @@ const Presensi = () => {
                 }}
               />
             </LocalizationProvider>
+          </div>
+          <div className="title flex text-2xl pt-2 pl-4 font-bold">
+            Persensi Semua Pegawai
           </div>
           <div className="flex space-x-4 px-2 py-3 justify-center rounded-[20px]">
             <div className="card h-50 w-80">

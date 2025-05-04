@@ -59,10 +59,9 @@ const FormLembur = () => {
           Form Pengajuan Lembur
         </h1>
         <p className="text-sm mb-4 text-gray-600 text-justify">
-          Lorem ipsum, dolor sit amet consectetur adipisicing elit. Quaerat,
-          soluta atque, provident at porro aliquid quisquam, iure alias
-          similique nam dolor minus. Aliquam inventore error laudantium unde
-          amet dolorum vitae?
+          Silakan lengkapi form berikut untuk pengajuan lembur. Pengajuan akan
+          diproses sesuai kebijakan perusahaan dan harus disetujui oleh atasan
+          terkait.
         </p>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1 text-left">
