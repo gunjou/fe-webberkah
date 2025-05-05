@@ -202,10 +202,6 @@ const Pegawai = () => {
         window.location.reload();
       })
       .catch((error) => {
-        console.log("selectedPegawai.jenis");
-        console.log(selectedPegawai.jenis);
-        console.log("selectedPegawai.tipe");
-        console.log(selectedPegawai.tipe);
         console.error(
           "Error updating data:",
           error.response?.data || error.message
@@ -340,11 +336,7 @@ const Pegawai = () => {
   if (currentRows.length === 0) {
     detail = (
       <TableRow>
-        <TableCell
-          sx={{ fontSize: "12px", padding: "6px" }}
-          colSpan={kolom.length}
-          align="center"
-        >
+        <TableCell colSpan={kolom.length} align="center">
           Tidak ada yang cocok dengan pencarian Anda.
         </TableCell>
       </TableRow>
@@ -352,43 +344,22 @@ const Pegawai = () => {
   } else {
     detail = currentRows.map((item, index) => (
       <TableRow key={index}>
-        <TableCell sx={{ fontSize: "12px", padding: "6px" }}>
-          {indexOfFirstRow + index + 1}
-        </TableCell>
+        <TableCell>{indexOfFirstRow + index + 1}</TableCell>
 
-        <TableCell
-          sx={{ fontSize: "12px", padding: "6px" }}
-          component="th"
-          scope="row"
-          className="capitalize"
-        >
+        <TableCell component="th" scope="row" className="capitalize">
           {item.nama}
         </TableCell>
-        <TableCell
-          sx={{ fontSize: "12px", padding: "6px" }}
-          align="left"
-          className="capitalize"
-        >
+        <TableCell align="left" className="capitalize">
           {item.jenis}
         </TableCell>
-        <TableCell
-          sx={{ fontSize: "12px", padding: "6px" }}
-          align="left"
-          className="capitalize"
-        >
+        <TableCell align="left" className="capitalize">
           {item.tipe}
         </TableCell>
 
-        <TableCell sx={{ fontSize: "12px", padding: "6px" }} align="left">
-          {item.username}
-        </TableCell>
-        <TableCell sx={{ fontSize: "12px", padding: "6px" }} align="left">
-          {item.kode_pemulihan}
-        </TableCell>
-        <TableCell sx={{ fontSize: "12px", padding: "6px" }} align="left">
-          {formatRupiah(item.gaji_pokok)}
-        </TableCell>
-        <TableCell sx={{ fontSize: "12px", padding: "6px" }} align="center">
+        <TableCell align="left">{item.username}</TableCell>
+        <TableCell align="left">{item.kode_pemulihan}</TableCell>
+        <TableCell align="left">{formatRupiah(item.gaji_pokok)}</TableCell>
+        <TableCell align="center">
           <span
             className="font-medium text-white hover:underline dark:text-cyan-500 cursor-pointer bg-custom-merah rounded-[20px] px-6 py-1"
             onClick={() => handleEdit(item)} // Panggil handleEdit
@@ -475,13 +446,12 @@ const Pegawai = () => {
                   <TableContainer sx={{ maxHeight: 300 }}>
                     <Table stickyHeader aria-label="sticky table">
                       <TableHead className="bg-[#e8ebea]">
-                        <TableRow sx={{ height: "36px" }}>
+                        <TableRow>
                           {kolom.map((column, index) => {
                             const isFirst = index === 0;
                             const isLast = index === kolom.length - 1;
                             return (
                               <TableCell
-                                sx={{ fontSize: "12px", padding: "6px" }}
                                 key={column.id}
                                 onClick={() => handleSort(column.id)}
                                 align={column.align}
@@ -490,8 +460,6 @@ const Pegawai = () => {
                                   backgroundColor: "#4d4d4d",
                                   color: "white",
                                   fontWeight: "bold",
-                                  fontSize: "12px",
-                                  padding: "6px",
                                   borderTopLeftRadius: isFirst ? "10px" : "0",
                                   borderTopRightRadius: isLast ? "10px" : "0",
                                   border: "1px solid #4d4d4d", // <- ini yang penting
@@ -510,9 +478,7 @@ const Pegawai = () => {
                           })}
                         </TableRow>
                       </TableHead>
-                      <TableBody sx={{ height: "32px" }} className="text-red">
-                        {detail}
-                      </TableBody>
+                      <TableBody className="text-red">{detail}</TableBody>
                     </Table>
                   </TableContainer>
                 </Paper>
