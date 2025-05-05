@@ -128,7 +128,7 @@ const Pegawai = () => {
         },
       })
       .then((res) => {
-        console.log(res.data.tipe_karyawan);
+        // console.log(res.data.tipe_karyawan);
         setTipeList(res.data.tipe_karyawan);
       })
       .catch((err) => {
@@ -202,6 +202,10 @@ const Pegawai = () => {
         window.location.reload();
       })
       .catch((error) => {
+        console.log("selectedPegawai.jenis");
+        console.log(selectedPegawai.jenis);
+        console.log("selectedPegawai.tipe");
+        console.log(selectedPegawai.tipe);
         console.error(
           "Error updating data:",
           error.response?.data || error.message
@@ -397,9 +401,11 @@ const Pegawai = () => {
   }
   const handleEdit = (karyawan) => {
     const jenisObj = jenisList.find((j) => j.jenis === karyawan.jenis);
+    const tipeObj = tipeList.find((t) => t.tipe === karyawan.tipe);
     setSelectedPegawai({
       ...karyawan,
       jenis: jenisObj ? jenisObj.id_jenis : "", // pastikan nilainya ID
+      tipe: tipeObj ? tipeObj.id_tipe : "",
     });
     setOpenModalEdit(true);
   };
