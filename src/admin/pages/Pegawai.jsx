@@ -50,6 +50,8 @@ const Pegawai = () => {
   const [openModalEdit, setOpenModalEdit] = useState(false);
   const [karyawan, setKaryawan] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 50;
   const [searchTerm, setSearchTerm] = useState("");
@@ -173,12 +175,14 @@ const Pegawai = () => {
       alert("Jenis pegawai tidak boleh kosong!");
       return;
     }
+
+    setIsLoading(true); // mulai loading
+
     const payload = {
       nama: selectedPegawai.nama,
       jenis: selectedPegawai.jenis,
       tipe: selectedPegawai.tipe,
       username: selectedPegawai.username,
-      // kode_pemulihan: selectedPegawai.kode_pemulihan,
       gaji_pokok: selectedPegawai.gaji_pokok,
     };
 
@@ -197,7 +201,7 @@ const Pegawai = () => {
               : item
           )
         );
-        alert("Data karyawan berhasil diperbarui!");
+        alert(res.data.status || "Data karyawan berhasil diperbarui!");
         setOpenModalEdit(false);
         window.location.reload();
       })
@@ -206,6 +210,9 @@ const Pegawai = () => {
           "Error updating data:",
           error.response?.data || error.message
         );
+      })
+      .finally(() => {
+        setIsLoading(false); // selesai loading
       });
   };
 
@@ -251,6 +258,8 @@ const Pegawai = () => {
   };
 
   const saveAdd = () => {
+    setIsAdding(true); // mulai loading
+
     const payloadAdd = {
       nama: newPegawai.nama,
       jenis: newPegawai.jenis,
@@ -279,7 +288,7 @@ const Pegawai = () => {
           gaji_pokok: "",
         }); // Reset form
 
-        alert("Data karyawan berhasil ditambahkan!");
+        alert(res.data.status || "Data karyawan berhasil ditambahkan!");
         window.location.reload();
       })
       .catch((error) => {
@@ -287,6 +296,9 @@ const Pegawai = () => {
           "Error adding data:",
           error.response?.data || error.message
         );
+      })
+      .finally(() => {
+        setIsAdding(false); // selesai loading
       });
   };
 
@@ -648,11 +660,16 @@ const Pegawai = () => {
                   <div className="button-footer flex gap-2">
                     <button
                       type="button"
-                      className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
-                      onClick={saveEdit} // Panggil fungsi saveEdit
+                      className="flex items-center gap-2 focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={saveEdit}
+                      disabled={isLoading}
                     >
-                      Simpan
+                      {isLoading && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                      )}
+                      {isLoading ? "Menyimpan..." : "Simpan"}
                     </button>
+
                     <button
                       type="button"
                       class="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
@@ -822,11 +839,16 @@ const Pegawai = () => {
                 <Modal.Footer>
                   <button
                     type="button"
-                    className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+                    className="flex items-center gap-2 focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={saveAdd}
+                    disabled={isAdding}
                   >
-                    Simpan
+                    {isAdding && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                    )}
+                    {isAdding ? "Menyimpan..." : "Simpan"}
                   </button>
+
                   <button
                     type="button"
                     class="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
