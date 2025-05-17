@@ -82,7 +82,7 @@ const LoginForm = ({ role = "karyawan", onLoginSuccess }) => {
             </label>
           </div>
 
-          <div className="mb-3">
+          <div className="mb-1">
             <label className="relative block flex">
               <span className="sr-only">Password</span>
               <span className="absolute inset-y-0 left-0 flex items-center pl-2">
@@ -114,7 +114,7 @@ const LoginForm = ({ role = "karyawan", onLoginSuccess }) => {
             {error || "Error placeholder"}
           </div>
 
-          <div className="flex justify-center mb-2 pt-3">
+          <div className="flex justify-center mb-2 pt-2">
             <div className="submit w-[150px] py-2 bg-black text-white font-semibold rounded-[12px] transition duration-300 hover:bg-gray-800 ">
               <input
                 className="cursor-pointer w-full h-full"
@@ -124,8 +124,8 @@ const LoginForm = ({ role = "karyawan", onLoginSuccess }) => {
             </div>
           </div>
         </form>
-        <div>
-          <span className="text-xs text-white">© 2025, PT. Berkah Angsana</span>
+        <div className="flex justify-center mt-4">
+          <span className="text-xs text-white">© 2025, Outlook Project</span>
         </div>
       </div>
     </div>

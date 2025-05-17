@@ -81,6 +81,7 @@ const FormIzinSakit = () => {
                   fullWidth: true,
                   required: true,
                   placeholder: "Pilih tanggal",
+                  className: "placeholder:text-xs",
                 },
               }}
             />
@@ -108,7 +109,7 @@ const FormIzinSakit = () => {
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full px-3 py-2 border rounded-lg placeholder:text-xs"
             placeholder="Masukkan alasan Anda"
             rows="4"
             required
@@ -127,7 +128,7 @@ const FormIzinSakit = () => {
         </div>
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+          className="w-full bg-custom-merah text-white py-2 rounded-lg hover:bg-custom-gelap"
         >
           Kirim
         </button>

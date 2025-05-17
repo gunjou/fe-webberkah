@@ -12,12 +12,13 @@ const Dashboard = ({ type }) => {
   let content;
 
   switch (type) {
-    case "profile-pegawai":
-      content = <Pegawai />;
-      break;
     case "presensi":
       content = <Presensi />;
       break;
+    case "profile-pegawai":
+      content = <Pegawai />;
+      break;
+
     case "rekapan":
       content = <Rekapan />;
       break;
@@ -28,7 +29,7 @@ const Dashboard = ({ type }) => {
       content = <PerhitunganGaji />;
       break;
     default:
-      content = <Pegawai />; // Konten default jika tidak ada case yang cocok
+      content = <Presensi />; // Konten default jika tidak ada case yang cocok
       break;
   }
 

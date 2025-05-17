@@ -358,23 +358,28 @@ const Pegawai = () => {
       <TableRow key={index}>
         <TableCell>{indexOfFirstRow + index + 1}</TableCell>
 
-        <TableCell component="th" scope="row" className="capitalize">
+        <TableCell style={{ padding: "8px" }} align="left">
           {item.nama}
         </TableCell>
-        <TableCell align="left" className="capitalize">
+        <TableCell style={{ padding: "8px" }} align="left">
           {item.jenis}
         </TableCell>
-        <TableCell align="left" className="capitalize">
+        <TableCell style={{ padding: "8px" }} align="left">
           {item.tipe}
         </TableCell>
-
-        <TableCell align="left">{item.username}</TableCell>
-        <TableCell align="left">{item.kode_pemulihan}</TableCell>
-        <TableCell align="left">{formatRupiah(item.gaji_pokok)}</TableCell>
-        <TableCell align="center">
+        <TableCell style={{ padding: "8px" }} align="left">
+          {item.username}
+        </TableCell>
+        <TableCell style={{ padding: "8px" }} align="left">
+          {item.kode_pemulihan}
+        </TableCell>
+        <TableCell style={{ padding: "8px" }} align="left">
+          {formatRupiah(item.gaji_pokok)}
+        </TableCell>
+        <TableCell style={{ padding: "8px" }} align="center">
           <span
             className="font-medium text-white hover:underline dark:text-cyan-500 cursor-pointer bg-custom-merah rounded-[20px] px-6 py-1"
-            onClick={() => handleEdit(item)} // Panggil handleEdit
+            onClick={() => handleEdit(item)}
           >
             Edit
           </span>
@@ -474,7 +479,8 @@ const Pegawai = () => {
                                   fontWeight: "bold",
                                   borderTopLeftRadius: isFirst ? "10px" : "0",
                                   borderTopRightRadius: isLast ? "10px" : "0",
-                                  border: "1px solid #4d4d4d", // <- ini yang penting
+                                  border: "1px solid #4d4d4d",
+                                  padding: "8px", // Tambahkan padding lebih kecil
                                 }}
                               >
                                 {column.label}

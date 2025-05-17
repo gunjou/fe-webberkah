@@ -31,16 +31,12 @@ const SideMenu = () => {
               </span>
             </div>
           </SidebarLogo>
-          <Sidebar.ItemGroup className="text-gray-800">
-            <NavLink to={"/pegawai"}>
-              <Sidebar.Item icon={FaUserFriends}>
-                <span className="left-14 flex">Data Pegawai</span>
-              </Sidebar.Item>
-            </NavLink>
 
+          <Sidebar.ItemGroup className="text-gray-800">
             <Sidebar.Collapse
               icon={FaClipboardList}
               label="Absensi"
+              open={true}
               renderChevronIcon={(theme, open) => {
                 const IconComponent = open ? HiOutlineMinus : HiOutlinePlus;
                 return (
@@ -69,9 +65,15 @@ const SideMenu = () => {
                 </Sidebar.Item>
               </NavLink>
             </Sidebar.Collapse>
+
             <NavLink to={"/perhitungan-gaji"}>
               <Sidebar.Item icon={FaCalculator}>
                 <span className="left-14 flex">Perhitungan Gaji</span>
+              </Sidebar.Item>
+            </NavLink>
+            <NavLink to={"/pegawai"}>
+              <Sidebar.Item icon={FaUserFriends}>
+                <span className="left-14 flex">Data Pegawai</span>
               </Sidebar.Item>
             </NavLink>
           </Sidebar.ItemGroup>

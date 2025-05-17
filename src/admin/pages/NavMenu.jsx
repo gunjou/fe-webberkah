@@ -5,9 +5,13 @@ import {
   DropdownHeader,
   DropdownItem,
   Navbar,
+  Modal,
+  Button,
 } from "flowbite-react";
 import Avatar from "@mui/material/Avatar";
 import { useNavigate } from "react-router-dom";
+import { SiGmail } from "react-icons/si";
+import { FaInstagram, FaWhatsapp } from "react-icons/fa";
 
 // Warna acak
 const getRandomColor = () => {
@@ -35,6 +39,7 @@ const NavMenu = () => {
   const namaAdmin = toTitleCase(namaAdminRaw);
 
   const [avatarColor, setAvatarColor] = useState("#3F51B5");
+  const [openModal, setOpenModal] = useState(false); // Tambah state modal
 
   useEffect(() => {
     const savedColor = localStorage.getItem("avatarColor");
@@ -76,7 +81,9 @@ const NavMenu = () => {
               <span className="text-sm whitespace-nowrap">{namaAdmin}</span>
             </DropdownHeader>
 
-            <DropdownItem>Settings</DropdownItem>
+            <DropdownItem onClick={() => setOpenModal(true)}>
+              Tentang
+            </DropdownItem>
             <DropdownDivider />
             <DropdownItem
               onClick={() => {
@@ -95,6 +102,53 @@ const NavMenu = () => {
           </div>
         </div>
       </Navbar>
+
+      {/* Modal Tentang */}
+      <Modal show={openModal} onClose={() => setOpenModal(false)}>
+        <Modal.Header>Tentang Aplikasi</Modal.Header>
+        <Modal.Body>
+          <div className="space-y-2 text-sm">
+            <div>
+              <b>Berkah Angsana (Admin) </b>
+            </div>
+            <div>
+              Sistem manajemen absensi dan pegawai PT. Berkah Angsana Teknik.
+            </div>
+            <div>Supported by: OutLook Project</div>
+            <div className="flex space-x-3 mt-2 text-[10px] justify-left">
+              <a
+                href="https://wa.me/6281917250391"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-green-500"
+              >
+                <FaWhatsapp size={20} />
+              </a>
+              <a
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=gibrangl1167@gmail.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-red-400"
+              >
+                <SiGmail size={20} />
+              </a>
+              <a
+                href="https://www.instagram.com/outlookofficial_/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-pink-500"
+              >
+                <FaInstagram size={20} />
+              </a>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button color="gray" onClick={() => setOpenModal(false)}>
+            Tutup
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

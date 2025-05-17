@@ -31,7 +31,7 @@ const Tentang = () => {
         </div>
       </div>
       <h1 className="text-2xl font-bold mt-10">Tentang</h1>
-      <p className="mt-4 px-10 text-justify">
+      <p className="mt-4 px-10 text-sm text-justify">
         PT. Berkah Angsana Teknik adalah perusahaan yang bergerak di bidang
         pelaksanaan jasa konstruksi dan merupakan anggota resmi dari asosiasi
         GAPENSI. Berlokasi di Dusun Perampuan Barat, Desa Perampuan, Kecamatan
@@ -39,14 +39,14 @@ const Tentang = () => {
         memiliki reputasi baik dalam menyediakan layanan konstruksi berkualitas
         tinggi.
       </p>
-      <p className="mt-4 px-10 text-justify">
+      <p className="mt-4 px-10 text-sm text-justify">
         Sebagai badan usaha berbentuk Perseroan Terbatas (PT), PT. Berkah
         Angsana Teknik berkomitmen untuk memberikan hasil terbaik dalam setiap
         proyek yang dijalankan. Perusahaan kami menjunjung tinggi
         profesionalisme dan kualitas kerja, sejalan dengan standar yang telah
         ditetapkan oleh GAPENSI.
       </p>
-      <p className="mt-4 px-10 text-justify">
+      <p className="mt-4 px-10 text-sm text-justify">
         PT. Berkah Angsana Teknik terus berupaya menjadi mitra terpercaya dalam
         mendukung pembangunan dan pengembangan infrastruktur di Indonesia.
       </p>
@@ -78,11 +78,11 @@ const Tentang = () => {
           <FaInstagram size={20} />
         </a>
       </div>
-      <div className="fixed bottom-0 right-0 m-4 ">
-        <div className="mt-4 text-[10px] px-10 text-left">
-          Supported by : OutLook
+      <div className="">
+        <div className="flex px-10 mt-4 text-[10px] px-10 text-left justify-end">
+          Supported by : OutLook Project
         </div>
-        <div className="flex px-10 space-x-2 mt-2 text-[10px] justify-right ">
+        <div className="flex px-10 space-x-2 mt-2 text-[10px] justify-end">
           <a
             href="https://wa.me/6281917250391"
             target="_blank"
@@ -103,7 +103,7 @@ const Tentang = () => {
             href="https://www.instagram.com/outlookofficial_/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-white hover:text-pink-500"
+            className="text-white hover:text-pink-500 mb-3"
           >
             <FaInstagram size={20} />
           </a>

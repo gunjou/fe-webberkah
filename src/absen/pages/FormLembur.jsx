@@ -123,6 +123,7 @@ const FormLembur = () => {
                   fullWidth: true,
                   required: true,
                   placeholder: "Pilih waktu selesai",
+                  className: "placeholder:text-xs",
                 },
               }}
             />
@@ -136,7 +137,7 @@ const FormLembur = () => {
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full px-3 py-2 border rounded-lg placeholder:text-xs"
             placeholder="Masukkan alasan lembur anda"
             rows="4"
             required
@@ -155,7 +156,7 @@ const FormLembur = () => {
         </div>
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+          className="w-full bg-custom-merah text-white py-2 rounded-lg hover:bg-custom-gelap"
         >
           Kirim
         </button>

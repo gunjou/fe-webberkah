@@ -121,7 +121,7 @@ const Login = () => {
           </div>
         </form>
         <div>
-          <span className="text-xs text-white">© 2025, PT. Berkah Angsana</span>
+          <span className="text-xs text-white">© 2025, Outlook Project</span>
         </div>
       </div>
     </div>
