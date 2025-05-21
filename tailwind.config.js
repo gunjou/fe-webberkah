@@ -10,6 +10,9 @@ module.exports = {
         "custom-merah": "#7c161b",
         "custom-cerah": "#B77171",
       },
+      fontFamily: {
+        poppins: ["Poppins", "sans-serif"],
+      },
     },
   },
   plugins: [flowbite.plugin()],

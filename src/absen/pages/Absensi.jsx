@@ -7,6 +7,13 @@ import api from "../../shared/Api";
 import { Avatar } from "@mui/material";
 import { IoTrashBin } from "react-icons/io5";
 import { FaPersonDigging } from "react-icons/fa6";
+import Badge from "@mui/material/Badge";
+import { IoMdNotificationsOutline } from "react-icons/io";
+import axios from "axios";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
+import dayjs from "dayjs";
+import { IoMdClose } from "react-icons/io";
 
 const toTitleCase = (str) => {
   return str
@@ -47,9 +54,14 @@ const Absensi = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAbsenMasuk, setIsAbsenMasuk] = useState(true);
   const [dataPresensi, setDataPresensi] = useState(null);
+  const [notifCount, setNotifCount] = useState(0);
+  const [notifPesan, setNotifPesan] = useState([]);
+  const [showNotifModal, setShowNotifModal] = useState("");
+  const [notifPesanModal, setNotifPesanModal] = useState("");
   const jamTerlambat = formatMenitToJamMenit(dataPresensi?.jam_terlambat);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const [izinTanggal, setIzinTanggal] = useState(dayjs());
 
   const getFormattedDate = () => {
     const date = new Date();
@@ -66,7 +78,7 @@ const Absensi = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false); // pastikan state dropdown kamu ini
+        setIsDropdownOpen(false);
       }
     };
 
@@ -83,7 +95,7 @@ const Absensi = () => {
 
       if (!id_karyawan || !token) {
         console.warn("Token atau ID karyawan belum tersedia");
-        return; // jangan lanjut fetch kalau belum siap
+        return;
       }
 
       try {
@@ -108,8 +120,33 @@ const Absensi = () => {
       }
     };
 
-    // Kasih delay dikit atau trigger pakai event tertentu kalau perlu
     fetchPresensi();
+  }, []);
+
+  useEffect(() => {
+    const fetchNotif = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(
+          `${process.env.REACT_APP_API_URL || ""}/notifikasi?role=karyawan`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setNotifCount(res.data.count || 0);
+        setNotifPesan(res.data.data || []);
+
+        const unread = res.data.data?.find((item) => !item.dibaca);
+        if (unread) {
+          setNotifPesanModal(unread.pesan);
+          setShowNotifModal(true);
+        }
+      } catch (err) {
+        setNotifCount(0);
+        setNotifPesan([]);
+      }
+    };
+    fetchNotif();
   }, []);
 
   const toggleDropdown = () => {
@@ -136,7 +173,7 @@ const Absensi = () => {
       console.error("Logout error:", err);
     } finally {
       localStorage.clear();
-      window.location.href = "/login"; // kembali ke halaman login
+      window.location.href = "/login";
     }
   };
 
@@ -155,13 +192,64 @@ const Absensi = () => {
     }
   };
 
+  const markNotifAsRead = async (id_notifikasi) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${
+          process.env.REACT_APP_API_URL || ""
+        }/notifikasi/${id_notifikasi}/read`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setNotifCount(0); // Hilangkan badge
+      // Update notifPesan agar semua notif dianggap sudah dibaca
+      setNotifPesan((prev) =>
+        prev.map((item) =>
+          item.id_notifikasi === id_notifikasi
+            ? { ...item, dibaca: true }
+            : item
+        )
+      );
+    } catch (err) {
+      // Optional: tampilkan error jika gagal
+      // alert("Gagal menandai notifikasi sebagai sudah dibaca");
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-custom-merah to-custom-gelap">
       <div className="Absensi">
         <div className="mt-0 ml-0 mr-0">
           <div className="block p-5 bg-white border border-gray-200 rounded-b-[60px] shadow-lg">
-            <div className="Header left-0 mb-2">
-              <div className="absolute right-5 mt-0" ref={dropdownRef}>
+            <div className="Header left-0 mb-2 relative">
+              <div
+                className="absolute right-5 mt-0 flex items-center gap-2"
+                ref={dropdownRef}
+              >
+                {/* Lonceng Notifikasi */}
+                <Badge
+                  badgeContent={notifCount}
+                  color="error"
+                  overlap="circular"
+                  anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                >
+                  <IoMdNotificationsOutline
+                    size={28}
+                    className="text-black cursor-pointer hover:text-yellow-400 transition"
+                    title="Notifikasi"
+                    onClick={() => {
+                      setShowNotifModal(true);
+                      // Cari notif yang belum dibaca
+                      const unread = notifPesan.find((item) => !item.dibaca);
+                      if (unread) {
+                        markNotifAsRead(unread.id_notifikasi);
+                      }
+                    }}
+                  />
+                </Badge>
                 <Avatar
                   onClick={toggleDropdown}
                   sx={{
@@ -175,12 +263,8 @@ const Absensi = () => {
                 >
                   {getInitials(localStorage.getItem("nama"))}
                 </Avatar>
-
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 z-50 text-left bg-custom-merah rounded-lg shadow-lg min-w-fit">
-                    <div className="px-4 py-2 border-b border-white text-white whitespace-nowrap font-semibold">
-                      {toTitleCase(localStorage.getItem("nama"))}
-                    </div>
+                  <div className="absolute left-0 top-full mt-2 z-50 text-left bg-custom-merah rounded-lg shadow-lg min-w-[80px] before:content-[''] before:absolute before:top-[-8px] before:left-4 before:border-8 before:border-transparent before:border-b-custom-merah">
                     <ul className="py-2">
                       <li
                         className="text-white px-4 py-2 hover:bg-custom-gelap cursor-pointer"
@@ -237,7 +321,6 @@ const Absensi = () => {
               </div>
             )}
 
-            {/* Peringatan terlambat ditampilkan jika sudah absen masuk dan terlambat */}
             {dataPresensi?.jam_terlambat > 0 && jamTerlambat && (
               <div className="flex justify-center mt-2">
                 <span className="text-sm font-bold text-[#FF0000] px-4 py-1">
@@ -278,6 +361,33 @@ const Absensi = () => {
           </button>
         </div>
 
+        {showNotifModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white text-black rounded-lg shadow-lg w-full max-w-md mx-4 relative flex flex-col">
+              <div className="flex-shrink-0 flex items-center justify-between border-b px-6 py-4 bg-white sticky top-0 z-10">
+                <h1 className="text-lg font-bold">Notifikasi</h1>
+                <button
+                  onClick={() => setShowNotifModal(false)}
+                  className="text-gray-500 hover:text-black text-xl"
+                  aria-label="Tutup"
+                >
+                  <IoMdClose size={25} />
+                </button>
+              </div>
+              <div className="px-6 py-6 text-center">
+                <span>{notifPesanModal || "Tidak ada notifikasi baru."}</span>
+              </div>
+              <div className="flex-shrink-0 flex justify-end border-t px-6 py-3 bg-white sticky bottom-0 z-10">
+                <button
+                  onClick={() => setShowNotifModal(false)}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div>
           <span className="Title flex pl-6 pt-2 text-xl text-white font-semibold">
             Presensi
