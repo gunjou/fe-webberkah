@@ -6,8 +6,8 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import dayjs from "dayjs";
-import axios from "axios";
 import { IoMdClose } from "react-icons/io";
+import api from "../../shared/Api";
 
 const toTitleCase = (str) => {
   if (!str) return "";
@@ -38,14 +38,9 @@ const FormLembur = () => {
     setLemburError("");
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `${
-          process.env.REACT_APP_API_URL || ""
-        }/check-lembur?tanggal=${tanggal}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await api.get(`/check-lembur?tanggal=${tanggal}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = res.data.data;
       setLemburList(Array.isArray(data) ? data : data ? [data] : []);
     } catch (err) {
@@ -60,8 +55,9 @@ const FormLembur = () => {
     if (!window.confirm("Yakin ingin menghapus pengajuan ini?")) return;
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(
-        `${process.env.REACT_APP_API_URL || ""}/hapus-pengajuan/${id_lembur}`,
+      await api.delete(
+        `/hapus-pengajuan/${id_lembur}`,
+        // const response = await api.get(`/cek_presensi/${id_karyawan}`, {
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -71,10 +67,8 @@ const FormLembur = () => {
       fetchLembur(lemburTanggal.format("YYYY-MM-DD"));
       // Jika tanggal utama sama dengan tanggal modal, refresh status disable form
       if (date.format("YYYY-MM-DD") === lemburTanggal.format("YYYY-MM-DD")) {
-        const res = await axios.get(
-          `${
-            process.env.REACT_APP_API_URL || ""
-          }/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
+        const res = await api.get(
+          `/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -100,10 +94,8 @@ const FormLembur = () => {
     const cekPengajuanHariIni = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(
-          `${
-            process.env.REACT_APP_API_URL || ""
-          }/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
+        const res = await api.get(
+          `/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -139,15 +131,12 @@ const FormLembur = () => {
       }
 
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || ""}/pengajuan-lembur`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await api.post(`/pengajuan-lembur`, formData, {
+        headers: {
+          "Content-Type": undefined,
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       alert("Pengajuan lembur berhasil dikirim!");
       navigate("/absensi");

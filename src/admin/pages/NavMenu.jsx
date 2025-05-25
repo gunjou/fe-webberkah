@@ -15,11 +15,11 @@ import { useNavigate } from "react-router-dom";
 import { SiGmail } from "react-icons/si";
 import { FaInstagram, FaWhatsapp } from "react-icons/fa";
 import { IoMdNotificationsOutline } from "react-icons/io";
-import axios from "axios";
 import dayjs from "dayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import api from "../../shared/Api";
 
 // Warna acak
 const getRandomColor = () => {
@@ -99,11 +99,11 @@ const NavMenu = () => {
     setNotifError("");
     try {
       const token = localStorage.getItem("token");
-      let url = `${process.env.REACT_APP_API_URL || ""}/izin/list`;
+      let url = `/izin/list`;
       if (tanggal) {
         url += `?tanggal=${tanggal}`;
       }
-      const res = await axios.get(url, {
+      const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifList(res.data.data || []);
@@ -123,11 +123,11 @@ const NavMenu = () => {
     setLemburError("");
     try {
       const token = localStorage.getItem("token");
-      let url = `${process.env.REACT_APP_API_URL || ""}/lembur/list`;
+      let url = `/lembur/list`;
       if (tanggal) {
         url += `?tanggal=${tanggal}`;
       }
-      const res = await axios.get(url, {
+      const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLemburList(res.data.data || []);
@@ -143,12 +143,9 @@ const NavMenu = () => {
   const fetchNotifCount = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_URL || ""}/notifikasi?role=admin`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await api.get(`/notifikasi?role=admin`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setNotifCount(res.data.count || 0);
       setNotifPesan(res.data.data || []);
     } catch (err) {
@@ -161,10 +158,8 @@ const NavMenu = () => {
   const markNotifAsRead = async (id_notifikasi) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put(
-        `${
-          process.env.REACT_APP_API_URL || ""
-        }/notifikasi/${id_notifikasi}/read`,
+      await api.put(
+        `/notifikasi/${id_notifikasi}/read`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -192,10 +187,11 @@ const NavMenu = () => {
   const handleApprove = async (id_izin) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || ""}/izin/${id_izin}/approve`,
+      await api.post(
+        `/izin/${id_izin}/approve`,
         {},
         {
+          "Content-Type": undefined,
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -216,10 +212,11 @@ const NavMenu = () => {
   const submitReject = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || ""}/izin/${rejectId}/reject`,
+      await api.post(
+        `/izin/${rejectId}/reject`,
         { alasan_penolakan: alasanPenolakan },
         {
+          "Content-Type": undefined,
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -235,10 +232,11 @@ const NavMenu = () => {
   const handleApproveLembur = async (id_lembur) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || ""}/lembur/${id_lembur}/approve`,
+      await api.post(
+        `/lembur/${id_lembur}/approve`,
         {},
         {
+          "Content-Type": undefined,
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -259,12 +257,11 @@ const NavMenu = () => {
   const submitRejectLembur = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${
-          process.env.REACT_APP_API_URL || ""
-        }/lembur/${rejectLemburId}/reject`,
+      await api.post(
+        `/lembur/${rejectLemburId}/reject`,
         { alasan_penolakan: alasanRejectLembur },
         {
+          "Content-Type": undefined,
           headers: { Authorization: `Bearer ${token}` },
         }
       );

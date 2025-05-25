@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import dayjs from "dayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import api from "../../shared/Api";
 
 const Lembur = () => {
   const [tanggal, setTanggal] = useState(null); // null = tampilkan semua
@@ -20,12 +20,9 @@ const Lembur = () => {
     try {
       const token = localStorage.getItem("token");
       // Ambil semua data jika tgl null, filter di FE
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_URL || ""}/lembur/list`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await api.get(`/lembur/list`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       let data = res.data.data;
       if (!data) setLemburList([]);
       else if (Array.isArray(data)) {
@@ -69,10 +66,11 @@ const Lembur = () => {
     setActionLoading(id_lembur);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || ""}/lembur/${id_lembur}/approve`,
+      await api.post(
+        `/lembur/${id_lembur}/approve`,
         {},
         {
+          "Content-Type": undefined,
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -92,10 +90,11 @@ const Lembur = () => {
     setActionLoading(id_lembur);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || ""}/lembur/${id_lembur}/reject`,
+      await api.post(
+        `/lembur/${id_lembur}/reject`,
         { alasan_penolakan: alasanReject },
         {
+          "Content-Type": undefined,
           headers: { Authorization: `Bearer ${token}` },
         }
       );

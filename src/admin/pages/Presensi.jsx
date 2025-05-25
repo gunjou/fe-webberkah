@@ -10,7 +10,6 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import Badge from "@mui/material/Badge";
-import axios from "axios";
 import { IoMdClose } from "react-icons/io";
 
 import api from "../../shared/Api";
@@ -121,11 +120,11 @@ const Presensi = () => {
     setIzinError("");
     try {
       const token = localStorage.getItem("token");
-      let url = `${process.env.REACT_APP_API_URL || ""}/izin/list`;
+      let url = `/izin/list`;
       if (tgl) {
         url += `?tanggal=${dayjs(tgl).format("YYYY-MM-DD")}`;
       }
-      const res = await axios.get(url, {
+      const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       let data = res.data.data;
@@ -149,10 +148,15 @@ const Presensi = () => {
     setIzinActionLoading(id_izin);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || ""}/izin/${id_izin}/approve`,
+      await api.post(
+        `/izin/${id_izin}/approve`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            "Content-Type": undefined,
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       fetchIzinList(izinFilterTanggal);
     } catch (err) {
@@ -170,10 +174,15 @@ const Presensi = () => {
     setIzinActionLoading(id_izin);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || ""}/izin/${id_izin}/reject`,
+      await api.post(
+        `/izin/${id_izin}/reject`,
         { alasan_penolakan: alasanReject },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            "Content-Type": undefined,
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       setRejectId(null);
       setAlasanReject("");

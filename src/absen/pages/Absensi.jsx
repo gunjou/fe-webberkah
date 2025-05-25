@@ -9,7 +9,6 @@ import { IoTrashBin } from "react-icons/io5";
 import { FaPersonDigging } from "react-icons/fa6";
 import Badge from "@mui/material/Badge";
 import { IoMdNotificationsOutline } from "react-icons/io";
-import axios from "axios";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
@@ -127,12 +126,9 @@ const Absensi = () => {
     const fetchNotif = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(
-          `${process.env.REACT_APP_API_URL || ""}/notifikasi?role=karyawan`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await api.get(`/notifikasi?role=karyawan`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setNotifCount(res.data.count || 0);
         setNotifPesan(res.data.data || []);
 
@@ -195,10 +191,8 @@ const Absensi = () => {
   const markNotifAsRead = async (id_notifikasi) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put(
-        `${
-          process.env.REACT_APP_API_URL || ""
-        }/notifikasi/${id_notifikasi}/read`,
+      await api.put(
+        `/notifikasi/${id_notifikasi}/read`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
