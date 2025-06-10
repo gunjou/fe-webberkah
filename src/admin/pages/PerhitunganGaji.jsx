@@ -58,7 +58,7 @@ const PerhitunganGaji = () => {
     if (!start || !end) return;
 
     api
-      .get(`/rekapan_gaji?start=${start}&end=${end}`, {
+      .get(`/perhitungan-gaji/?start=${start}&end=${end}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {

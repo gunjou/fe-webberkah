@@ -19,7 +19,8 @@ const LoginForm = ({ role = "karyawan", onLoginSuccess }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    const apiEndpoint = role === "admin" ? "/login/admin" : "/login/karyawan";
+    const apiEndpoint =
+      role === "admin" ? "/auth/login/admin" : "/auth/login/karyawan";
 
     try {
       const response = await api.post(apiEndpoint, {

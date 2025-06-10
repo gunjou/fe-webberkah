@@ -53,7 +53,11 @@ const Rekapan = () => {
     if (!start || !end) return;
 
     api
-      .get(`/rekapan/absensi?start=${start}&end=${end}`, {
+      .get("/rekapan/absensi", {
+        params: {
+          start: start,
+          end: end,
+        },
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -74,19 +78,45 @@ const Rekapan = () => {
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    const format = (date) =>
-      `${String(date.getDate()).padStart(2, "0")}-${String(
-        date.getMonth() + 1
-      ).padStart(2, "0")}-${date.getFullYear()}`;
+    const format = (date) => date.toISOString().split("T")[0]; // yyyy-mm-dd
 
     const start = format(firstDay);
     const end = format(lastDay);
 
-    setStartDate(start.split("-").reverse().join("-")); // untuk input type date
-    setEndDate(end.split("-").reverse().join("-"));
-
-    fetchData(start, end);
+    setStartDate(start);
+    setEndDate(end);
   }, []);
+
+  useEffect(() => {
+    if (!startDate || !endDate) return;
+    if (new Date(startDate) > new Date(endDate)) return;
+
+    const formatToDDMMYYYY = (str) => {
+      const [year, month, day] = str.split("-");
+      return `${day}-${month}-${year}`;
+    };
+
+    fetchData(formatToDDMMYYYY(startDate), formatToDDMMYYYY(endDate));
+  }, [startDate, endDate]);
+
+  const resetFilter = () => {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    const format = (date) => {
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${year}-${month}-${day}`; // yyyy-mm-dd untuk input type date
+    };
+
+    const start = format(firstDay);
+    const end = format(lastDay);
+
+    setStartDate(start);
+    setEndDate(end);
+  };
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -426,18 +456,14 @@ const Rekapan = () => {
                       className="border rounded-[20px] px-2 py-1 text-sm"
                     />
                   </div>
-                  <button
-                    onClick={() => {
-                      const formatDate = (str) => {
-                        const [year, month, day] = str.split("-");
-                        return `${day}-${month}-${year}`;
-                      };
-                      fetchData(formatDate(startDate), formatDate(endDate));
-                    }}
-                    className="bg-custom-merah hover:bg-red-700 text-white text-[12px] rounded-[20px] px-4 py-2"
+                  <span
+                    onClick={resetFilter}
+                    className="text-blue-600 text-sm cursor-pointer underline mt-[6px]"
+                    title="Kembalikan ke tanggal default"
                   >
-                    Tampilkan
-                  </button>
+                    Reset
+                  </span>
+
                   <div className="flex items-center ml-4 justify-end space-x-2 flex-wrap w-full">
                     <input
                       type="text"

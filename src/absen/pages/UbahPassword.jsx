@@ -3,6 +3,8 @@ import { FiArrowLeft } from "react-icons/fi";
 import { RiHomeLine } from "react-icons/ri";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import api from "../../shared/Api";
+import axios from "axios";
 
 const UbahPassword = () => {
   const navigate = useNavigate();
@@ -15,7 +17,7 @@ const UbahPassword = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -29,9 +31,26 @@ const UbahPassword = () => {
       return;
     }
 
-    console.log("Kata sandi berhasil diubah.!");
-    alert("Password berhasil diubah!");
-    navigate("/absensi"); // Redirect to the absensi page after successful password change
+    try {
+      const idPegawai = localStorage.getItem("id_pegawai"); // atau dari context/props
+
+      const token = localStorage.getItem("token");
+      api.put(
+        `/pegawai/${idPegawai}/password`,
+        { password: newPassword, konfir_password: confirmPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      alert("Password berhasil diubah!");
+      navigate("/absensi");
+    } catch (err) {
+      console.error(err);
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Terjadi kesalahan saat mengubah password.");
+      }
+    }
   };
 
   return (

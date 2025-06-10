@@ -107,13 +107,13 @@ const Pegawai = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     api
-      .get("/jenis", {
+      .get("/jenis-pegawai/", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => {
-        setJenisList(res.data.jenis_karyawan);
+        setJenisList(res.data);
         // console.log(res.data);
       })
       .catch((err) => {
@@ -124,14 +124,14 @@ const Pegawai = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     api
-      .get("/tipe", {
+      .get("/tipe-pegawai/", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => {
         // console.log(res.data.tipe_karyawan);
-        setTipeList(res.data.tipe_karyawan);
+        setTipeList(res.data);
       })
       .catch((err) => {
         console.error("Gagal mengambil data tipe pegawai:", err);
@@ -142,13 +142,13 @@ const Pegawai = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     api
-      .get("/karyawan", {
+      .get("/pegawai/", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => {
-        const sorted = res.data.karyawan
+        const sorted = res.data
 
           .filter((item) => item.nama) // optional: filter kalau nama tidak null
           .sort((a, b) => a.nama.localeCompare(b.nama));
@@ -188,7 +188,7 @@ const Pegawai = () => {
 
     const token = localStorage.getItem("token");
     api
-      .put(`karyawan/${selectedPegawai.id_karyawan}`, payload, {
+      .put(`/pegawai/${selectedPegawai.id_karyawan}`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -232,7 +232,7 @@ const Pegawai = () => {
 
     const token = localStorage.getItem("token");
     api
-      .put(`/karyawan/delete/${selectedPegawai.id_karyawan}`, null, {
+      .put(`/pegawai/delete/${selectedPegawai.id_karyawan}`, null, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -271,7 +271,7 @@ const Pegawai = () => {
 
     const token = localStorage.getItem("token");
     api
-      .post("/karyawan", payloadAdd, {
+      .post("/pegawai/", payloadAdd, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

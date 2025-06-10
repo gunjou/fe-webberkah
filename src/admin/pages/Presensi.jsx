@@ -67,9 +67,9 @@ const Presensi = () => {
 
   useEffect(() => {
     api
-      .get("/karyawan")
+      .get("/pegawai/")
       .then((res) => {
-        const sorted = res.data.karyawan
+        const sorted = res.data
           .filter((item) => item.nama)
           .sort((a, b) => a.nama.localeCompare(b.nama));
 

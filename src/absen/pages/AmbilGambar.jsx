@@ -80,7 +80,10 @@ const AmbilGambar = () => {
             formData.append("latitude", latitude);
             formData.append("longitude", longitude);
 
-            const endpoint = `/absensi/${id_karyawan}`;
+            const endpoint =
+              mode === "checkin"
+                ? `/absensi/chek-in/${id_karyawan}`
+                : `/absensi/check-out/${id_karyawan}`;
             const method = mode === "checkin" ? "post" : "put";
 
             const response = await api[method](endpoint, formData, {
