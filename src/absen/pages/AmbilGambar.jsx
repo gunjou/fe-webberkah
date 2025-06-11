@@ -82,7 +82,7 @@ const AmbilGambar = () => {
 
             const endpoint =
               mode === "checkin"
-                ? `/absensi/chek-in/${id_karyawan}`
+                ? `/absensi/check-in/${id_karyawan}`
                 : `/absensi/check-out/${id_karyawan}`;
             const method = mode === "checkin" ? "post" : "put";
 
@@ -129,7 +129,7 @@ const AmbilGambar = () => {
         const id_karyawan = localStorage.getItem("id_karyawan");
         const token = localStorage.getItem("token");
 
-        const response = await api.get(`/cek_presensi/${id_karyawan}`, {
+        const response = await api.get(`/absensi/check/${id_karyawan}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

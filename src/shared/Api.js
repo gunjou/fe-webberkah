@@ -35,15 +35,14 @@ api.interceptors.response.use(
 
       if (message === "Token expired, Login ulang") {
         alert("Sesi Anda telah berakhir. Silakan login ulang.");
-
-        localStorage.removeItem("token");
-        localStorage.removeItem("id_karyawan");
-        localStorage.removeItem("id_admin");
-        localStorage.removeItem("nama");
-        localStorage.removeItem("role");
-        localStorage.removeItem("jenis");
-        localStorage.removeItem("avatarColor");
-
+        localStorage.clear();
+        // localStorage.removeItem("token");
+        // localStorage.removeItem("id_karyawan");
+        // localStorage.removeItem("id_admin");
+        // localStorage.removeItem("nama");
+        // localStorage.removeItem("role");
+        // localStorage.removeItem("jenis");
+        // localStorage.removeItem("avatarColor");
         window.location.href = "/login";
       }
     }

@@ -111,7 +111,7 @@ const History = () => {
         const end = selectedDate.endOf("month").format("DD-MM-YYYY");
 
         const response = await api.get(
-          `/rekapan-person?start=${start}&end=${end}`,
+          `/rekapan/rekap?start=${start}&end=${end}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -119,9 +119,9 @@ const History = () => {
           }
         );
 
-        console.log("Rekapan Response:", response.data.data_karyawan);
+        console.log("Rekapan Response:", response);
 
-        setDataKaryawan(response.data.data_karyawan);
+        setDataKaryawan(response.data.rekap);
       } catch (error) {
         console.error("Gagal mengambil data rekapan karyawan:", error);
         setDataKaryawan(null); // biar nggak nunggu loading terus
@@ -140,7 +140,7 @@ const History = () => {
         const end = selectedDate.endOf("month").format("DD-MM-YYYY");
 
         const response = await api.get(
-          `/list-rekapan-person?start=${start}&end=${end}`,
+          `/rekapan/person?start=${start}&end=${end}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -148,7 +148,7 @@ const History = () => {
           }
         );
 
-        console.log("Rekapan Response:", response.data.data_absensi);
+        console.log("Rekapan Response:", response);
 
         setListDataKaryawan(response.data.data_absensi);
       } catch (error) {

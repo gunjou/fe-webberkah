@@ -86,7 +86,7 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
           ["izin", "sakit"].includes(item.status_absen?.toLowerCase())
         );
     } else if (type === "tanpa_keterangan") {
-      endpoint = `/absensi/tidak_hadir?tanggal=${formattedDate}`;
+      endpoint = `/absensi/tidak-hadir?tanggal=${formattedDate}`;
     }
 
     setLoading(true);

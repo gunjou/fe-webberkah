@@ -98,13 +98,14 @@ const Absensi = () => {
       }
 
       try {
-        const response = await api.get(`/cek_presensi/${id_karyawan}`, {
+        const response = await api.get(`/absensi/check/${id_karyawan}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         const presensi = response.data;
+        console.log(response);
         setDataPresensi(presensi);
 
         if (!presensi) {
@@ -164,7 +165,7 @@ const Absensi = () => {
 
   const handleLogout = async () => {
     try {
-      await api.post("/logout/karyawan");
+      await api.post("/auth/logout/karyawan");
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
@@ -177,7 +178,7 @@ const Absensi = () => {
     if (window.confirm("Yakin ingin menghapus jam keluar ini?")) {
       const token = localStorage.getItem("token");
       api
-        .put(`/absensi/delete_jam_masuk/${id_absensi}`, {
+        .delete(`/absensi/delete-check-out/${id_absensi}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then(() => {
