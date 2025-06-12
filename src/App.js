@@ -1,6 +1,7 @@
 import "./App.css";
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
 // Shared
 import LoginForm from "./shared/components/LoginForm";
@@ -26,41 +27,50 @@ import Tentang from "./absen/pages/Tentang";
 import UbahPassword from "./absen/pages/UbahPassword";
 import FormLembur from "./absen/pages/FormLembur";
 
-// Fungsi pengecekan role dari localStorage
-const getRole = () => localStorage.getItem("jenis");
-
 function App() {
-  const role = getRole();
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("jenis");
 
   useEffect(() => {
-    const checkTokenValidity = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/login";
-        return;
-      }
-
+    const checkVersion = async () => {
       try {
-        const response = await fetch(
-          `${process.env.REACT_APP_API_URL}/protected`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await fetch("/version.json");
+        const serverVersion = (await res.json()).version;
+        const localVersion = localStorage.getItem("app_version");
 
-        if (!response.ok) {
-          throw new Error("Token invalid or expired");
+        if (localVersion && localVersion !== serverVersion) {
+          localStorage.clear(); // opsional
+          window.location.reload(true); // reload paksa
         }
+
+        localStorage.setItem("app_version", serverVersion);
       } catch (error) {
-        localStorage.clear();
-        window.location.href = "/login";
+        console.error("Gagal cek versi:", error);
       }
     };
 
-    checkTokenValidity();
+    checkVersion();
+  }, []);
+
+  // Validasi token kadaluarsa saat load pertama
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const now = Date.now() / 1000;
+
+        if (decoded.exp < now) {
+          console.log("Token expired, force logout");
+          localStorage.clear();
+          window.location.replace("/login");
+        }
+      } catch (err) {
+        console.log("Invalid token, force logout");
+        localStorage.clear();
+        window.location.replace("/login");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

@@ -2,8 +2,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
-  // baseURL: "http://127.0.0.1:5000",
+  // baseURL: process.env.REACT_APP_API_URL,
+  baseURL: "http://127.0.0.1:5000",
   headers: {
     "Content-Type": "application/json",
   },
@@ -21,6 +21,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+let isLogoutTriggered = false;
 // Interceptor response: handle error 401
 api.interceptors.response.use(
   (response) => response,
@@ -29,21 +30,16 @@ api.interceptors.response.use(
       const message = error.response?.data?.status;
 
       if (message === "Invalid username or password") {
-        // Biarkan ditangani oleh komponen yang melakukan login (jangan handle di interceptor)
         return Promise.reject(error);
       }
 
       if (message === "Token expired, Login ulang") {
-        alert("Sesi Anda telah berakhir. Silakan login ulang.");
-        localStorage.clear();
-        // localStorage.removeItem("token");
-        // localStorage.removeItem("id_karyawan");
-        // localStorage.removeItem("id_admin");
-        // localStorage.removeItem("nama");
-        // localStorage.removeItem("role");
-        // localStorage.removeItem("jenis");
-        // localStorage.removeItem("avatarColor");
-        window.location.href = "/login";
+        if (!isLogoutTriggered) {
+          isLogoutTriggered = true; // Set flag agar tidak berulang
+          alert("Sesi Anda telah berakhir. Silakan login ulang.");
+          localStorage.clear();
+          window.location.replace("/login");
+        }
       }
     }
     return Promise.reject(error);

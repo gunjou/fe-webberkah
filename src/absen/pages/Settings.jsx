@@ -13,7 +13,7 @@ const Settings = () => {
       console.error("Logout error:", err);
     } finally {
       localStorage.clear();
-      window.location.href = "/login"; // kembali ke halaman login
+      window.location.replace("/login"); // kembali ke halaman login
     }
   };
 

@@ -85,6 +85,17 @@ const NavMenu = () => {
     fetchNotifCount(); // panggil juga fetchNotifCount saat komponen dimuat
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await api.post("/logout/admin");
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.clear();
+      window.location.replace("/login"); // kembali ke halaman login
+    }
+  };
+
   // Ambil inisial maksimal 2 huruf
   const initials = namaAdminRaw
     .split(" ")
@@ -318,8 +329,7 @@ const NavMenu = () => {
             <DropdownItem
               onClick={() => {
                 if (window.confirm("Apakah anda ingin keluar?")) {
-                  localStorage.clear();
-                  navigate("/login");
+                  handleLogout();
                 }
               }}
             >

@@ -170,7 +170,7 @@ const Absensi = () => {
       console.error("Logout error:", err);
     } finally {
       localStorage.clear();
-      window.location.href = "/login";
+      window.location.replace("/login");
     }
   };
 
