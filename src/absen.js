@@ -1,5 +1,8 @@
 import "./App.css";
+import { useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import checkAppVersion from "./shared/utils/check_version";
 import Absensi from "./absen/pages/Absensi";
 import AmbilGambar from "./absen/pages/AmbilGambar";
 import InDevelopMobile from "./absen/pages/InDevelopMobile";
@@ -15,6 +18,30 @@ import UbahPassword from "./absen/pages/UbahPassword";
 import FormLembur from "./absen/pages/FormLembur";
 
 function App() {
+  const token = localStorage.getItem("token");
+
+  // Validasi token kadaluarsa saat load pertama
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const now = Date.now() / 1000;
+
+        if (decoded.exp < now) {
+          console.log("Token expired, force logout");
+          localStorage.clear();
+          window.location.replace("/login");
+        }
+      } catch (err) {
+        console.log("Invalid token, force logout");
+        localStorage.clear();
+        window.location.replace("/login");
+      }
+    }
+    checkAppVersion();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="App">
       <BrowserRouter>

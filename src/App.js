@@ -6,6 +6,7 @@ import { jwtDecode } from "jwt-decode";
 // Shared
 import LoginForm from "./shared/components/LoginForm";
 import NotFound from "./shared/NotFound";
+import checkAppVersion from "./shared/utils/check_version";
 
 // Admin
 import Dashboard from "./admin/pages/Dashboard";
@@ -31,27 +32,6 @@ function App() {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("jenis");
 
-  useEffect(() => {
-    const checkVersion = async () => {
-      try {
-        const res = await fetch("/version.json");
-        const serverVersion = (await res.json()).version;
-        const localVersion = localStorage.getItem("app_version");
-
-        if (localVersion && localVersion !== serverVersion) {
-          localStorage.clear(); // opsional
-          window.location.reload(true); // reload paksa
-        }
-
-        localStorage.setItem("app_version", serverVersion);
-      } catch (error) {
-        console.error("Gagal cek versi:", error);
-      }
-    };
-
-    checkVersion();
-  }, []);
-
   // Validasi token kadaluarsa saat load pertama
   useEffect(() => {
     if (token) {
@@ -70,6 +50,7 @@ function App() {
         window.location.replace("/login");
       }
     }
+    checkAppVersion();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
