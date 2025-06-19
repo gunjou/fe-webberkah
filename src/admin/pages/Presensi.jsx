@@ -44,6 +44,8 @@ const Presensi = () => {
   const [izinActionLoading, setIzinActionLoading] = useState(null);
   const [rejectId, setRejectId] = useState(null);
   const [alasanReject, setAlasanReject] = useState("");
+  const [absensiIzinSakit, setAbsensiIzinSakit] = useState([]);
+  const [tidakHadirList, setTidakHadirList] = useState([]);
 
   const getFormattedDate = () => {
     const date = new Date();
@@ -121,13 +123,16 @@ const Presensi = () => {
     setIzinError("");
     try {
       const token = localStorage.getItem("token");
-      let url = `/izin/list`;
+      let url = `/perizinan/`;
+
       if (tgl) {
         url += `?tanggal=${dayjs(tgl).format("YYYY-MM-DD")}`;
       }
       const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      setIzinList(Array.isArray(res.data) ? res.data : []);
+
       let data = res.data.data;
       if (!data) setIzinList([]);
       else if (Array.isArray(data)) setIzinList(data);
@@ -144,13 +149,33 @@ const Presensi = () => {
     if (izinModal) fetchIzinList(izinFilterTanggal);
   }, [izinModal, izinFilterTanggal]);
 
+  const fetchAbsensiIzinSakit = async (tanggal) => {
+    const token = localStorage.getItem("token");
+    const tglFormatted = dayjs(tanggal).format("DD-MM-YYYY");
+
+    try {
+      const res = await api.get(`/absensi/izin-sakit?tanggal=${tglFormatted}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = res.data?.absensi || [];
+      setAbsensiIzinSakit(data);
+    } catch (err) {
+      console.error("Gagal ambil data izin/sakit:", err);
+      setAbsensiIzinSakit([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchAbsensiIzinSakit(selectedDate);
+  }, [selectedDate]);
+
   const handleApproveIzin = async (id_izin) => {
     if (!window.confirm("Setujui pengajuan izin ini?")) return;
     setIzinActionLoading(id_izin);
     try {
       const token = localStorage.getItem("token");
-      await api.post(
-        `/izin/${id_izin}/approve`,
+      await api.put(
+        `/perizinan/${id_izin}/setujui`,
         {},
         {
           headers: {
@@ -175,9 +200,9 @@ const Presensi = () => {
     setIzinActionLoading(id_izin);
     try {
       const token = localStorage.getItem("token");
-      await api.post(
-        `/izin/${id_izin}/reject`,
-        { alasan_penolakan: alasanReject },
+      await api.put(
+        `/perizinan/${id_izin}/ditolak`,
+        { alasan: alasanReject },
         {
           headers: {
             "Content-Type": undefined,
@@ -199,6 +224,28 @@ const Presensi = () => {
     setNotifModal(true);
     fetchNotifCount();
   };
+
+  const fetchTidakHadir = async (tanggal) => {
+    const token = localStorage.getItem("token");
+    const tglFormatted = dayjs(tanggal).format("DD-MM-YYYY");
+
+    try {
+      const res = await api.get(
+        `/absensi/tidak-hadir?tanggal=${tglFormatted}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = res.data?.absensi || [];
+      setTidakHadirList(data);
+    } catch (err) {
+      console.error("Gagal ambil data tidak hadir:", err);
+      setTidakHadirList([]);
+    }
+  };
+  useEffect(() => {
+    fetchTidakHadir(selectedDate);
+  }, [selectedDate]);
 
   return (
     <div className="Presensi">
@@ -273,15 +320,9 @@ const Presensi = () => {
                   </div>
                   <div className="mt-7 text-left ml-0">
                     <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                      {
-                        absen.filter(
-                          (item) =>
-                            item.nama_status === "Izin" ||
-                            item.nama_status === "Sakit"
-                        ).length
-                      }
-                      /{karyawan.length}
+                      {absensiIzinSakit.length}/{karyawan.length}
                     </p>
+
                     <p className="font-normal text-red-700 dark:text-gray-400">
                       Orang
                     </p>
@@ -306,8 +347,7 @@ const Presensi = () => {
                   </div>
                   <div className="mt-7 text-left ml-0">
                     <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                      {karyawan.length - absen.length}/
-                      {karyawan.filter((item) => item.id_karyawan).length}
+                      {tidakHadirList.length}/{karyawan.length}
                     </p>
                     <p className="font-normal text-red-700 dark:text-gray-400">
                       Orang
@@ -363,8 +403,17 @@ const Presensi = () => {
 
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    {absen.filter((item) => item.id_jenis === 5).length}/
-                    {karyawan.filter((item) => item.id_jenis === 5).length}
+                    {
+                      absen.filter(
+                        (item) => item.id_jenis === 5 || item.id_jenis === 6
+                      ).length
+                    }
+                    /
+                    {
+                      karyawan.filter(
+                        (item) => item.id_jenis === 5 || item.id_jenis === 6
+                      ).length
+                    }
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -383,13 +432,13 @@ const Presensi = () => {
               >
                 <div className="absolute top-4 left-5">
                   <h5 className="text-lg font-normal tracking-tight text-gray-900 dark:text-white">
-                    Cleaning Services
+                    Cleaning
                   </h5>
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    {absen.filter((item) => item.id_jenis === 6).length}/
-                    {karyawan.filter((item) => item.id_jenis === 6).length}
+                    {absen.filter((item) => item.id_jenis === 7).length}/
+                    {karyawan.filter((item) => item.id_jenis === 7).length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -441,7 +490,7 @@ const Presensi = () => {
                           Nama
                         </span>
                         <span className="mr-2">:</span>
-                        <span>{item.nama || "-"}</span>
+                        <span>{item.nama_karyawan || "-"}</span>
                       </div>
                       <div className="mb-1 flex">
                         <span className="font-semibold w-36 inline-block">
@@ -490,8 +539,14 @@ const Presensi = () => {
         </div>
       )}
       {izinModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white text-black rounded-lg shadow-lg w-full max-w-4xl mx-4 relative flex flex-col max-h-[90vh]">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+          onClick={() => setIzinModal(false)}
+        >
+          <div
+            className="bg-white text-black rounded-lg shadow-lg w-full max-w-4xl mx-4 relative flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex-shrink-0 flex items-center justify-between border-b px-6 py-4 bg-white sticky top-0 z-10">
               <h1 className="text-xl font-bold text-left">
                 Data Pengajuan Izin/Sakit
@@ -504,7 +559,7 @@ const Presensi = () => {
                 <IoMdClose size={25} />
               </button>
             </div>
-            <div className="px-6 pt-4 pb-2 flex items-center gap-2">
+            {/* <div className="px-6 pt-4 pb-2 flex items-center gap-2">
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   label="Filter Tanggal"
@@ -530,7 +585,7 @@ const Presensi = () => {
                   Reset
                 </button>
               )}
-            </div>
+            </div> */}
             <div className="px-6 py-2 overflow-y-auto flex-1">
               {izinLoading ? (
                 <div className="flex justify-center py-8">
@@ -551,8 +606,7 @@ const Presensi = () => {
                         <th className="border px-2 py-1">Jenis</th>
                         <th className="border px-2 py-1">Tanggal Mulai</th>
                         <th className="border px-2 py-1">Tanggal Selesai</th>
-                        <th className="border px-2 py-1">Durasi Izin</th>{" "}
-                        {/* Tambahan kolom durasi */}
+                        {/* <th className="border px-2 py-1">Durasi Izin</th>{" "} */}
                         <th className="border px-2 py-1">Keterangan</th>
                         <th className="border px-2 py-1">Lampiran</th>
                         <th className="border px-2 py-1">Status</th>
@@ -563,8 +617,8 @@ const Presensi = () => {
                       {izinList.map((item) => (
                         <tr key={item.id_izin}>
                           <td className="border px-2 py-1">
-                            {item.nama
-                              ? item.nama.replace(/\b\w/g, (c) =>
+                            {item.nama_karyawan
+                              ? item.nama_karyawan.replace(/\b\w/g, (c) =>
                                   c.toUpperCase()
                                 )
                               : "-"}
@@ -582,11 +636,11 @@ const Presensi = () => {
                               ? dayjs(item.tgl_selesai).format("DD/MM/YYYY")
                               : "-"}
                           </td>
-                          <td className="border px-2 py-1">
+                          {/* <td className="border px-2 py-1">
                             {item.durasi_izin
                               ? `${item.durasi_izin} hari`
                               : "-"}
-                          </td>
+                          </td> */}
                           <td className="border px-2 py-1">
                             {item.keterangan || "-"}
                           </td>
@@ -705,14 +759,7 @@ const Presensi = () => {
                 </div>
               )}
             </div>
-            <div className="flex-shrink-0 flex justify-start border-t px-6 py-3 bg-white sticky bottom-0 z-10">
-              <button
-                onClick={() => setIzinModal(false)}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
-              >
-                Tutup
-              </button>
-            </div>
+            <div className="flex-shrink-0 flex justify-start border-t px-6 py-3 bg-white sticky bottom-0 z-10"></div>
           </div>
         </div>
       )}
@@ -721,6 +768,7 @@ const Presensi = () => {
         close={handleCloseHadir}
         type={modalType}
         selectedDate={selectedDate}
+        absen={absen}
       />
     </div>
   );

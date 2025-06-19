@@ -116,7 +116,6 @@ const FormIzinSakit = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Lampiran hanya wajib jika type === "4" (Sakit)
     if (
       !date ||
       !endDate ||
@@ -135,16 +134,16 @@ const FormIzinSakit = () => {
 
     try {
       const formData = new FormData();
-      formData.append("jenis_izin", Number(type));
-      formData.append("tgl_mulai", date.format("YYYY-MM-DD"));
-      formData.append("tgl_selesai", endDate.format("YYYY-MM-DD"));
+      formData.append("id_jenis", Number(type));
+      formData.append("tgl_mulai", date.format("DD-MM-YYYY"));
+      formData.append("tgl_selesai", endDate.format("DD-MM-YYYY"));
       formData.append("keterangan", reason);
       if (attachment) {
-        formData.append("lampiran", attachment);
+        formData.append("file", attachment);
       }
 
       const token = localStorage.getItem("token");
-      await api.post(`/pengajuan-izin`, formData, {
+      await api.post(`/perizinan/`, formData, {
         headers: {
           "Content-Type": undefined,
           Authorization: `Bearer ${token}`,

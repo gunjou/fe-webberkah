@@ -61,6 +61,7 @@ const Absensi = () => {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const [izinTanggal, setIzinTanggal] = useState(dayjs());
+  const [izinDisetujui, setIzinDisetujui] = useState(false);
 
   const getFormattedDate = () => {
     const date = new Date();
@@ -121,6 +122,41 @@ const Absensi = () => {
     };
 
     fetchPresensi();
+  }, []);
+
+  useEffect(() => {
+    const fetchIzinStatus = async () => {
+      const id_karyawan = localStorage.getItem("id_karyawan");
+      const token = localStorage.getItem("token");
+
+      try {
+        const res = await api.get(`/absensi/izin-sakit`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { id_karyawan },
+        });
+
+        const izinData = res.data.absensi || [];
+
+        // Format tanggal hari ini menjadi DD-MM-YYYY
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, "0");
+        const mm = String(today.getMonth() + 1).padStart(2, "0"); // Januari = 0
+        const yyyy = today.getFullYear();
+        const formattedToday = `${dd}-${mm}-${yyyy}`;
+
+        const adaIzinHariIni = izinData.some(
+          (item) =>
+            item.tanggal === formattedToday &&
+            item.status_absen?.toLowerCase() === "izin"
+        );
+
+        setIzinDisetujui(adaIzinHariIni);
+      } catch (err) {
+        console.error("Gagal mengambil status izin:", err);
+      }
+    };
+
+    fetchIzinStatus();
   }, []);
 
   useEffect(() => {
@@ -296,18 +332,22 @@ const Absensi = () => {
               <div className="flex absolute right-5">{getFormattedDate()}</div>
             </div>
             <div className="text-4xl font-bold pb-4">08:00 - 17:00</div>
-            {isAbsenMasuk !== null ? (
-              <>
-                <div className="flex justify-center">
-                  <button
-                    type="button"
-                    className="flex w-[150px] text-white items-center justify-center bg-custom-merah hover:bg-custom-gelap text-black font-medium rounded-[20px] px-2 py-2 shadow-md"
-                    onClick={handleAbsen}
-                  >
-                    {isAbsenMasuk ? "Absen Masuk" : "Absen Pulang"}
-                  </button>
-                </div>
-              </>
+            {izinDisetujui ? (
+              <div className="flex justify-center mt-4">
+                <span className="text-black font-semibold">
+                  Izin telah disetujui
+                </span>
+              </div>
+            ) : isAbsenMasuk !== null ? (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  className="flex w-[150px] text-white items-center justify-center bg-custom-merah hover:bg-custom-gelap text-black font-medium rounded-[20px] px-2 py-2 shadow-md"
+                  onClick={handleAbsen}
+                >
+                  {isAbsenMasuk ? "Absen Masuk" : "Absen Pulang"}
+                </button>
+              </div>
             ) : (
               <div className="flex justify-center mt-4 pb-1">
                 <p className="font-semibold">

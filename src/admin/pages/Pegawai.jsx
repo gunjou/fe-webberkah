@@ -16,6 +16,14 @@ import api from "../../shared/Api";
 // import SideMenu from './SideMenu'
 // import NavMenu from './NavMenu'
 
+const toTitleCase = (str) => {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 const kolom = [
   { id: "no", label: "No", minWidth: 10 },
   { id: "nama", label: "Nama Pegawai", minWidth: 100 },
@@ -359,16 +367,16 @@ const Pegawai = () => {
         <TableCell>{indexOfFirstRow + index + 1}</TableCell>
 
         <TableCell style={{ padding: "8px" }} align="left">
-          {item.nama}
+          {toTitleCase(item.nama)}
         </TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
-          {item.jenis}
+          {toTitleCase(item.jenis)}
         </TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
-          {item.tipe}
+          {toTitleCase(item.tipe)}
         </TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
-          {item.username}
+          {toTitleCase(item.username)}
         </TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
           {item.kode_pemulihan}

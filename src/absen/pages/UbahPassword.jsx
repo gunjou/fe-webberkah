@@ -32,7 +32,7 @@ const UbahPassword = () => {
     }
 
     try {
-      const idPegawai = localStorage.getItem("id_pegawai"); // atau dari context/props
+      const idPegawai = localStorage.getItem("id_karyawan"); // atau dari context/props
 
       const token = localStorage.getItem("token");
       api.put(

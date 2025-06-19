@@ -54,6 +54,35 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
   const [loading, setLoading] = useState(true);
   const [editData, setEditData] = useState(null);
 
+  const [daftarKaryawan, setDaftarKaryawan] = useState([]);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    api
+      .get("/pegawai/", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        const karyawanList = res.data.map((k) => ({
+          id: k.id_karyawan,
+          nama: toTitleCase(k.nama),
+        }));
+        setDaftarKaryawan(karyawanList);
+      })
+      .catch((err) => {
+        console.error("Gagal fetch pegawai:", err);
+      });
+  }, []);
+
+  const [showTambahManual, setShowTambahManual] = useState(false);
+  const [formManual, setFormManual] = useState({
+    id_karyawan: "",
+    jam_masuk: "",
+    jam_keluar: "",
+    lokasi_masuk: "",
+    lokasi_keluar: "",
+  });
+
   const formatDateParam = (dateObj) => {
     return dayjs(dateObj).format("DD-MM-YYYY");
   };
@@ -80,11 +109,35 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
       else if (type === "cleaning_services")
         filterData = (data) => data.filter((item) => item.id_jenis === 6);
     } else if (type === "izin_sakit") {
-      endpoint = `/absensi/hadir?tanggal=${formattedDate}`;
-      filterData = (data) =>
-        data.filter((item) =>
-          ["izin", "sakit"].includes(item.status_absen?.toLowerCase())
-        );
+      const token = localStorage.getItem("token");
+      const formattedDate = formatDateParam(selectedDate);
+
+      api
+        .get(`/absensi/izin-sakit?tanggal=${formattedDate}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          const hasil = res.data?.absensi || [];
+          const sorted = hasil
+            .filter((item) => item.nama)
+            .sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+          setData(sorted);
+          setFilteredData(sorted);
+        })
+        .catch((err) => {
+          console.error("Gagal ambil data izin/sakit:", err);
+          alert(
+            "Gagal ambil data izin/sakit: " +
+              (err.response?.data?.message || "Server error.")
+          );
+          setData([]);
+          setFilteredData([]);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+
+      return; // penting: keluar dari useEffect di sini
     } else if (type === "tanpa_keterangan") {
       endpoint = `/absensi/tidak-hadir?tanggal=${formattedDate}`;
     }
@@ -128,18 +181,26 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
   const handleDelete = (id) => {
     if (window.confirm("Yakin ingin menghapus data ini?")) {
       const token = localStorage.getItem("token");
+
+      console.log("Menghapus ID:", id); // debug log
+
       api
         .delete(`/absensi/delete/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then(() => {
-          const updated = data.filter((d) => d.id !== id);
+          const updated = data.filter((d) => d.id_absensi !== id);
           setData(updated);
           setFilteredData(updated);
           alert("Data berhasil dihapus!");
-          window.location.reload();
         })
-        .catch((err) => console.error("Gagal menghapus:", err));
+        .catch((err) => {
+          console.error("Gagal menghapus:", err);
+          alert(
+            err.response?.data?.message ||
+              "Gagal menghapus: terjadi error di server (500)"
+          );
+        });
     }
   };
 
@@ -175,7 +236,8 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
             const jenisMap = {
               4: "Staff",
               5: "Pegawai Lapangan",
-              6: "Cleaning Services",
+              6: "Pegawi Lapangan",
+              7: "Cleaning",
             };
             newRow["Jenis Pegawai"] = jenisMap[row.id_jenis] || "Lainnya"; // Add this line
           } else {
@@ -253,6 +315,56 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
   };
 
   const getColumns = (type) => {
+    if (type === "izin_sakit") {
+      if (type === "izin_sakit") {
+        return [
+          {
+            field: "no",
+            headerName: "No",
+            width: 50,
+            renderCell: (params) => {
+              const index = params.api.getSortedRowIds().indexOf(params.id);
+              return index + 1;
+            },
+          },
+          {
+            field: "nama",
+            headerName: "Nama",
+            width: 160,
+            renderCell: (params) => {
+              const toTitleCase = (str) =>
+                str.replace(
+                  /\w\S*/g,
+                  (txt) =>
+                    txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
+                );
+              return toTitleCase(params.value || "-");
+            },
+          },
+          {
+            field: "jenis",
+            headerName: "Jenis Pegawai",
+            width: 120,
+            renderCell: (params) => {
+              const toTitleCase = (str) =>
+                str.replace(
+                  /\w\S*/g,
+                  (txt) =>
+                    txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
+                );
+              return toTitleCase(params.value || "-");
+            },
+          },
+          {
+            field: "status_absen",
+            headerName: "Status",
+            width: 120,
+          },
+        ];
+      }
+    }
+
+    // fallback ke struktur aslinya untuk semua tipe selain izin_sakit
     const baseColumns = [
       {
         field: "no",
@@ -292,31 +404,46 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
         align: "center",
         renderCell: (params) => (
           <div className="flex items-center justify-center space-x-2 w-full">
-            <button
-              onClick={() => handleEdit(params.row)}
-              className="flex items-center text-blue-500 hover:text-blue-700"
-              title="Edit"
-            >
-              <BiSolidEdit className="mr-1" />
-              Edit
-            </button>
-            {type !== "tanpa_keterangan" && (
+            {type === "tanpa_keterangan" ? (
               <button
-                onClick={() => handleDelete(params.row.id_absensi)}
-                className="flex items-center text-red-500 hover:text-red-700"
-                title="Delete"
+                onClick={() =>
+                  handleTambahManualDariRow(
+                    params.row.id_karyawan || params.row.id
+                  )
+                }
+                className="flex items-center text-green-600 hover:text-green-800"
+                title="Tambah Kehadiran"
               >
-                <IoTrashBin className="mr-1" />
-                Delete
+                <BiSolidEdit className="mr-1" />
+                Hadir
               </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleEdit(params.row)}
+                  className="flex items-center text-blue-500 hover:text-blue-700"
+                  title="Edit"
+                >
+                  <BiSolidEdit className="mr-1" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(params.row.id_absensi)}
+                  className="flex items-center text-red-500 hover:text-red-700"
+                  title="Delete"
+                >
+                  <IoTrashBin className="mr-1" />
+                  Delete
+                </button>
+              </>
             )}
           </div>
         ),
       },
     ];
 
-    // Tambahkan kolom lain jika bukan 'tanpa_keterangan'
-    if (type !== "tanpa_keterangan" && type !== "izin_sakit") {
+    // Tambahan kolom jika bukan 'tanpa_keterangan' atau 'izin_sakit'
+    if (type !== "tanpa_keterangan") {
       return [
         ...baseColumns.slice(0, 2),
         {
@@ -378,6 +505,8 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
         ...baseColumns.slice(2),
       ];
     }
+
+    // Untuk 'tanpa_keterangan' tambahkan jenis pegawai
     return [
       ...baseColumns.slice(0, 2),
       {
@@ -388,9 +517,10 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
           const jenisMap = {
             4: "Staff",
             5: "Pegawai Lapangan",
-            6: "Cleaning Services",
+            6: "Pegawai Lapangan (Hybrid)",
+            7: "Cleaning",
           };
-          return jenisMap[params.row.id_jenis] || "Lainnya";
+          return jenisMap[params.row.id_jenis] || "Direktur";
         },
       },
       ...baseColumns.slice(2),
@@ -408,6 +538,19 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
       default:
         return "List Presensi";
     }
+  };
+
+  const daftarLokasi = ["Kantor Perampuan", "Gudang GM", "PLTG Jeranjang"];
+
+  const handleTambahManualDariRow = (id_karyawan) => {
+    setFormManual({
+      id_karyawan,
+      jam_masuk: "",
+      jam_keluar: "",
+      lokasi_masuk: "",
+      lokasi_keluar: "",
+    });
+    setShowTambahManual(true);
   };
 
   return (
@@ -461,6 +604,15 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
               </span>
               Unduh PDF
             </button>
+            {type === "hadir" && (
+              <button
+                type="button"
+                className="flex items-center text-[12px] bg-blue-600 text-white hover:bg-blue-800 rounded-[20px] px-4 py-2"
+                onClick={() => setShowTambahManual(true)}
+              >
+                Tambah Kehadiran
+              </button>
+            )}
           </div>
         </Box>
       </Modal>
@@ -491,28 +643,77 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
                 </div>
               ) : (
                 <>
-                  <div>
-                    <label className="text-sm">Jam Masuk</label>
-                    <input
-                      type="text"
-                      className="w-full border p-2 rounded"
-                      value={editData.jam_masuk}
-                      onChange={(e) =>
-                        setEditData({ ...editData, jam_masuk: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm">Jam Keluar</label>
-                    <input
-                      type="text"
-                      className="w-full border p-2 rounded"
-                      value={editData.jam_keluar || ""}
-                      onChange={(e) =>
-                        setEditData({ ...editData, jam_keluar: e.target.value })
-                      }
-                    />
-                  </div>
+                  <>
+                    <div>
+                      <label className="text-sm">Jam Masuk</label>
+                      <input
+                        type="text"
+                        className="w-full border p-2 rounded"
+                        value={editData.jam_masuk}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            jam_masuk: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm">Jam Keluar</label>
+                      <input
+                        type="text"
+                        className="w-full border p-2 rounded"
+                        value={editData.jam_keluar || ""}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            jam_keluar: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm">Lokasi Check-In</label>
+                      <select
+                        className="w-full border p-2 rounded"
+                        value={editData.lokasi_masuk || ""}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            lokasi_masuk: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">Pilih Lokasi</option>
+                        {daftarLokasi.map((lok, idx) => (
+                          <option key={idx} value={lok}>
+                            {lok}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm">Lokasi Check-Out</label>
+                      <select
+                        className="w-full border p-2 rounded"
+                        value={editData.lokasi_keluar || ""}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            lokasi_keluar: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">Pilih Lokasi</option>
+                        {daftarLokasi.map((lok, idx) => (
+                          <option key={idx} value={lok}>
+                            {lok}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
                 </>
               )}
             </div>
@@ -520,7 +721,7 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
             <div className="mt-4 flex justify-end space-x-2">
               <button
                 onClick={() => setEditData(null)}
-                className="px-4 py-2 rounded bg-gray-400 text-white"
+                className="px-4 py-2 rounded-[15px] bg-gray-400 text-white"
               >
                 Batal
               </button>
@@ -548,7 +749,7 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
                       setFilteredData(updated);
                       setEditData(null);
                       alert("Data berhasil diperbarui!");
-                      window.location.reload();
+                      //window.location.reload();
                     })
                     .catch((err) => {
                       console.error(
@@ -562,7 +763,163 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
                       );
                     });
                 }}
-                className="px-4 py-2 rounded bg-blue-500 text-white"
+                className="px-4 py-2 rounded-[15px] bg-blue-500 text-white"
+              >
+                Simpan
+              </button>
+            </div>
+          </Box>
+        </Modal>
+      )}
+      {showTambahManual && (
+        <Modal open={true} onClose={() => setShowTambahManual(false)}>
+          <Box sx={{ ...style, width: 400 }}>
+            <Typography variant="h6" mb={2}>
+              Tambah Kehadiran
+            </Typography>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm">Pegawai</label>
+                <select
+                  className="w-full border p-2 rounded"
+                  value={formManual.id_karyawan}
+                  onChange={(e) =>
+                    setFormManual({
+                      ...formManual,
+                      id_karyawan: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Pilih Pegawai</option>
+                  {daftarKaryawan.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm">Jam Masuk</label>
+                <input
+                  type="text"
+                  placeholder="07:30"
+                  className="w-full border p-2 rounded"
+                  value={formManual.jam_masuk}
+                  onChange={(e) =>
+                    setFormManual({ ...formManual, jam_masuk: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-sm">Jam Keluar</label>
+                <input
+                  type="text"
+                  placeholder="16:30"
+                  className="w-full border p-2 rounded"
+                  value={formManual.jam_keluar}
+                  onChange={(e) =>
+                    setFormManual({ ...formManual, jam_keluar: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-sm">Lokasi Check-In</label>
+                <select
+                  className="w-full border p-2 rounded"
+                  value={formManual.lokasi_masuk}
+                  onChange={(e) =>
+                    setFormManual({
+                      ...formManual,
+                      lokasi_masuk: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Pilih Lokasi</option>
+                  {daftarLokasi.map((lok, idx) => (
+                    <option key={idx} value={lok}>
+                      {lok}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm">Lokasi Check-Out</label>
+                <select
+                  className="w-full border p-2 rounded"
+                  value={formManual.lokasi_keluar}
+                  onChange={(e) =>
+                    setFormManual({
+                      ...formManual,
+                      lokasi_keluar: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Pilih Lokasi</option>
+                  {daftarLokasi.map((lok, idx) => (
+                    <option key={idx} value={lok}>
+                      {lok}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShowTambahManual(false)}
+                className="px-4 py-2 rounded-[15px] bg-gray-400 text-white"
+              >
+                Batal
+              </button>
+              <button
+                onClick={async () => {
+                  const {
+                    id_karyawan,
+                    jam_masuk,
+                    jam_keluar,
+                    lokasi_masuk,
+                    lokasi_keluar,
+                  } = formManual;
+
+                  if (
+                    !id_karyawan ||
+                    !jam_masuk ||
+                    !jam_keluar ||
+                    !lokasi_masuk ||
+                    !lokasi_keluar
+                  ) {
+                    alert("Semua field wajib diisi.");
+                    return;
+                  }
+
+                  const token = localStorage.getItem("token");
+                  try {
+                    await api.post(
+                      `/absensi/add/${id_karyawan}`,
+                      {
+                        tanggal: dayjs(selectedDate).format("YYYY-MM-DD"),
+                        jam_masuk,
+                        jam_keluar,
+                        lokasi_masuk,
+                        lokasi_keluar,
+                      },
+                      {
+                        headers: { Authorization: `Bearer ${token}` },
+                      }
+                    );
+                    alert("Absen berhasil ditambahkan!");
+                    setShowTambahManual(false);
+                    //window.location.reload();
+                  } catch (err) {
+                    console.error("Gagal tambah absen:", err);
+                    alert("Gagal menambahkan absen.");
+                  }
+                }}
+                className="px-4 py-2 rounded-[15px] bg-blue-500 text-white"
               >
                 Simpan
               </button>
