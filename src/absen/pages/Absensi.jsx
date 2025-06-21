@@ -13,6 +13,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { IoMdClose } from "react-icons/io";
+import { MdHistory } from "react-icons/md";
 
 const toTitleCase = (str) => {
   return str
@@ -53,15 +54,17 @@ const Absensi = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAbsenMasuk, setIsAbsenMasuk] = useState(true);
   const [dataPresensi, setDataPresensi] = useState(null);
-  const [notifCount, setNotifCount] = useState(0);
-  const [notifPesan, setNotifPesan] = useState([]);
-  const [showNotifModal, setShowNotifModal] = useState("");
-  const [notifPesanModal, setNotifPesanModal] = useState("");
+  // const [notifCount, setNotifCount] = useState(0);
+  // const [notifPesan, setNotifPesan] = useState([]);
+  // const [showNotifModal, setShowNotifModal] = useState("");
+  // const [notifPesanModal, setNotifPesanModal] = useState("");
   const jamTerlambat = formatMenitToJamMenit(dataPresensi?.jam_terlambat);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const [izinTanggal, setIzinTanggal] = useState(dayjs());
   const [izinDisetujui, setIzinDisetujui] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [izinStatus, setIzinStatus] = useState(null);
 
   const getFormattedDate = () => {
     const date = new Date();
@@ -73,6 +76,26 @@ const Absensi = () => {
       timeZone: "Asia/Makassar",
     };
     return new Intl.DateTimeFormat("id-ID", options).format(date);
+  };
+
+  const fetchStatusIzin = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get(`/perizinan/by-karyawan`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = res.data?.data || [];
+
+      // Ambil data terakhir atau hari ini
+      const today = new Date().toISOString().slice(0, 10);
+      const todayData = data.find((item) => item.tgl_mulai?.includes(today));
+      setIzinStatus(todayData || data[data.length - 1]); // fallback ke data terakhir
+      setShowStatusModal(true);
+    } catch (err) {
+      console.error("Gagal mengambil status izin:", err);
+      setIzinStatus(null);
+      setShowStatusModal(true);
+    }
   };
 
   useEffect(() => {
@@ -159,28 +182,28 @@ const Absensi = () => {
     fetchIzinStatus();
   }, []);
 
-  useEffect(() => {
-    const fetchNotif = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await api.get(`/notifikasi?role=karyawan`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setNotifCount(res.data.count || 0);
-        setNotifPesan(res.data.data || []);
+  // useEffect(() => {
+  //   const fetchNotif = async () => {
+  //     try {
+  //       const token = localStorage.getItem("token");
+  //       const res = await api.get(`/notifikasi?role=karyawan`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       setNotifCount(res.data.count || 0);
+  //       setNotifPesan(res.data.data || []);
 
-        const unread = res.data.data?.find((item) => !item.dibaca);
-        if (unread) {
-          setNotifPesanModal(unread.pesan);
-          setShowNotifModal(true);
-        }
-      } catch (err) {
-        setNotifCount(0);
-        setNotifPesan([]);
-      }
-    };
-    fetchNotif();
-  }, []);
+  //       const unread = res.data.data?.find((item) => !item.dibaca);
+  //       if (unread) {
+  //         setNotifPesanModal(unread.pesan);
+  //         setShowNotifModal(true);
+  //       }
+  //     } catch (err) {
+  //       setNotifCount(0);
+  //       setNotifPesan([]);
+  //     }
+  //   };
+  //   fetchNotif();
+  // }, []);
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
@@ -225,30 +248,30 @@ const Absensi = () => {
     }
   };
 
-  const markNotifAsRead = async (id_notifikasi) => {
-    try {
-      const token = localStorage.getItem("token");
-      await api.put(
-        `/notifikasi/${id_notifikasi}/read`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setNotifCount(0); // Hilangkan badge
-      // Update notifPesan agar semua notif dianggap sudah dibaca
-      setNotifPesan((prev) =>
-        prev.map((item) =>
-          item.id_notifikasi === id_notifikasi
-            ? { ...item, dibaca: true }
-            : item
-        )
-      );
-    } catch (err) {
-      // Optional: tampilkan error jika gagal
-      // alert("Gagal menandai notifikasi sebagai sudah dibaca");
-    }
-  };
+  // const markNotifAsRead = async (id_notifikasi) => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     await api.put(
+  //       `/notifikasi/${id_notifikasi}/read`,
+  //       {},
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+  //     setNotifCount(0); // Hilangkan badge
+  //     // Update notifPesan agar semua notif dianggap sudah dibaca
+  //     setNotifPesan((prev) =>
+  //       prev.map((item) =>
+  //         item.id_notifikasi === id_notifikasi
+  //           ? { ...item, dibaca: true }
+  //           : item
+  //       )
+  //     );
+  //   } catch (err) {
+  //     // Optional: tampilkan error jika gagal
+  //     // alert("Gagal menandai notifikasi sebagai sudah dibaca");
+  //   }
+  // };
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-custom-merah to-custom-gelap">
@@ -260,7 +283,17 @@ const Absensi = () => {
                 className="absolute right-5 mt-0 flex items-center gap-2"
                 ref={dropdownRef}
               >
-                {/* Lonceng Notifikasi */}
+                <MdHistory
+                  size={28}
+                  className="text-black cursor-pointer hover:text-yellow-400 transition"
+                  title="Lihat Status Izin"
+                  onClick={() => {
+                    setShowStatusModal(true);
+                    //fetchStatusIzin(tanggalFilter); // ambil status izin default hari ini
+                  }}
+                />
+
+                {/* Lonceng Notifikasi
                 <Badge
                   badgeContent={notifCount}
                   color="error"
@@ -280,7 +313,7 @@ const Absensi = () => {
                       }
                     }}
                   />
-                </Badge>
+                </Badge> */}
                 <Avatar
                   onClick={toggleDropdown}
                   sx={{
@@ -396,7 +429,78 @@ const Absensi = () => {
           </button>
         </div>
 
-        {showNotifModal && (
+        {showStatusModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white text-black shadow-lg w-full max-w-md mx-4 rounded-lg flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b px-6 py-4 sticky top-0 bg-white z-10 rounded-t-lg">
+                <h1 className="text-lg font-bold">Status Izin</h1>
+                <button
+                  onClick={() => setShowStatusModal(false)}
+                  className="text-gray-500 hover:text-black text-xl"
+                >
+                  <IoMdClose size={25} />
+                </button>
+              </div>
+
+              {/* Body dengan Tabel */}
+              <div className="px-6 py-6 text-sm text-left">
+                {izinStatus ? (
+                  <table className="w-full border-separate border-spacing-y-2">
+                    <tbody>
+                      <tr>
+                        <td className="font-semibold w-32 align-top">Mulai</td>
+                        <td>: {izinStatus.tgl_mulai}</td>
+                      </tr>
+                      <tr>
+                        <td className="font-semibold align-top">Selesai</td>
+                        <td>: {izinStatus.tgl_selesai}</td>
+                      </tr>
+                      <tr>
+                        <td className="font-semibold align-top">Alasan</td>
+                        <td>: {toTitleCase(izinStatus.keterangan || "-")}</td>
+                      </tr>
+                      <tr>
+                        <td className="font-semibold align-top">Status</td>
+                        <td>
+                          :{" "}
+                          <span
+                            className={`font-bold ${
+                              izinStatus.status_izin === "rejected"
+                                ? "text-red-600"
+                                : "text-green-600"
+                            }`}
+                          >
+                            {toTitleCase(izinStatus.status_izin)}
+                          </span>
+                        </td>
+                      </tr>
+                      {izinStatus.status_izin === "rejected" && (
+                        <tr>
+                          <td className="font-semibold align-top">
+                            Alasan Penolakan
+                          </td>
+                          <td>
+                            :{" "}
+                            {toTitleCase(
+                              izinStatus.alasan_penolakan || "Tidak ada alasan"
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-gray-500 italic">
+                    Tidak ada data izin tersedia.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* {showNotifModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
             <div className="bg-white text-black rounded-lg shadow-lg w-full max-w-md mx-4 relative flex flex-col">
               <div className="flex-shrink-0 flex items-center justify-between border-b px-6 py-4 bg-white sticky top-0 z-10">
@@ -422,7 +526,7 @@ const Absensi = () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
         <div>
           <span className="Title flex pl-6 pt-2 text-xl text-white font-semibold">
             Presensi

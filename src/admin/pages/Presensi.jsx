@@ -43,7 +43,7 @@ const Presensi = () => {
   const [izinFilterTanggal, setIzinFilterTanggal] = useState(null);
   const [izinActionLoading, setIzinActionLoading] = useState(null);
   const [rejectId, setRejectId] = useState(null);
-  const [alasanReject, setAlasanReject] = useState("");
+  const [alasanReject, setAlasanReject] = useState({});
   const [absensiIzinSakit, setAbsensiIzinSakit] = useState([]);
   const [tidakHadirList, setTidakHadirList] = useState([]);
 
@@ -193,28 +193,48 @@ const Presensi = () => {
   };
 
   const handleRejectIzin = async (id_izin) => {
-    if (!alasanReject.trim()) {
+    if (!alasanReject[id_izin] || !alasanReject[id_izin].trim()) {
       alert("Alasan penolakan wajib diisi!");
       return;
     }
+
     setIzinActionLoading(id_izin);
     try {
       const token = localStorage.getItem("token");
       await api.put(
-        `/perizinan/${id_izin}/ditolak`,
-        { alasan: alasanReject },
+        `/perizinan/${id_izin}/tolak`,
+        { alasan: alasanReject[id_izin] || "" },
         {
           headers: {
-            "Content-Type": undefined,
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
       setRejectId(null);
       setAlasanReject("");
       fetchIzinList(izinFilterTanggal);
     } catch (err) {
       alert("Gagal reject izin!");
+    } finally {
+      setIzinActionLoading(null);
+    }
+  };
+
+  const handleDeleteIzin = async (id_izin) => {
+    if (!window.confirm("Yakin ingin menghapus pengajuan izin ini?")) return;
+
+    setIzinActionLoading(id_izin);
+    try {
+      const token = localStorage.getItem("token");
+      await api.delete(`/perizinan/${id_izin}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      fetchIzinList(izinFilterTanggal); // refresh daftar izin
+    } catch (err) {
+      alert("Gagal menghapus pengajuan izin.");
     } finally {
       setIzinActionLoading(null);
     }
@@ -598,21 +618,21 @@ const Presensi = () => {
                   Tidak ada pengajuan izin/sakit.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-y-auto max-h-[60vh]">
                   <table className="min-w-full border text-sm">
-                    <thead>
+                    <thead className="sticky top-0 z-10 bg-white shadow">
                       <tr className="bg-gray-100">
                         <th className="border px-2 py-1">Nama</th>
                         <th className="border px-2 py-1">Jenis</th>
                         <th className="border px-2 py-1">Tanggal Mulai</th>
                         <th className="border px-2 py-1">Tanggal Selesai</th>
-                        {/* <th className="border px-2 py-1">Durasi Izin</th>{" "} */}
                         <th className="border px-2 py-1">Keterangan</th>
                         <th className="border px-2 py-1">Lampiran</th>
                         <th className="border px-2 py-1">Status</th>
                         <th className="border px-2 py-1">Aksi</th>
                       </tr>
                     </thead>
+
                     <tbody>
                       {izinList.map((item) => (
                         <tr key={item.id_izin}>
@@ -685,9 +705,12 @@ const Presensi = () => {
                                     type="text"
                                     className="border px-2 py-1 rounded text-xs"
                                     placeholder="Alasan penolakan"
-                                    value={alasanReject}
+                                    value={alasanReject[item.id_izin] || ""}
                                     onChange={(e) =>
-                                      setAlasanReject(e.target.value)
+                                      setAlasanReject({
+                                        ...alasanReject,
+                                        [item.id_izin]: e.target.value,
+                                      })
                                     }
                                     disabled={
                                       izinActionLoading === item.id_izin
@@ -711,7 +734,7 @@ const Presensi = () => {
                                       className="bg-gray-300 hover:bg-gray-400 text-black px-2 py-1 rounded text-xs"
                                       onClick={() => {
                                         setRejectId(null);
-                                        setAlasanReject("");
+                                        setAlasanReject({});
                                       }}
                                       type="button"
                                     >
@@ -738,13 +761,24 @@ const Presensi = () => {
                                     className="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
                                     onClick={() => {
                                       setRejectId(item.id_izin);
-                                      setAlasanReject("");
+                                      setAlasanReject({});
                                     }}
                                     disabled={
                                       izinActionLoading === item.id_izin
                                     }
                                   >
                                     Tolak
+                                  </button>
+                                  <button
+                                    className="bg-gray-500 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs"
+                                    onClick={() =>
+                                      handleDeleteIzin(item.id_izin)
+                                    }
+                                    disabled={
+                                      izinActionLoading === item.id_izin
+                                    }
+                                  >
+                                    Hapus
                                   </button>
                                 </div>
                               )

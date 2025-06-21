@@ -26,58 +26,163 @@ const FormIzinSakit = () => {
   const [attachment, setAttachment] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showIzinModal, setShowIzinModal] = useState(false);
+  //const [izinTanggal, setIzinTanggal] = useState(dayjs());
+  //const [izinList, setIzinList] = useState([]);
+  //const [izinLoading, setIzinLoading] = useState(false);
+  //const [izinError, setIzinError] = useState("");
+  const [sudahMengajukan, setSudahMengajukan] = useState(false);
+  const navigate = useNavigate();
   const [izinTanggal, setIzinTanggal] = useState(dayjs());
   const [izinList, setIzinList] = useState([]);
   const [izinLoading, setIzinLoading] = useState(false);
-  const [izinError, setIzinError] = useState("");
-  const [sudahMengajukan, setSudahMengajukan] = useState(false);
-  const navigate = useNavigate();
 
   const jenisOptions = [
     { label: "Sakit", value: 4 },
     { label: "Izin", value: 3 },
   ];
 
-  const fetchIzin = async (tanggal) => {
+  const fetchIzinByTanggal = async (tanggal) => {
     setIzinLoading(true);
-    setIzinError("");
     try {
       const token = localStorage.getItem("token");
-      const res = await api.get(`/check-izin?tanggal=${tanggal}`, {
+      const res = await api.get("/perizinan/by-karyawan", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = res.data.data;
-      setIzinList(Array.isArray(data) ? data : data ? [data] : []);
+
+      const targetDate = tanggal.format("DD-MM-YYYY");
+      const filtered = res.data.data.filter(
+        (izin) =>
+          izin.tgl_mulai === targetDate || izin.tgl_selesai === targetDate
+      );
+
+      setIzinList(filtered);
     } catch (err) {
-      setIzinError("Gagal memuat data pengajuan izin.");
+      console.error("Gagal mengambil data izin:", err);
       setIzinList([]);
     } finally {
       setIzinLoading(false);
     }
   };
 
-  const handleDeletePengajuan = async (id_izin) => {
-    if (!window.confirm("Yakin ingin menghapus pengajuan ini?")) return;
+  useEffect(() => {
+    if (showIzinModal) {
+      fetchIzinByTanggal(izinTanggal);
+    }
+  }, [showIzinModal, izinTanggal]);
+
+  // const fetchIzin = async (tanggal) => {
+  //   setIzinLoading(true);
+  //   setIzinError("");
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     const res = await api.get(`/check-izin?tanggal=${tanggal}`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     const data = res.data.data;
+  //     setIzinList(Array.isArray(data) ? data : data ? [data] : []);
+  //   } catch (err) {
+  //     setIzinError("Gagal memuat data pengajuan izin.");
+  //     setIzinList([]);
+  //   } finally {
+  //     setIzinLoading(false);
+  //   }
+  // };
+
+  // const handleDeletePengajuan = async (id_izin) => {
+  //   if (!window.confirm("Yakin ingin menghapus pengajuan ini?")) return;
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     await api.delete(`/hapus-pengajuan/${id_izin}`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     alert("Pengajuan berhasil dihapus.");
+  //     // Refresh data setelah hapus
+  //     fetchIzin(izinTanggal.format("YYYY-MM-DD"));
+  //     // Jika tanggal utama sama dengan tanggal modal, refresh status disable form
+  //     if (date.format("YYYY-MM-DD") === izinTanggal.format("YYYY-MM-DD")) {
+  //       // Cek ulang status pengajuan hari ini
+  //       const res = await api.get(
+  //         `/check-izin?tanggal=${date.format("YYYY-MM-DD")}`,
+  //         {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //         }
+  //       );
+  //       const data = res.data.data;
+  //       setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
+  //     }
+  //   } catch (err) {
+  //     alert(
+  //       "Gagal menghapus pengajuan!\n" +
+  //         (err.response?.data?.message || "Terjadi kesalahan.")
+  //     );
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (showIzinModal) {
+  //     fetchIzin(izinTanggal.format("YYYY-MM-DD"));
+  //   }
+  // }, [showIzinModal, izinTanggal]);
+
+  // useEffect(() => {
+  //   const cekPengajuanHariIni = async () => {
+  //     try {
+  //       const token = localStorage.getItem("token");
+  //       const res = await api.get(
+  //         `/check-izin?tanggal=${date.format("YYYY-MM-DD")}`,
+  //         {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //         }
+  //       );
+  //       // Jika ada data pengajuan pada tanggal tersebut, set disable
+  //       const data = res.data.data;
+  //       setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
+  //     } catch (err) {
+  //       setSudahMengajukan(false); // Jika error, tetap bisa isi
+  //     }
+  //   };
+  //   cekPengajuanHariIni();
+  // }, [date]);
+  const fetchDataIzin = async (tanggal) => {
+    setIzinLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await api.delete(`/hapus-pengajuan/${id_izin}`, {
+      const res = await api.get("/perizinan/by-karyawan", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      const formatted = tanggal.format("YYYY-MM-DD");
+
+      const filtered = res.data.data.filter(
+        (item) => item.tgl_mulai === formatted || item.tgl_selesai === formatted
+      );
+
+      setIzinList(filtered);
+    } catch (error) {
+      console.error("Gagal memuat data izin:", error);
+      setIzinList([]);
+    } finally {
+      setIzinLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showIzinModal) {
+      fetchDataIzin(izinTanggal);
+    }
+  }, [showIzinModal, izinTanggal]);
+
+  const handleDeleteIzin = async (id_izin) => {
+    if (!window.confirm("Yakin ingin menghapus pengajuan ini?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await api.delete(`/perizinan/${id_izin}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       alert("Pengajuan berhasil dihapus.");
-      // Refresh data setelah hapus
-      fetchIzin(izinTanggal.format("YYYY-MM-DD"));
-      // Jika tanggal utama sama dengan tanggal modal, refresh status disable form
-      if (date.format("YYYY-MM-DD") === izinTanggal.format("YYYY-MM-DD")) {
-        // Cek ulang status pengajuan hari ini
-        const res = await api.get(
-          `/check-izin?tanggal=${date.format("YYYY-MM-DD")}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const data = res.data.data;
-        setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
-      }
+      fetchDataIzin(izinTanggal); // refresh data
     } catch (err) {
       alert(
         "Gagal menghapus pengajuan!\n" +
@@ -85,32 +190,6 @@ const FormIzinSakit = () => {
       );
     }
   };
-
-  useEffect(() => {
-    if (showIzinModal) {
-      fetchIzin(izinTanggal.format("YYYY-MM-DD"));
-    }
-  }, [showIzinModal, izinTanggal]);
-
-  useEffect(() => {
-    const cekPengajuanHariIni = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await api.get(
-          `/check-izin?tanggal=${date.format("YYYY-MM-DD")}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        // Jika ada data pengajuan pada tanggal tersebut, set disable
-        const data = res.data.data;
-        setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
-      } catch (err) {
-        setSudahMengajukan(false); // Jika error, tetap bisa isi
-      }
-    };
-    cekPengajuanHariIni();
-  }, [date]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -151,7 +230,7 @@ const FormIzinSakit = () => {
       });
 
       alert("Pengajuan izin berhasil dikirim!");
-      window.location.reload();
+      navigate("/absensi");
     } catch (err) {
       console.error("Error response:", err.response?.data);
       alert(
@@ -314,6 +393,119 @@ const FormIzinSakit = () => {
         </button>
       </form>
       {showIzinModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+          <div className="bg-white text-left text-black rounded-2xl shadow-2xl w-full max-w-3xl relative flex flex-col max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b px-6 py-4 sticky top-0 bg-white z-10">
+              <h1 className="text-lg font-bold">Riwayat Pengajuan Izin</h1>
+              <button
+                onClick={() => setShowIzinModal(false)}
+                className="text-gray-600 hover:text-black text-xl"
+              >
+                <IoMdClose />
+              </button>
+            </div>
+
+            {/* Filter Tanggal */}
+            <div className="px-6 py-3 flex items-center gap-2">
+              <span className="font-semibold text-sm">Tanggal:</span>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  value={izinTanggal}
+                  onChange={(newValue) => setIzinTanggal(newValue)}
+                  format="DD-MM-YYYY"
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      className: "w-32",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+            </div>
+
+            {/* Isi Modal */}
+            <div className="px-6 py-2 overflow-y-auto flex-1">
+              {izinLoading ? (
+                <p>Memuat data...</p>
+              ) : izinList.length === 0 ? (
+                <p className="text-gray-500 text-sm">
+                  Tidak ada pengajuan pada tanggal ini.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {izinList.map((izin) => (
+                    <div
+                      key={izin.id_izin}
+                      className="border rounded-xl p-4 bg-gray-50 shadow text-sm space-y-1 relative"
+                    >
+                      <div className="flex">
+                        <span className="w-36 font-semibold">Nama</span>
+                        <span className="mr-2">:</span>
+                        <span>{izin.nama_karyawan}</span>
+                      </div>
+                      <div className="flex">
+                        <span className="w-36 font-semibold">Jenis</span>
+                        <span className="mr-2">:</span>
+                        <span>{izin.nama_status}</span>
+                      </div>
+                      <div className="flex">
+                        <span className="w-36 font-semibold">Tanggal</span>
+                        <span className="mr-2">:</span>
+                        <span>
+                          {dayjs(izin.tgl_mulai).format("DD-MM-YYYY")} s.d.{" "}
+                          {dayjs(izin.tgl_selesai).format("DD-MM-YYYY")}
+                        </span>
+                      </div>
+                      <div className="flex">
+                        <span className="w-36 font-semibold">Alasan</span>
+                        <span className="mr-2">:</span>
+                        <span>{izin.keterangan}</span>
+                      </div>
+                      <div className="flex">
+                        <span className="w-36 font-semibold">Status</span>
+                        <span className="mr-2">:</span>
+                        <span
+                          className={
+                            izin.status_izin === "approved"
+                              ? "text-green-600 font-bold"
+                              : izin.status_izin === "pending"
+                              ? "text-yellow-600 font-bold"
+                              : "text-red-600 font-bold"
+                          }
+                        >
+                          {izin.status_izin}
+                        </span>
+                      </div>
+                      {izin.status_izin === "rejected" && (
+                        <div className="flex">
+                          <span className="w-36 font-semibold">
+                            Alasan Penolakan
+                          </span>
+                          <span className="mr-2">:</span>
+                          <span>{izin.alasan_penolakan}</span>
+                        </div>
+                      )}
+                      {izin.status_izin === "pending" && (
+                        <div className="mt-2 text-right">
+                          <button
+                            className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
+                            onClick={() => handleDeleteIzin(izin.id_izin)}
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* {showIzinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white text-black rounded-lg shadow-lg w-full max-w-2xl mx-4 relative flex flex-col max-h-[90vh]">
             <div className="flex-shrink-0 flex items-center justify-between border-b px-6 py-4 bg-white sticky top-0 z-10">
@@ -494,7 +686,7 @@ const FormIzinSakit = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
