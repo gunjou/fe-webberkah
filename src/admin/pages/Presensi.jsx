@@ -46,6 +46,7 @@ const Presensi = () => {
   const [alasanReject, setAlasanReject] = useState({});
   const [absensiIzinSakit, setAbsensiIzinSakit] = useState([]);
   const [tidakHadirList, setTidakHadirList] = useState([]);
+  const [fileBlobs, setFileBlobs] = useState({});
 
   const getFormattedDate = () => {
     const date = new Date();
@@ -132,6 +133,11 @@ const Presensi = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setIzinList(Array.isArray(res.data) ? res.data : []);
+      res.data.data?.forEach((item) => {
+        if (item.path_lampiran) {
+          fetchFileWithToken(item.path_lampiran, item.id_izin);
+        }
+      });
 
       let data = res.data.data;
       if (!data) setIzinList([]);
@@ -145,9 +151,58 @@ const Presensi = () => {
     }
   };
 
+  const fetchFileWithToken = async (path, id_izin) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `https://api.berkahangsana.com/perizinan/preview/${path}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error("Gagal ambil file.");
+
+      const blob = await res.blob();
+      const objectURL = URL.createObjectURL(blob);
+
+      setFileBlobs((prev) => ({ ...prev, [id_izin]: objectURL }));
+    } catch (err) {
+      console.error("Gagal ambil file preview:", err);
+    }
+  };
+
   useEffect(() => {
     if (izinModal) fetchIzinList(izinFilterTanggal);
   }, [izinModal, izinFilterTanggal]);
+
+  const handleViewFile = async (path, id_izin) => {
+    if (fileBlobs[id_izin]) {
+      // Sudah ada, langsung buka
+      window.open(fileBlobs[id_izin], "_blank");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `https://api.berkahangsana.com/perizinan/preview/${path}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error("Gagal fetch lampiran");
+
+      const blob = await res.blob();
+      const objectURL = URL.createObjectURL(blob);
+      setFileBlobs((prev) => ({ ...prev, [id_izin]: objectURL }));
+      window.open(objectURL, "_blank");
+    } catch (err) {
+      console.error("Gagal membuka file:", err);
+      alert("Gagal membuka lampiran.");
+    }
+  };
 
   const fetchAbsensiIzinSakit = async (tanggal) => {
     const token = localStorage.getItem("token");
@@ -648,12 +703,12 @@ const Presensi = () => {
                           </td>
                           <td className="border px-2 py-1">
                             {item.tgl_mulai
-                              ? dayjs(item.tgl_mulai).format("DD/MM/YYYY")
+                              ? dayjs(item.tgl_mulai).format("DD-MM-YYYY")
                               : "-"}
                           </td>
                           <td className="border px-2 py-1">
                             {item.tgl_selesai
-                              ? dayjs(item.tgl_selesai).format("DD/MM/YYYY")
+                              ? dayjs(item.tgl_selesai).format("DD-MM-YYYY")
                               : "-"}
                           </td>
                           {/* <td className="border px-2 py-1">
@@ -664,21 +719,24 @@ const Presensi = () => {
                           <td className="border px-2 py-1">
                             {item.keterangan || "-"}
                           </td>
-                          <td className="border px-2 py-1">
+                          <td className="border px-2 py-1 text-center">
                             {item.path_lampiran ? (
-                              <a
-                                href={item.path_lampiran}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline"
-                                title="Lihat lampiran"
+                              <button
+                                onClick={() =>
+                                  handleViewFile(
+                                    item.path_lampiran,
+                                    item.id_izin
+                                  )
+                                }
+                                className="text-blue-600 hover:underline text-sm"
                               >
-                                Lihat
-                              </a>
+                                Lihat File
+                              </button>
                             ) : (
-                              <span>-</span>
+                              "-"
                             )}
                           </td>
+
                           <td className="border px-2 py-1 font-semibold">
                             <span
                               className={

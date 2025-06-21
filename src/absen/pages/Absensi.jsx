@@ -78,6 +78,26 @@ const Absensi = () => {
     return new Intl.DateTimeFormat("id-ID", options).format(date);
   };
 
+  const formatTanggalIndo = (tanggalString) => {
+    if (!tanggalString) return "-";
+    const bulanIndo = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    const [tahun, bulan, tanggal] = tanggalString.split("T")[0].split("-");
+    return `${tanggal} ${bulanIndo[parseInt(bulan, 10) - 1]} ${tahun}`;
+  };
+
   const fetchStatusIzin = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -97,6 +117,9 @@ const Absensi = () => {
       setShowStatusModal(true);
     }
   };
+  useEffect(() => {
+    fetchStatusIzin();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -283,7 +306,7 @@ const Absensi = () => {
                 className="absolute right-5 mt-0 flex items-center gap-2"
                 ref={dropdownRef}
               >
-                <MdHistory
+                <IoMdNotificationsOutline
                   size={28}
                   className="text-black cursor-pointer hover:text-yellow-400 transition"
                   title="Lihat Status Izin"
@@ -450,11 +473,11 @@ const Absensi = () => {
                     <tbody>
                       <tr>
                         <td className="font-semibold w-32 align-top">Mulai</td>
-                        <td>: {izinStatus.tgl_mulai}</td>
+                        <td>: {formatTanggalIndo(izinStatus.tgl_mulai)}</td>
                       </tr>
                       <tr>
                         <td className="font-semibold align-top">Selesai</td>
-                        <td>: {izinStatus.tgl_selesai}</td>
+                        <td>: {formatTanggalIndo(izinStatus.tgl_selesai)}</td>
                       </tr>
                       <tr>
                         <td className="font-semibold align-top">Alasan</td>
@@ -466,9 +489,11 @@ const Absensi = () => {
                           :{" "}
                           <span
                             className={`font-bold ${
-                              izinStatus.status_izin === "rejected"
-                                ? "text-red-600"
-                                : "text-green-600"
+                              izinStatus.status_izin === "approved"
+                                ? "text-green-600"
+                                : izinStatus.status_izin === "pending"
+                                ? "text-yellow-500"
+                                : "text-red-600"
                             }`}
                           >
                             {toTitleCase(izinStatus.status_izin)}
