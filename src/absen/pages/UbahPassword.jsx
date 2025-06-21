@@ -75,11 +75,11 @@ const UbahPassword = () => {
         className="bg-white text-black p-4 rounded-lg shadow-lg w-full mx-4 my-4"
       >
         <h1 className="text-2xl font-bold mb-2 text-left">Ganti Password</h1>
-        <p className="text-sm mb-4 text-gray-600 text-justify">
+        {/* <p className="text-sm mb-4 text-gray-600 text-justify">
           Masukkan password baru untuk akun Anda. Jika ini adalah pertama kali
           anda mengubah password, silakan masukkan password baru tanpa
           memasukkan password lama.
-        </p>
+        </p> */}
         {!isFirstTime && (
           <div className="mb-4 relative">
             <label className="block text-sm font-medium mb-1 text-left">

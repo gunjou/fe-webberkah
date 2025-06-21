@@ -65,6 +65,7 @@ const Absensi = () => {
   const [izinDisetujui, setIzinDisetujui] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [izinStatus, setIzinStatus] = useState(null);
+  const [isSakitHariIni, setIsSakitHariIni] = useState(false);
 
   const getFormattedDate = () => {
     const date = new Date();
@@ -180,22 +181,28 @@ const Absensi = () => {
 
         const izinData = res.data.absensi || [];
 
-        // Format tanggal hari ini menjadi DD-MM-YYYY
         const today = new Date();
         const dd = String(today.getDate()).padStart(2, "0");
-        const mm = String(today.getMonth() + 1).padStart(2, "0"); // Januari = 0
+        const mm = String(today.getMonth() + 1).padStart(2, "0");
         const yyyy = today.getFullYear();
         const formattedToday = `${dd}-${mm}-${yyyy}`;
 
-        const adaIzinHariIni = izinData.some(
+        const adaIzin = izinData.some(
           (item) =>
             item.tanggal === formattedToday &&
             item.status_absen?.toLowerCase() === "izin"
         );
 
-        setIzinDisetujui(adaIzinHariIni);
+        const adaSakit = izinData.some(
+          (item) =>
+            item.tanggal === formattedToday &&
+            item.status_absen?.toLowerCase() === "sakit"
+        );
+
+        setIzinDisetujui(adaIzin);
+        setIsSakitHariIni(adaSakit);
       } catch (err) {
-        console.error("Gagal mengambil status izin:", err);
+        console.error("Gagal mengambil status izin/sakit:", err);
       }
     };
 
@@ -385,29 +392,28 @@ const Absensi = () => {
               <div className="flex absolute right-5">{getFormattedDate()}</div>
             </div>
             <div className="text-4xl font-bold pb-4">08:00 - 17:00</div>
-            {izinDisetujui ? (
-              <div className="flex justify-center mt-4">
+            <div className="flex justify-center mt-4">
+              {izinDisetujui || isSakitHariIni ? (
                 <span className="text-black font-semibold">
-                  Izin telah disetujui
+                  {izinDisetujui
+                    ? "Izin telah disetujui"
+                    : "Status absen: Sakit"}
                 </span>
-              </div>
-            ) : isAbsenMasuk !== null ? (
-              <div className="flex justify-center">
+              ) : isAbsenMasuk !== null ? (
                 <button
                   type="button"
-                  className="flex w-[150px] text-white items-center justify-center bg-custom-merah hover:bg-custom-gelap text-black font-medium rounded-[20px] px-2 py-2 shadow-md"
+                  className="flex w-[150px] text-white items-center justify-center bg-custom-merah hover:bg-custom-gelap text-black font-medium rounded-[20px] px-2 py-2 shadow-md disabled:opacity-50"
                   onClick={handleAbsen}
+                  disabled={izinDisetujui || isSakitHariIni}
                 >
                   {isAbsenMasuk ? "Absen Masuk" : "Absen Pulang"}
                 </button>
-              </div>
-            ) : (
-              <div className="flex justify-center mt-4 pb-1">
+              ) : (
                 <p className="font-semibold">
                   Terimakasih telah bekerja hari ini!
                 </p>
-              </div>
-            )}
+              )}
+            </div>
 
             {dataPresensi?.jam_terlambat > 0 && jamTerlambat && (
               <div className="flex justify-center mt-2">
