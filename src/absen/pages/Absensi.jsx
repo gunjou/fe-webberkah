@@ -117,9 +117,6 @@ const Absensi = () => {
       setShowStatusModal(true);
     }
   };
-  useEffect(() => {
-    fetchStatusIzin();
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -312,7 +309,7 @@ const Absensi = () => {
                   title="Lihat Status Izin"
                   onClick={() => {
                     setShowStatusModal(true);
-                    //fetchStatusIzin(tanggalFilter); // ambil status izin default hari ini
+                    fetchStatusIzin();
                   }}
                 />
 
