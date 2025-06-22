@@ -32,7 +32,12 @@ const FormIzinSakit = () => {
   const [izinLoading, setIzinLoading] = useState(false);
   const [isAbsenIzinOrSakit, setIsAbsenIzinOrSakit] = useState(false);
   const [durasiIzin, setDurasiIzin] = useState("fullday"); // fullday atau halfday
-  const [jamSelesai, setJamSelesai] = useState(""); // untuk setengah hari
+  const [jamSelesai, setJamSelesai] = useState(() => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  });
 
   const jenisOptions = [
     { label: "Sakit", value: 4 },
@@ -229,6 +234,31 @@ const FormIzinSakit = () => {
     fetchStatusAbsenHariIni();
   }, []);
 
+  const handleDurasiChange = (e) => {
+    const selected = e.target.value;
+
+    if (selected === "halfday") {
+      const now = dayjs(); // ambil waktu saat ini
+      const batas = dayjs().hour(16);
+
+      if (now.isAfter(batas)) {
+        alert(
+          "Pengajuan Setengah Hari tidak tersedia setelah pukul 16:00 Wita."
+        );
+        return;
+      }
+    }
+
+    setDurasiIzin(selected);
+  };
+
+  // useEffect(() => {
+  //   const now = new Date();
+  //   if (now.getHours() > 16) {
+  //     alert("Pengajuan setengah hari tidak tersedia setelah pukul 16:00 Wita.");
+  //   }
+  // }, []);
+
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-custom-merah to-custom-gelap flex items-center justify-center">
       <div className="w-full px-4 pt-4 absolute top-0 left-0 flex justify-start">
@@ -278,11 +308,13 @@ const FormIzinSakit = () => {
           </label>
           <select
             value={durasiIzin}
-            onChange={(e) => setDurasiIzin(e.target.value)}
+            onChange={handleDurasiChange}
             className="w-full px-3 py-2 border rounded-lg"
           >
             <option value="fullday">Full Day</option>
+            {/* //{!dayjs().isAfter(dayjs().hour(16)) && ( */}
             <option value="halfday">Setengah Hari</option>
+            {/* // )} */}
           </select>
         </div>
 

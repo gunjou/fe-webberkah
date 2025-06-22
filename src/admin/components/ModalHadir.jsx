@@ -779,7 +779,7 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
             </Typography>
             <div className="space-y-3">
               <div>
-                <label className="text-sm">Pegawai</label>
+                <label className="text-sm font-semibold">Pegawai</label>
                 <select
                   className="w-full border p-2 rounded"
                   value={formManual.id_karyawan}
@@ -800,10 +800,10 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
               </div>
 
               <div>
-                <label className="text-sm">Jam Masuk</label>
+                <label className="text-sm font-semibold">Jam Masuk</label>
                 <input
                   type="text"
-                  placeholder="07:30"
+                  placeholder="hh:mm"
                   className="w-full border p-2 rounded"
                   value={formManual.jam_masuk}
                   onChange={(e) =>
@@ -813,10 +813,10 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
               </div>
 
               <div>
-                <label className="text-sm">Jam Keluar</label>
+                <label className="text-sm font-semibold">Jam Keluar</label>
                 <input
                   type="text"
-                  placeholder="16:30"
+                  placeholder="hh:mm"
                   className="w-full border p-2 rounded"
                   value={formManual.jam_keluar}
                   onChange={(e) =>
@@ -826,7 +826,7 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
               </div>
 
               <div>
-                <label className="text-sm">Lokasi Check-In</label>
+                <label className="text-sm font-semibold">Lokasi Check-In</label>
                 <select
                   className="w-full border p-2 rounded"
                   value={formManual.lokasi_masuk}
@@ -847,7 +847,9 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
               </div>
 
               <div>
-                <label className="text-sm">Lokasi Check-Out</label>
+                <label className="text-sm font-semibold">
+                  Lokasi Check-Out
+                </label>
                 <select
                   className="w-full border p-2 rounded"
                   value={formManual.lokasi_keluar}
