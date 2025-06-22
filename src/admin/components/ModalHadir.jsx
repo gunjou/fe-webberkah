@@ -885,14 +885,10 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
                     lokasi_keluar,
                   } = formManual;
 
-                  if (
-                    !id_karyawan ||
-                    !jam_masuk ||
-                    !jam_keluar ||
-                    !lokasi_masuk ||
-                    !lokasi_keluar
-                  ) {
-                    alert("Semua field wajib diisi.");
+                  if (!id_karyawan || !jam_masuk || !lokasi_masuk) {
+                    alert(
+                      "Pegawai, Jam Masuk, dan Lokasi Check-In wajib diisi."
+                    );
                     return;
                   }
 

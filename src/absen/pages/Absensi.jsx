@@ -1,19 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { RiCalendarScheduleFill } from "react-icons/ri";
-import { FaNotesMedical, FaUserEdit } from "react-icons/fa";
+import { FaNotesMedical } from "react-icons/fa";
 import { FaLocationDot } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import api from "../../shared/Api";
 import { Avatar } from "@mui/material";
 import { IoTrashBin } from "react-icons/io5";
 import { FaPersonDigging } from "react-icons/fa6";
-import Badge from "@mui/material/Badge";
 import { IoMdNotificationsOutline } from "react-icons/io";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
-import dayjs from "dayjs";
+//import dayjs from "dayjs";
 import { IoMdClose } from "react-icons/io";
-import { MdHistory } from "react-icons/md";
 
 const toTitleCase = (str) => {
   return str
@@ -54,14 +50,9 @@ const Absensi = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAbsenMasuk, setIsAbsenMasuk] = useState(true);
   const [dataPresensi, setDataPresensi] = useState(null);
-  // const [notifCount, setNotifCount] = useState(0);
-  // const [notifPesan, setNotifPesan] = useState([]);
-  // const [showNotifModal, setShowNotifModal] = useState("");
-  // const [notifPesanModal, setNotifPesanModal] = useState("");
   const jamTerlambat = formatMenitToJamMenit(dataPresensi?.jam_terlambat);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-  const [izinTanggal, setIzinTanggal] = useState(dayjs());
   const [izinDisetujui, setIzinDisetujui] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [izinStatus, setIzinStatus] = useState(null);
@@ -209,29 +200,6 @@ const Absensi = () => {
     fetchIzinStatus();
   }, []);
 
-  // useEffect(() => {
-  //   const fetchNotif = async () => {
-  //     try {
-  //       const token = localStorage.getItem("token");
-  //       const res = await api.get(`/notifikasi?role=karyawan`, {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       });
-  //       setNotifCount(res.data.count || 0);
-  //       setNotifPesan(res.data.data || []);
-
-  //       const unread = res.data.data?.find((item) => !item.dibaca);
-  //       if (unread) {
-  //         setNotifPesanModal(unread.pesan);
-  //         setShowNotifModal(true);
-  //       }
-  //     } catch (err) {
-  //       setNotifCount(0);
-  //       setNotifPesan([]);
-  //     }
-  //   };
-  //   fetchNotif();
-  // }, []);
-
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
@@ -275,31 +243,6 @@ const Absensi = () => {
     }
   };
 
-  // const markNotifAsRead = async (id_notifikasi) => {
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     await api.put(
-  //       `/notifikasi/${id_notifikasi}/read`,
-  //       {},
-  //       {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       }
-  //     );
-  //     setNotifCount(0); // Hilangkan badge
-  //     // Update notifPesan agar semua notif dianggap sudah dibaca
-  //     setNotifPesan((prev) =>
-  //       prev.map((item) =>
-  //         item.id_notifikasi === id_notifikasi
-  //           ? { ...item, dibaca: true }
-  //           : item
-  //       )
-  //     );
-  //   } catch (err) {
-  //     // Optional: tampilkan error jika gagal
-  //     // alert("Gagal menandai notifikasi sebagai sudah dibaca");
-  //   }
-  // };
-
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-custom-merah to-custom-gelap">
       <div className="Absensi">
@@ -319,28 +262,6 @@ const Absensi = () => {
                     fetchStatusIzin();
                   }}
                 />
-
-                {/* Lonceng Notifikasi
-                <Badge
-                  badgeContent={notifCount}
-                  color="error"
-                  overlap="circular"
-                  anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                >
-                  <IoMdNotificationsOutline
-                    size={28}
-                    className="text-black cursor-pointer hover:text-yellow-400 transition"
-                    title="Notifikasi"
-                    onClick={() => {
-                      setShowNotifModal(true);
-                      // Cari notif yang belum dibaca
-                      const unread = notifPesan.find((item) => !item.dibaca);
-                      if (unread) {
-                        markNotifAsRead(unread.id_notifikasi);
-                      }
-                    }}
-                  />
-                </Badge> */}
                 <Avatar
                   onClick={toggleDropdown}
                   sx={{
@@ -528,33 +449,6 @@ const Absensi = () => {
           </div>
         )}
 
-        {/* {showNotifModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white text-black rounded-lg shadow-lg w-full max-w-md mx-4 relative flex flex-col">
-              <div className="flex-shrink-0 flex items-center justify-between border-b px-6 py-4 bg-white sticky top-0 z-10">
-                <h1 className="text-lg font-bold">Notifikasi</h1>
-                <button
-                  onClick={() => setShowNotifModal(false)}
-                  className="text-gray-500 hover:text-black text-xl"
-                  aria-label="Tutup"
-                >
-                  <IoMdClose size={25} />
-                </button>
-              </div>
-              <div className="px-6 py-6 text-center">
-                <span>{notifPesanModal || "Tidak ada notifikasi baru."}</span>
-              </div>
-              <div className="flex-shrink-0 flex justify-end border-t px-6 py-3 bg-white sticky bottom-0 z-10">
-                <button
-                  onClick={() => setShowNotifModal(false)}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
-                >
-                  Tutup
-                </button>
-              </div>
-            </div>
-          </div>
-        )} */}
         <div>
           <span className="Title flex pl-6 pt-2 text-xl text-white font-semibold">
             Presensi

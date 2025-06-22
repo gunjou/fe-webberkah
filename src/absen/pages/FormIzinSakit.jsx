@@ -5,7 +5,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import axios from "axios";
+//import axios from "axios";
 import { IoMdClose } from "react-icons/io";
 import api from "../../shared/Api";
 
@@ -26,13 +26,13 @@ const FormIzinSakit = () => {
   const [attachment, setAttachment] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showIzinModal, setShowIzinModal] = useState(false);
-
   const navigate = useNavigate();
-
   const [izinTanggal, setIzinTanggal] = useState(dayjs());
   const [izinList, setIzinList] = useState([]);
   const [izinLoading, setIzinLoading] = useState(false);
   const [isAbsenIzinOrSakit, setIsAbsenIzinOrSakit] = useState(false);
+  const [durasiIzin, setDurasiIzin] = useState("fullday"); // fullday atau halfday
+  const [jamSelesai, setJamSelesai] = useState(""); // untuk setengah hari
 
   const jenisOptions = [
     { label: "Sakit", value: 4 },
@@ -118,6 +118,42 @@ const FormIzinSakit = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    const token = localStorage.getItem("token");
+
+    if (durasiIzin === "halfday") {
+      if (!jamSelesai) {
+        alert("Jam selesai wajib diisi!");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        await api.post(
+          "/perizinan/setengah-hari",
+          {
+            jam_selesai: jamSelesai,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        alert("Pengajuan izin berhasil dikirim!");
+        navigate("/absensi");
+      } catch (err) {
+        console.error("Error response:", err.response?.data);
+        alert(
+          "Gagal mengirim pengajuan izin!\n" +
+            (err.response?.data?.message || "Terjadi kesalahan.")
+        );
+      } finally {
+        setIsLoading(false);
+      }
+
+      return; // penting! agar tidak lanjut ke proses fullday di bawah
+    }
+
+    // Validasi khusus untuk fullday
     if (
       !date ||
       !endDate ||
@@ -144,8 +180,7 @@ const FormIzinSakit = () => {
         formData.append("file", attachment);
       }
 
-      const token = localStorage.getItem("token");
-      await api.post(`/perizinan/`, formData, {
+      await api.post("/perizinan/", formData, {
         headers: {
           "Content-Type": undefined,
           Authorization: `Bearer ${token}`,
@@ -237,105 +272,141 @@ const FormIzinSakit = () => {
             readOnly
           />
         </div>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1 text-left">
-              Tanggal Mulai
-            </label>
-            <DatePicker
-              value={date}
-              onChange={(newValue) => setDate(newValue)}
-              format="DD/MM/YYYY"
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  required: true,
-                  placeholder: "Pilih tanggal mulai",
-                  className: "placeholder:text-xs",
-                },
-              }}
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1 text-left">
-              Tanggal Selesai
-            </label>
-            <DatePicker
-              value={endDate}
-              onChange={(newValue) => setEndDate(newValue)}
-              format="DD/MM/YYYY"
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  required: true,
-                  placeholder: "Pilih tanggal selesai",
-                  className: "placeholder:text-xs",
-                },
-              }}
-              minDate={date}
-            />
-          </div>
-        </LocalizationProvider>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1 text-left">
-            Jenis
+            Durasi Izin
           </label>
           <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
+            value={durasiIzin}
+            onChange={(e) => setDurasiIzin(e.target.value)}
             className="w-full px-3 py-2 border rounded-lg"
-            required
           >
-            <option value="">Pilih Jenis</option>
-            {jenisOptions.map((j) => (
-              <option key={j.value} value={j.value}>
-                {j.label}
-              </option>
-            ))}
+            <option value="fullday">Full Day</option>
+            <option value="halfday">Setengah Hari</option>
           </select>
         </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1 text-left">
-            Alasan
-          </label>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg placeholder:text-xs"
-            placeholder="Masukkan alasan Anda"
-            rows="4"
-            required
-          ></textarea>
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1 text-left">
-            Lampiran
-            {type === "4" && <span className="text-red-500 ml-1">*</span>}
-            <span className="text-xs text-gray-500 ml-2">
-              {type === "4"
-                ? "(Wajib untuk sakit, file gambar/pdf)"
-                : "(Opsional untuk izin, file gambar/pdf)"}
-            </span>
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="file"
-              onChange={(e) => setAttachment(e.target.files[0])}
-              className="w-full px-3 py-2 border rounded-lg"
-              accept="image/*,application/pdf"
-              required={type === "4"}
-            />
-            {attachment && (
-              <button
-                type="button"
-                onClick={() => setAttachment(null)}
-                className="text-red-600 font-semibold text-xs hover:underline"
+
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          {durasiIzin === "fullday" ? (
+            <>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1 text-left">
+                  Tanggal Mulai
+                </label>
+                <DatePicker
+                  value={date}
+                  onChange={(newValue) => setDate(newValue)}
+                  format="DD/MM/YYYY"
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true,
+                      placeholder: "Pilih tanggal mulai",
+                      className: "placeholder:text-xs",
+                    },
+                  }}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1 text-left">
+                  Tanggal Selesai
+                </label>
+                <DatePicker
+                  value={endDate}
+                  onChange={(newValue) => setEndDate(newValue)}
+                  format="DD/MM/YYYY"
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true,
+                      placeholder: "Pilih tanggal selesai",
+                      className: "placeholder:text-xs",
+                    },
+                  }}
+                  minDate={date}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1 text-left">
+                Jam Selesai
+              </label>
+              <input
+                type="time"
+                value={jamSelesai}
+                onChange={(e) => setJamSelesai(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+              />
+            </div>
+          )}
+        </LocalizationProvider>
+        {durasiIzin === "fullday" && (
+          <>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1 text-left">
+                Jenis
+              </label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
               >
-                Hapus
-              </button>
-            )}
-          </div>
-        </div>
+                <option value="">Pilih Jenis</option>
+                {jenisOptions.map((j) => (
+                  <option key={j.value} value={j.value}>
+                    {j.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1 text-left">
+                Alasan
+              </label>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg placeholder:text-xs"
+                placeholder="Masukkan alasan Anda"
+                rows="4"
+                required
+              ></textarea>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1 text-left">
+                Lampiran
+                {type === "4" && <span className="text-red-500 ml-1">*</span>}
+                <span className="text-xs text-gray-500 ml-2">
+                  {type === "4"
+                    ? "(Wajib untuk sakit, file gambar/pdf)"
+                    : "(Opsional untuk izin, file gambar/pdf)"}
+                </span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  onChange={(e) => setAttachment(e.target.files[0])}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  accept="image/*,application/pdf"
+                  required={type === "4"}
+                />
+                {attachment && (
+                  <button
+                    type="button"
+                    onClick={() => setAttachment(null)}
+                    className="text-red-600 font-semibold text-xs hover:underline"
+                  >
+                    Hapus
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
         {!isAbsenIzinOrSakit && (
           <button
             type="submit"
