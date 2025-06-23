@@ -99,7 +99,9 @@ const Leaderboard = () => {
               <div>Total Terlambat: {formatTerlambat(item.jam_terlambat)}</div>
               <div>Total Lebih Awal: {formatTerlambat(item.waktu_lebih)}</div>
               <div>Total Jam Kerja: {item.total_jam_kerja} jam</div>
-              <div>Total Bolos: {formatTerlambat(item.jam_kurang)}</div>
+              <div>
+                Rata-rata CheckIn: {item.rata_rata_checkin?.slice(0, 5)} WITA
+              </div>
             </>
           ) : (
             <>
