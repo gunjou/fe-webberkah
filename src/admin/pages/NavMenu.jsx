@@ -340,7 +340,7 @@ const NavMenu = () => {
             <div className="text-sm font-bold">{namaAdmin}</div>
             <div className="text-xs">Admin</div>
           </div>
-          <Badge
+          {/* <Badge
             badgeContent={badgeCount}
             color="error"
             overlap="circular"
@@ -352,7 +352,7 @@ const NavMenu = () => {
               title="Notifikasi"
               onClick={openNotifModal}
             />
-          </Badge>
+          </Badge> */}
         </div>
       </Navbar>
 

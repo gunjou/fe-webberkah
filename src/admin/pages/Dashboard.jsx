@@ -7,6 +7,7 @@ import Presensi from "./Presensi";
 import Rekapan from "./Rekapan";
 import Lembur from "./Lembur";
 import PerhitunganGaji from "./PerhitunganGaji";
+import Leaderboard from "./Leaderboard";
 
 const Dashboard = ({ type }) => {
   let content;
@@ -27,6 +28,9 @@ const Dashboard = ({ type }) => {
       break;
     case "perhitungan-gaji":
       content = <PerhitunganGaji />;
+      break;
+    case "leaderboard":
+      content = <Leaderboard />;
       break;
     default:
       content = <Presensi />; // Konten default jika tidak ada case yang cocok

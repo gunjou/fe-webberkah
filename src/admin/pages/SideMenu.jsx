@@ -10,6 +10,7 @@ import {
 import { HiClipboardDocumentList } from "react-icons/hi2";
 import { IoTimer } from "react-icons/io5";
 import { HiOutlineMinus, HiOutlinePlus } from "react-icons/hi";
+import { MdLeaderboard } from "react-icons/md";
 
 import { twMerge } from "tailwind-merge";
 import { NavLink } from "react-router-dom";
@@ -62,6 +63,11 @@ const SideMenu = () => {
               <NavLink to={"/lembur"}>
                 <Sidebar.Item icon={IoTimer}>
                   <span className="left-14 flex">Lembur</span>
+                </Sidebar.Item>
+              </NavLink>
+              <NavLink to={"/leaderboard"}>
+                <Sidebar.Item icon={MdLeaderboard}>
+                  <span className="left-14 flex">Leaderboard</span>
                 </Sidebar.Item>
               </NavLink>
             </Sidebar.Collapse>

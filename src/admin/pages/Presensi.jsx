@@ -347,7 +347,7 @@ const Presensi = () => {
             </LocalizationProvider>
             <button
               type="button"
-              className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-white text-sm font-semibold px-4 py-2 rounded shadow"
+              className="flex items-center gap-2 bg-red-800 hover:bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded shadow"
               onClick={() => setIzinModal(true)}
             >
               Lihat Pengajuan Izin

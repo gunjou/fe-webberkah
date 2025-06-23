@@ -91,6 +91,14 @@ function App() {
           }
         />
         <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard type="leaderboard" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/perhitungan-gaji"
           element={
             <ProtectedRoute>

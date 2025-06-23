@@ -663,6 +663,7 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
                       <input
                         type="text"
                         className="w-full border p-2 rounded"
+                        placeholder="hh:mm"
                         value={editData.jam_keluar || ""}
                         onChange={(e) =>
                           setEditData({
