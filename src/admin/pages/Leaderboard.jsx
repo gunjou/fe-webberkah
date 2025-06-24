@@ -9,16 +9,31 @@ const Leaderboard = () => {
   const [kurangDisiplin, setKurangDisiplin] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(null); // "disiplin" | "tidak_disiplin" | null
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-12
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  const getStartAndEndDate = (month, year) => {
+    const start = `${year}-${String(month).padStart(2, "0")}-01`;
+    const end = new Date(year, month, 0).toISOString().split("T")[0];
+    return { start, end };
+  };
 
   const fetchPeringkat = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
+      const { start, end } = getStartAndEndDate(selectedMonth, selectedYear);
 
       const [res1, res2] = await Promise.all([
-        api.get("/peringkat/paling-disiplin", { headers }),
-        api.get("/peringkat/kurang-disiplin", { headers }),
+        api.get("/peringkat/paling-disiplin", {
+          headers,
+          params: { start_date: start, end_date: end },
+        }),
+        api.get("/peringkat/kurang-disiplin", {
+          headers,
+          params: { start_date: start, end_date: end },
+        }),
       ]);
 
       setPalingDisiplin(res1.data.data || []);
@@ -32,7 +47,7 @@ const Leaderboard = () => {
 
   useEffect(() => {
     fetchPeringkat();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const renderItem = (item, index, mode) => {
     const trophyRotation = mode === "tidak_disiplin" ? "rotate-180" : "";
@@ -87,9 +102,11 @@ const Leaderboard = () => {
               ({capitalize(item.jenis)})
             </span>
           </h4>
-          <span className="text-sm font-semibold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-            {item.poin ?? 0} poin
-          </span>
+          {mode === "disiplin" && (
+            <span className="text-sm font-semibold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+              {item.poin ?? 0} poin
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-700">
@@ -125,6 +142,38 @@ const Leaderboard = () => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Leaderboard Disiplin Pegawai</h2>
+      <div className="flex flex-wrap items-center gap-4 mb-4">
+        <div className="flex flex-col">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {new Date(0, i).toLocaleString("default", { month: "long" })}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            {Array.from({ length: 5 }, (_, i) => {
+              const year = new Date().getFullYear() - i;
+              return (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card
@@ -191,9 +240,9 @@ const Leaderboard = () => {
                 <p className="text-center py-4">Memuat data...</p>
               ) : showModal === "disiplin" ? (
                 palingDisiplin.length ? (
-                  palingDisiplin.map((item, index) =>
-                    renderItem(item, index, "disiplin")
-                  )
+                  palingDisiplin
+                    .filter((item) => item.poin > 0)
+                    .map((item, index) => renderItem(item, index, "disiplin"))
                 ) : (
                   <p className="text-center text-gray-500">Tidak ada data.</p>
                 )
