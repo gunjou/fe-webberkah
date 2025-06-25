@@ -219,10 +219,11 @@ const Lembur = () => {
         {/* Filter Tanggal */}
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
-            label="Filter Tanggal"
+            label="Pilih Tanggal"
             value={tanggal}
             onChange={setTanggal}
             format="DD/MM/YYYY"
+            className="bg-white rounded-lg"
             slotProps={{
               textField: {
                 size: "small",
@@ -320,8 +321,12 @@ const Lembur = () => {
                         {item.nama_karyawan}
                       </td>
                       <td className="border px-2 py-1">{item.tanggal}</td>
-                      <td className="border px-2 py-1">{item.jam_mulai}</td>
-                      <td className="border px-2 py-1">{item.jam_selesai}</td>
+                      <td className="border px-2 py-1">
+                        {item.jam_mulai?.slice(0, 5)}
+                      </td>
+                      <td className="border px-2 py-1">
+                        {item.jam_selesai?.slice(0, 5)}
+                      </td>
                       <td className="border px-2 py-1">{item.keterangan}</td>
                       <td className="border px-2 py-1 text-center">
                         {item.path_lampiran ? (

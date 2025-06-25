@@ -214,10 +214,13 @@ const Leaderboard = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+          onClick={() => setShowModal(null)} // Handle click outside modal to close
+        >
           <div
             className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
           >
             <div className="flex justify-between items-center rounded-lg border-b px-6 py-4 sticky top-0 bg-white z-10">
               <h3 className="text-lg font-bold">
