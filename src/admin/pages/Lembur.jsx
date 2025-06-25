@@ -20,6 +20,15 @@ const Lembur = () => {
   const [idKaryawanFilter, setIdKaryawanFilter] = useState("");
   const [statusLemburFilter, setStatusLemburFilter] = useState("");
   const [pegawaiList, setPegawaiList] = useState([]);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [formData, setFormData] = useState({
+    id_karyawan: "",
+    tanggal: "",
+    jam_mulai: "",
+    jam_selesai: "",
+    keterangan: "",
+    file: "",
+  });
 
   // Function to fetch lembur data
   const fetchLembur = useCallback(
@@ -151,19 +160,20 @@ const Lembur = () => {
   };
 
   // Handle actions like approve, reject, and delete
-  const handleApprove = async (id) => {
+  const handleApprove = async (id_lembur) => {
     if (!window.confirm("Setujui lembur ini?")) return;
-    setLemburActionLoading(id);
+    setLemburActionLoading(id_lembur);
     try {
       const token = localStorage.getItem("token");
       await api.put(
-        `/lembur/${id}/setujui`,
+        `/lembur/${id_lembur}/setujui`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       fetchLembur(tanggal);
+      setLemburModal(false);
     } catch {
       alert("Gagal menyetujui lembur.");
     } finally {
@@ -172,17 +182,15 @@ const Lembur = () => {
   };
 
   const handleReject = async (id_lembur) => {
-    const alasan = lemburAlasanReject[id_lembur];
-    if (!alasan || !alasan.trim()) {
-      alert("Isi alasan penolakan.");
-      return;
-    }
+    if (!window.confirm("Tolak lembur ini?")) return;
+    setLemburActionLoading(id_lembur);
+    // No need for reason validation anymore
     setLemburActionLoading(id_lembur);
     try {
       const token = localStorage.getItem("token");
-      await api.post(
+      await api.put(
         `/lembur/${id_lembur}/tolak`,
-        { alasan_penolakan: alasan },
+        {}, // No reason required
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setLemburRejectId(null);
@@ -204,6 +212,7 @@ const Lembur = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchLembur(tanggal);
+      alert("Lembur berhasil dihapus.");
     } catch {
       alert("Gagal menghapus lembur.");
     } finally {
@@ -213,9 +222,9 @@ const Lembur = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Lembur</h2>
+      <h2 className="text-2xl font-bold mb-2">Lembur</h2>
       {/* Date Filter Section */}
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-4 mb-2">
         {/* Filter Tanggal */}
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
@@ -262,7 +271,10 @@ const Lembur = () => {
         {/* Lain-lain */}
         <button
           className="bg-red-800 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
-          onClick={() => setLemburModal(true)}
+          onClick={() => {
+            setLemburModal(true);
+            fetchLembur(tanggal); // Fetch lembur with the current filters applied
+          }}
         >
           Pengajuan Lembur
         </button>
@@ -285,13 +297,14 @@ const Lembur = () => {
       </div>
 
       {/* Table for Lembur Data */}
-      <div className="bg-white shadow rounded-lg px-6 pb-6 pt-4">
+      <div className="bg-white shadow rounded-lg px-6 pb-2">
         <span className="text-sm font-semibold">
           Detail Rekapan Lembur Karyawan
         </span>
+
         <div className="bg-white shadow rounded-lg overflow-x-auto">
           <div className="max-h-80 overflow-y-auto">
-            <table className="min-w-full text-sm border">
+            <table className="min-w-full text-sm border mt-2">
               <thead className="bg-gray-100 sticky top-0 z-10">
                 <tr>
                   <th className="border px-2 py-1">No</th>
@@ -322,10 +335,10 @@ const Lembur = () => {
                       </td>
                       <td className="border px-2 py-1">{item.tanggal}</td>
                       <td className="border px-2 py-1">
-                        {item.jam_mulai?.slice(0, 5)}
+                        {dayjs(item.jam_mulai).format("HH:mm")}
                       </td>
                       <td className="border px-2 py-1">
-                        {item.jam_selesai?.slice(0, 5)}
+                        {dayjs(item.jam_selesai).format("HH:mm")}
                       </td>
                       <td className="border px-2 py-1">{item.keterangan}</td>
                       <td className="border px-2 py-1 text-center">
@@ -367,7 +380,140 @@ const Lembur = () => {
             </table>
           </div>
         </div>
+        <button
+          className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 mt-2 rounded-lg text-sm"
+          onClick={() => setShowFormModal(true)}
+        >
+          Tambah Lembur
+        </button>
       </div>
+      {showFormModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center"
+          onClick={() => setShowFormModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg w-full max-w-lg p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold mb-4">Form Tambah Lembur</h2>
+            <form
+              className="flex flex-col gap-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const token = localStorage.getItem("token");
+                const form = new FormData();
+
+                // Format tanggal ke DD-MM-YYYY sebelum dikirim
+                const formattedDate = dayjs(formData.tanggal).format(
+                  "DD-MM-YYYY"
+                );
+
+                form.append("id_karyawan", formData.id_karyawan);
+                form.append("tanggal", formattedDate); // <-- tanggal terformat
+                form.append("jam_mulai", formData.jam_mulai);
+                form.append("jam_selesai", formData.jam_selesai);
+                form.append("keterangan", formData.keterangan);
+                if (formData.file) {
+                  form.append("file", formData.file);
+                }
+
+                try {
+                  await api.post("/lembur/pengajuan", form, {
+                    headers: {
+                      "Content-Type": "multipart/form-data",
+                      Authorization: `Bearer ${token}`,
+                    },
+                  });
+                  alert("Berhasil menambahkan lembur.");
+                  fetchLembur(tanggal);
+                  setShowFormModal(false);
+                  setFormData({
+                    id_karyawan: "",
+                    tanggal: "",
+                    jam_mulai: "",
+                    jam_selesai: "",
+                    keterangan: "",
+                    file: "",
+                  });
+                } catch {
+                  alert("Gagal menambahkan lembur.");
+                }
+              }}
+            >
+              <input
+                required
+                type="number"
+                placeholder="Masukkan ID Pegawai"
+                value={formData.id_karyawan}
+                onChange={(e) =>
+                  setFormData({ ...formData, id_karyawan: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+
+              <input
+                required
+                type="date"
+                value={formData.tanggal}
+                onChange={(e) =>
+                  setFormData({ ...formData, tanggal: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+              <input
+                required
+                type="time"
+                value={formData.jam_mulai}
+                onChange={(e) =>
+                  setFormData({ ...formData, jam_mulai: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+              <input
+                required
+                type="time"
+                value={formData.jam_selesai}
+                onChange={(e) =>
+                  setFormData({ ...formData, jam_selesai: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+              <textarea
+                placeholder="Deskripsi lembur"
+                value={formData.keterangan}
+                onChange={(e) =>
+                  setFormData({ ...formData, keterangan: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={(e) =>
+                  setFormData({ ...formData, file: e.target.files[0] })
+                }
+                className="border p-2 rounded"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
+                  onClick={() => setShowFormModal(false)}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                >
+                  Simpan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal for Pending Requests */}
       {lemburModal && (
@@ -437,64 +583,26 @@ const Lembur = () => {
                           </td>
 
                           <td className="border px-2 py-1">
-                            {lemburRejectId === item.id_lembur ? (
-                              <div className="flex flex-col gap-1">
-                                <input
-                                  type="text"
-                                  className="border px-2 py-1 rounded text-xs"
-                                  placeholder="Alasan penolakan"
-                                  value={
-                                    lemburAlasanReject[item.id_lembur] || ""
-                                  }
-                                  onChange={(e) =>
-                                    setLemburAlasanReject({
-                                      ...lemburAlasanReject,
-                                      [item.id_lembur]: e.target.value,
-                                    })
-                                  }
-                                  disabled={
-                                    lemburActionLoading === item.id_lembur
-                                  }
-                                />
-                                <div className="flex gap-1">
-                                  <button
-                                    className="bg-red-500 text-white px-2 py-1 rounded text-xs"
-                                    onClick={() => handleReject(item.id_lembur)}
-                                  >
-                                    Tolak
-                                  </button>
-                                  <button
-                                    className="bg-gray-300 text-black px-2 py-1 rounded text-xs"
-                                    onClick={() => setLemburRejectId(null)}
-                                  >
-                                    Batal
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex gap-1">
-                                <button
-                                  className="bg-green-500 text-white px-2 py-1 rounded text-xs"
-                                  onClick={() => handleApprove(item.id_lembur)}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  className="bg-red-500 text-white px-2 py-1 rounded text-xs"
-                                  onClick={() =>
-                                    setLemburRejectId(item.id_lembur)
-                                  }
-                                >
-                                  Tolak
-                                </button>
-                                <button
-                                  className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
-                                  onClick={() => handleDelete(item.id_lembur)}
-                                >
-                                  Hapus
-                                </button>
-                              </div>
-                            )}
+                            <div className="flex gap-1">
+                              <button
+                                className="bg-green-500 text-white px-2 py-1 rounded text-xs"
+                                onClick={() => item.id_lembur}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                className="bg-red-500 text-white px-2 py-1 rounded text-xs"
+                                onClick={() => handleReject(item.id_lembur)}
+                              >
+                                Tolak
+                              </button>
+                              <button
+                                className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
+                                onClick={() => handleDelete(item.id_lembur)}
+                              >
+                                Hapus
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

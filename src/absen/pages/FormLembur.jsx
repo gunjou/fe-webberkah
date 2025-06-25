@@ -30,91 +30,91 @@ const FormLembur = () => {
   const [lemburList, setLemburList] = useState([]);
   const [lemburLoading, setLemburLoading] = useState(false);
   const [lemburError, setLemburError] = useState("");
-  const [sudahMengajukan, setSudahMengajukan] = useState(false);
+  // const [sudahMengajukan, setSudahMengajukan] = useState(false);
   const navigate = useNavigate();
 
-  const fetchLembur = async (tanggal) => {
-    setLemburLoading(true);
-    setLemburError("");
-    try {
-      const token = localStorage.getItem("token");
-      const res = await api.get(`/check-lembur?tanggal=${tanggal}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = res.data.data;
-      setLemburList(Array.isArray(data) ? data : data ? [data] : []);
-    } catch (err) {
-      setLemburError("Gagal memuat data pengajuan lembur.");
-      setLemburList([]);
-    } finally {
-      setLemburLoading(false);
-    }
-  };
+  // const fetchLembur = async (tanggal) => {
+  //   setLemburLoading(true);
+  //   setLemburError("");
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     const res = await api.get(`/check-lembur?tanggal=${tanggal}`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     const data = res.data.data;
+  //     setLemburList(Array.isArray(data) ? data : data ? [data] : []);
+  //   } catch (err) {
+  //     setLemburError("Gagal memuat data pengajuan lembur.");
+  //     setLemburList([]);
+  //   } finally {
+  //     setLemburLoading(false);
+  //   }
+  // };
 
-  const handleDeletePengajuan = async (id_lembur) => {
-    if (!window.confirm("Yakin ingin menghapus pengajuan ini?")) return;
-    try {
-      const token = localStorage.getItem("token");
-      await api.delete(
-        `/hapus-pengajuan/${id_lembur}`,
-        // const response = await api.get(`/cek_presensi/${id_karyawan}`, {
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("Pengajuan berhasil dihapus.");
-      // Refresh data setelah hapus
-      fetchLembur(lemburTanggal.format("YYYY-MM-DD"));
-      // Jika tanggal utama sama dengan tanggal modal, refresh status disable form
-      if (date.format("YYYY-MM-DD") === lemburTanggal.format("YYYY-MM-DD")) {
-        const res = await api.get(
-          `/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const data = res.data.data;
-        setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
-      }
-    } catch (err) {
-      alert(
-        "Gagal menghapus pengajuan!\n" +
-          (err.response?.data?.message || "Terjadi kesalahan.")
-      );
-    }
-  };
+  // const handleDeletePengajuan = async (id_lembur) => {
+  //   if (!window.confirm("Yakin ingin menghapus pengajuan ini?")) return;
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     await api.delete(
+  //       `/hapus-pengajuan/${id_lembur}`,
+  //       // const response = await api.get(`/cek_presensi/${id_karyawan}`, {
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+  //     alert("Pengajuan berhasil dihapus.");
+  //     // Refresh data setelah hapus
+  //     fetchLembur(lemburTanggal.format("YYYY-MM-DD"));
+  //     // Jika tanggal utama sama dengan tanggal modal, refresh status disable form
+  //     if (date.format("YYYY-MM-DD") === lemburTanggal.format("YYYY-MM-DD")) {
+  //       const res = await api.get(
+  //         `/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
+  //         {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //         }
+  //       );
+  //       const data = res.data.data;
+  //       setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
+  //     }
+  //   } catch (err) {
+  //     alert(
+  //       "Gagal menghapus pengajuan!\n" +
+  //         (err.response?.data?.message || "Terjadi kesalahan.")
+  //     );
+  //   }
+  // };
 
-  useEffect(() => {
-    if (showLemburModal) {
-      fetchLembur(lemburTanggal.format("YYYY-MM-DD"));
-    }
-  }, [showLemburModal, lemburTanggal]);
+  // useEffect(() => {
+  //   if (showLemburModal) {
+  //     fetchLembur(lemburTanggal.format("YYYY-MM-DD"));
+  //   }
+  // }, [showLemburModal, lemburTanggal]);
 
-  useEffect(() => {
-    const cekPengajuanHariIni = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await api.get(
-          `/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        // Jika ada data pengajuan pada tanggal tersebut, set disable
-        const data = res.data.data;
-        setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
-      } catch (err) {
-        setSudahMengajukan(false); // Jika error, tetap bisa isi
-      }
-    };
-    cekPengajuanHariIni();
-  }, [date]);
+  // useEffect(() => {
+  //   const cekPengajuanHariIni = async () => {
+  //     try {
+  //       const token = localStorage.getItem("token");
+  //       const res = await api.get(
+  //         `/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
+  //         {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //         }
+  //       );
+  //       // Jika ada data pengajuan pada tanggal tersebut, set disable
+  //       const data = res.data.data;
+  //       setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
+  //     } catch (err) {
+  //       setSudahMengajukan(false); // Jika error, tetap bisa isi
+  //     }
+  //   };
+  //   cekPengajuanHariIni();
+  // }, [date]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    if (!date || !startTime || !endTime || !reason.trim()) {
+    if (!date || !startTime || !endTime) {
       alert("Semua kolom wajib diisi!");
       setIsLoading(false);
       return;
@@ -122,16 +122,16 @@ const FormLembur = () => {
 
     try {
       const formData = new FormData();
-      formData.append("tanggal", date.format("YYYY-MM-DD"));
-      formData.append("jam_mulai", startTime.format("HH:mm"));
-      formData.append("jam_selesai", endTime.format("HH:mm"));
-      formData.append("deskripsi", reason);
+      formData.append("tanggal", date.format("DD-MM-YYYY"));
+      formData.append("jam_mulai", startTime.format("HH:MM"));
+      formData.append("jam_selesai", endTime.format("HH:MM"));
+      formData.append("keterangan", reason);
       if (attachment) {
-        formData.append("lampiran", attachment);
+        formData.append("file", attachment);
       }
 
       const token = localStorage.getItem("token");
-      await api.post(`/pengajuan-lembur`, formData, {
+      await api.post(`/lembur/pengajuan`, formData, {
         headers: {
           "Content-Type": undefined,
           Authorization: `Bearer ${token}`,
@@ -182,12 +182,12 @@ const FormLembur = () => {
           </button>
         </div>
         <div className="mb-4"></div>
-        {sudahMengajukan && (
+        {/* {sudahMengajukan && (
           <div className="mb-4 text-left text-xs text-red-600 font-semibold">
             Anda sudah mengajukan lembur untuk tanggal ini. Form tidak dapat
             diisi lagi hari ini.
           </div>
-        )}
+        )} */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1 text-left">
             Nama
@@ -197,7 +197,6 @@ const FormLembur = () => {
             value={toTitleCase(localStorage.getItem("nama"))}
             className="w-full px-3 py-2 border rounded-lg"
             readOnly
-            disabled={sudahMengajukan}
           />
         </div>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -214,7 +213,6 @@ const FormLembur = () => {
                   fullWidth: true,
                   required: true,
                   placeholder: "Pilih tanggal",
-                  disabled: sudahMengajukan,
                 },
               }}
             />
@@ -232,7 +230,6 @@ const FormLembur = () => {
                   fullWidth: true,
                   required: true,
                   placeholder: "Pilih waktu mulai",
-                  disabled: sudahMengajukan,
                 },
               }}
             />
@@ -251,7 +248,6 @@ const FormLembur = () => {
                   required: true,
                   placeholder: "Pilih waktu selesai",
                   className: "placeholder:text-xs",
-                  disabled: sudahMengajukan,
                 },
               }}
             />
@@ -267,8 +263,6 @@ const FormLembur = () => {
             className="w-full px-3 py-2 border rounded-lg placeholder:text-xs"
             placeholder="Masukkan alasan lembur Anda"
             rows="4"
-            required
-            disabled={sudahMengajukan}
           ></textarea>
         </div>
         <div className="mb-4">
@@ -283,13 +277,12 @@ const FormLembur = () => {
             onChange={(e) => setAttachment(e.target.files[0])}
             className="w-full px-3 py-2 border rounded-lg"
             accept="image/*,application/pdf"
-            disabled={sudahMengajukan}
           />
         </div>
         <button
           type="submit"
           className="w-full bg-custom-merah text-white py-2 rounded-lg hover:bg-custom-gelap"
-          disabled={isLoading || sudahMengajukan}
+          disabled={isLoading}
         >
           {isLoading ? "Mengirim..." : "Kirim"}
         </button>
@@ -448,9 +441,9 @@ const FormLembur = () => {
                         <div className="flex justify-end mt-2">
                           <button
                             className="bg-red-500 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
-                            onClick={() =>
-                              handleDeletePengajuan(item.id_lembur || item.id)
-                            }
+                            // onClick={() =>
+                            //   handleDeletePengajuan(item.id_lembur || item.id)
+                            // }
                             type="button"
                           >
                             Hapus Pengajuan
