@@ -10,6 +10,7 @@ import "jspdf-autotable";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 
 const Lembur = () => {
+  const [fileBlobs, setFileBlobs] = useState({});
   const [tanggal, setTanggal] = useState(null);
   const [lemburList, setLemburList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -92,8 +93,24 @@ const Lembur = () => {
     [tanggal, idKaryawanFilter, statusLemburFilter]
   );
 
+  const fetchPegawaiList = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get("/pegawai/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("DATA PEGAWAI:", res.data); // 👈 log hasil
+
+      setPegawaiList(res.data);
+    } catch (error) {
+      console.error("Gagal ambil data pegawai:", error);
+    }
+  };
+
   useEffect(() => {
     fetchLembur(tanggal);
+    fetchPegawaiList(); // <- penting!
   }, [tanggal, idKaryawanFilter, statusLemburFilter, fetchLembur]);
 
   // Excel download functionality
@@ -220,6 +237,28 @@ const Lembur = () => {
     }
   };
 
+  const fetchFileWithToken = async (path, id_lembur) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `https://api.berkahangsana.com/lembur/preview/${path}`, // URL ini sesuaikan dengan endpoint preview lembur
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error("Gagal ambil file.");
+
+      const blob = await res.blob();
+      const objectURL = URL.createObjectURL(blob);
+      setFileBlobs((prev) => ({ ...prev, [id_lembur]: objectURL }));
+      window.open(objectURL, "_blank");
+    } catch (err) {
+      console.error("Gagal ambil file preview:", err);
+      alert("Gagal membuka lampiran.");
+    }
+  };
+
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-2">Lembur</h2>
@@ -335,22 +374,25 @@ const Lembur = () => {
                       </td>
                       <td className="border px-2 py-1">{item.tanggal}</td>
                       <td className="border px-2 py-1">
-                        {dayjs(item.jam_mulai).format("HH:mm")}
+                        {item.jam_mulai?.slice(0, 5)}
                       </td>
                       <td className="border px-2 py-1">
-                        {dayjs(item.jam_selesai).format("HH:mm")}
+                        {item.jam_selesai?.slice(0, 5)}
                       </td>
                       <td className="border px-2 py-1">{item.keterangan}</td>
                       <td className="border px-2 py-1 text-center">
                         {item.path_lampiran ? (
-                          <a
-                            href={item.path_lampiran}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 underline text-xs"
+                          <button
+                            onClick={() =>
+                              fetchFileWithToken(
+                                item.path_lampiran,
+                                item.id_lembur
+                              )
+                            }
+                            className="text-blue-600 hover:underline text-xs"
                           >
-                            Lihat
-                          </a>
+                            Lihat File
+                          </button>
                         ) : (
                           "-"
                         )}
@@ -382,7 +424,10 @@ const Lembur = () => {
         </div>
         <button
           className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 mt-2 rounded-lg text-sm"
-          onClick={() => setShowFormModal(true)}
+          onClick={() => {
+            fetchPegawaiList(); // <- langsung panggil sebelum form muncul
+            setShowFormModal(true);
+          }}
         >
           Tambah Lembur
         </button>
@@ -398,19 +443,17 @@ const Lembur = () => {
           >
             <h2 className="text-lg font-bold mb-4">Form Tambah Lembur</h2>
             <form
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-2"
               onSubmit={async (e) => {
                 e.preventDefault();
                 const token = localStorage.getItem("token");
                 const form = new FormData();
-
-                // Format tanggal ke DD-MM-YYYY sebelum dikirim
                 const formattedDate = dayjs(formData.tanggal).format(
                   "DD-MM-YYYY"
                 );
 
                 form.append("id_karyawan", formData.id_karyawan);
-                form.append("tanggal", formattedDate); // <-- tanggal terformat
+                form.append("tanggal", formattedDate);
                 form.append("jam_mulai", formData.jam_mulai);
                 form.append("jam_selesai", formData.jam_selesai);
                 form.append("keterangan", formData.keterangan);
@@ -425,7 +468,8 @@ const Lembur = () => {
                       Authorization: `Bearer ${token}`,
                     },
                   });
-                  alert("Berhasil menambahkan lembur.");
+
+                  alert("Lembur berhasil ditambahkan!");
                   fetchLembur(tanggal);
                   setShowFormModal(false);
                   setFormData({
@@ -441,60 +485,97 @@ const Lembur = () => {
                 }
               }}
             >
-              <input
-                required
-                type="number"
-                placeholder="Masukkan ID Pegawai"
-                value={formData.id_karyawan}
-                onChange={(e) =>
-                  setFormData({ ...formData, id_karyawan: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
+              {/* ID Karyawan */}
+              <div>
+                <label className="block font-medium">Pilih Pegawai</label>
+                <select
+                  required
+                  value={formData.id_karyawan}
+                  onChange={(e) =>
+                    setFormData({ ...formData, id_karyawan: e.target.value })
+                  }
+                  className="border p-1 capitalize rounded w-full"
+                >
+                  <option value="">Pilih Pegawai</option>
+                  {pegawaiList.map((p) => (
+                    <option key={p.id_karyawan} value={p.id_karyawan}>
+                      {p.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              <input
-                required
-                type="date"
-                value={formData.tanggal}
-                onChange={(e) =>
-                  setFormData({ ...formData, tanggal: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
-              <input
-                required
-                type="time"
-                value={formData.jam_mulai}
-                onChange={(e) =>
-                  setFormData({ ...formData, jam_mulai: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
-              <input
-                required
-                type="time"
-                value={formData.jam_selesai}
-                onChange={(e) =>
-                  setFormData({ ...formData, jam_selesai: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
-              <textarea
-                placeholder="Deskripsi lembur"
-                value={formData.keterangan}
-                onChange={(e) =>
-                  setFormData({ ...formData, keterangan: e.target.value })
-                }
-                className="border p-2 rounded"
-              />
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={(e) =>
-                  setFormData({ ...formData, file: e.target.files[0] })
-                }
-                className="border p-2 rounded"
-              />
+              {/* Tanggal */}
+              <div>
+                <label className="block  font-medium">Tanggal Lembur</label>
+                <input
+                  required
+                  type="date"
+                  value={formData.tanggal}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tanggal: e.target.value })
+                  }
+                  className="border p-1 rounded w-full"
+                />
+              </div>
+
+              {/* Jam Mulai */}
+              <div>
+                <label className="block font-medium">Jam Mulai</label>
+                <input
+                  required
+                  //type="time"
+                  value={formData.jam_mulai}
+                  placeholder="HH:MM"
+                  onChange={(e) =>
+                    setFormData({ ...formData, jam_mulai: e.target.value })
+                  }
+                  className="border border-black p-1 rounded w-full"
+                />
+              </div>
+
+              {/* Jam Selesai */}
+              <div>
+                <label className="block font-medium">Jam Selesai</label>
+                <input
+                  required
+                  // type="time"
+                  placeholder="HH:MM"
+                  value={formData.jam_selesai}
+                  onChange={(e) =>
+                    setFormData({ ...formData, jam_selesai: e.target.value })
+                  }
+                  className="border border-black p-1 rounded w-full"
+                />
+              </div>
+
+              {/* Keterangan */}
+              <div>
+                <label className="block font-medium">Deskripsi Lembur</label>
+                <textarea
+                  placeholder="Contoh: Menginput data laporan keuangan."
+                  value={formData.keterangan}
+                  onChange={(e) =>
+                    setFormData({ ...formData, keterangan: e.target.value })
+                  }
+                  className="border p-1 rounded w-full"
+                />
+              </div>
+
+              {/* Lampiran */}
+              <div>
+                <label className="block font-medium">Lampiran (Opsional)</label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) =>
+                    setFormData({ ...formData, file: e.target.files[0] })
+                  }
+                  className="border p-1 rounded w-full"
+                />
+              </div>
+
+              {/* Tombol */}
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
