@@ -13,6 +13,9 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 import api from "../../shared/Api";
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+import { MdClose } from "react-icons/md";
 
 const kolom = [
   { id: "no", label: "No", minWidth: 30 },
@@ -28,6 +31,7 @@ const kolom = [
   { id: "total_jam_kerja_normal", label: "Normal", minWidth: 60 },
   { id: "total_jam_terlambat", label: "Terlambat", minWidth: 60 },
   { id: "total_jam_kurang", label: "Bolos", minWidth: 60 },
+  { id: "action", label: "Action", minWidth: 60 }, // Tambah kolom action
 ];
 
 const formatTerlambat = (menit) => {
@@ -48,6 +52,10 @@ const Rekapan = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [openModal, setOpenModal] = useState(false);
+  const [detailData, setDetailData] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedNama, setSelectedNama] = useState("");
 
   const fetchData = (start = "", end = "") => {
     const token = localStorage.getItem("token");
@@ -360,6 +368,46 @@ const Rekapan = () => {
     doc.save(`${getFileName(startDate, endDate)}.pdf`);
   };
 
+  const handleOpenModal = (id_karyawan, nama) => {
+    setOpenModal(true);
+    setSelectedNama(nama);
+    setDetailLoading(true);
+    const token = localStorage.getItem("token");
+
+    // Format tanggal ke dd-mm-yyyy
+    const formatToDDMMYYYY = (str) => {
+      const [year, month, day] = str.split("-");
+      return `${day}-${month}-${year}`;
+    };
+
+    const formattedStart = formatToDDMMYYYY(startDate);
+    const formattedEnd = formatToDDMMYYYY(endDate);
+
+    api
+      .get("/rekapan/absensi/detail", {
+        params: {
+          id_karyawan,
+          start_date: formattedStart,
+          end_date: formattedEnd,
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        setDetailData(res.data.data || []);
+        setDetailLoading(false);
+      })
+      .catch(() => {
+        setDetailData([]);
+        setDetailLoading(false);
+      });
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setDetailData([]);
+    setSelectedNama("");
+  };
+
   const detail =
     currentRows.length === 0 ? (
       <TableRow>
@@ -421,6 +469,14 @@ const Rekapan = () => {
             {item.total_jam_kurang === "0" || !item.total_jam_kurang
               ? "-"
               : item.total_jam_kurang}
+          </TableCell>
+          <TableCell align="center">
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded-[10px] text-xs"
+              onClick={() => handleOpenModal(item.id_karyawan, item.nama)}
+            >
+              Detail
+            </button>
           </TableCell>
         </TableRow>
       ))
@@ -512,7 +568,9 @@ const Rekapan = () => {
                           {kolom.map((column, index) => (
                             <TableCell
                               key={column.id}
-                              onClick={() => handleSort(column.id)}
+                              onClick={() =>
+                                column.id !== "action" && handleSort(column.id)
+                              }
                               style={{
                                 minWidth: column.minWidth,
                                 backgroundColor: "#4d4d4d",
@@ -520,25 +578,30 @@ const Rekapan = () => {
                                 fontWeight: "bold",
                                 fontSize: "12px",
                                 padding: "6px",
-                                cursor: "pointer",
+                                cursor:
+                                  column.id !== "action"
+                                    ? "pointer"
+                                    : "default",
                                 whiteSpace: "nowrap",
                                 textAlign: "center",
-                                borderRadius: index === 12 ? "0 10px 0 0" : "0",
+                                borderRadius: index === 13 ? "0 10px 0 0" : "0",
                                 border: "1px solid #4d4d4d",
                                 boxSizing: "border-box",
                               }}
                             >
                               {column.label}
-                              {sortConfig.key === column.id && (
-                                <span style={{ marginLeft: 4 }}>
-                                  {sortConfig.direction === "asc" ? " ▲" : " ▼"}
-                                </span>
-                              )}
+                              {sortConfig.key === column.id &&
+                                column.id !== "action" && (
+                                  <span style={{ marginLeft: 4 }}>
+                                    {sortConfig.direction === "asc"
+                                      ? " ▲"
+                                      : " ▼"}
+                                  </span>
+                                )}
                             </TableCell>
                           ))}
                         </TableRow>
                       </TableHead>
-
                       <TableBody>
                         {currentRows.length === 0 ? (
                           <TableRow sx={{ height: "32px" }}>
@@ -631,6 +694,19 @@ const Rekapan = () => {
                               >
                                 {formatTerlambat(item.total_jam_kurang) || "-"}
                               </TableCell>
+                              <TableCell
+                                sx={{ fontSize: "12px", padding: "6px" }}
+                                align="center"
+                              >
+                                <button
+                                  className="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded-[10px] text-xs"
+                                  onClick={() =>
+                                    handleOpenModal(item.id_karyawan, item.nama)
+                                  }
+                                >
+                                  Detail
+                                </button>
+                              </TableCell>
                             </TableRow>
                           ))
                         )}
@@ -672,6 +748,90 @@ const Rekapan = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Detail */}
+      <Modal open={openModal} onClose={handleCloseModal}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 900,
+            bgcolor: "background.paper",
+            borderRadius: 5,
+            boxShadow: 24,
+            p: 3,
+            maxHeight: "80vh",
+            overflowY: "auto",
+          }}
+        >
+          {/* Bagian Header Nama dan Tombol Tutup */}
+          <div className="mb-2 flex justify-between items-center sticky top-0 bg-white p-2 z-10">
+            <span className="font-bold text-lg capitalize">{selectedNama}</span>
+            <button
+              onClick={handleCloseModal}
+              className="text-gray-500 p-1 rounded-full hover:bg-gray-200"
+              style={{ fontSize: "1.5rem", lineHeight: 0 }}
+            >
+              <MdClose />
+            </button>
+          </div>
+
+          {/* Konten Tabel yang Dapat Di-scroll */}
+          {detailLoading ? (
+            <div>Loading...</div>
+          ) : detailData.length === 0 ? (
+            <div>Tidak ada data detail.</div>
+          ) : (
+            <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
+              <Table size="small">
+                <TableHead
+                  sx={{
+                    position: "sticky",
+                    top: 0,
+                    backgroundColor: "white",
+                    zIndex: 1,
+                  }}
+                >
+                  <TableRow>
+                    <TableCell>Tanggal</TableCell>
+                    <TableCell>Lokasi Masuk</TableCell>
+                    <TableCell>Lokasi Pulang</TableCell>
+                    <TableCell>Jam Masuk</TableCell>
+                    <TableCell>Jam Pulang</TableCell>
+                    <TableCell>Keterangan</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody className="capitalize">
+                  {detailData.map((row, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{row.tanggal || "-"}</TableCell>
+                      <TableCell>{row.lokasi_masuk || "-"}</TableCell>
+                      <TableCell>{row.lokasi_keluar || "-"}</TableCell>
+                      <TableCell>{row.jam_masuk?.slice(0, 5) || "-"}</TableCell>
+                      <TableCell>
+                        {row.jam_keluar?.slice(0, 5) || "-"}
+                      </TableCell>
+                      <TableCell
+                        style={{
+                          color: ["libur nasional", "minggu"].includes(
+                            row.status_hari
+                          )
+                            ? "red"
+                            : "black",
+                        }}
+                      >
+                        {row.status_hari || "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </Box>
+      </Modal>
     </div>
   );
 };
