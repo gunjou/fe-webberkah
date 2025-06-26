@@ -262,84 +262,79 @@ const Lembur = () => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-2">Lembur</h2>
-      {/* Date Filter Section */}
-      <div className="flex items-center gap-4 mb-2">
-        {/* Filter Tanggal */}
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <DatePicker
-            label="Pilih Tanggal"
-            value={tanggal}
-            onChange={setTanggal}
-            format="DD/MM/YYYY"
-            className="bg-white rounded-lg"
-            slotProps={{
-              textField: {
-                size: "small",
-                sx: { minWidth: 120 },
-              },
-            }}
-          />
-        </LocalizationProvider>
-
-        {/* Filter Pegawai */}
-        <select
-          value={idKaryawanFilter}
-          onChange={(e) => setIdKaryawanFilter(e.target.value)}
-          className="px-2 py-2 border rounded-lg text-sm"
-        >
-          <option value="">Pilih Pegawai</option>
-          {pegawaiList.map((pegawai) => (
-            <option key={pegawai.id_karyawan} value={pegawai.id_karyawan}>
-              {pegawai.nama_karyawan}
-            </option>
-          ))}
-        </select>
-
-        {/* Filter Status Lembur */}
-        <select
-          value={statusLemburFilter}
-          onChange={(e) => setStatusLemburFilter(e.target.value)}
-          className="px-2 py-2 border rounded-lg text-sm"
-        >
-          <option value="">Pilih Status Lembur</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
-
-        {/* Lain-lain */}
-        <button
-          className="bg-red-800 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
-          onClick={() => {
-            setLemburModal(true);
-            fetchLembur(tanggal); // Fetch lembur with the current filters applied
-          }}
-        >
-          Pengajuan Lembur
-        </button>
-
-        {/* Download Buttons */}
-        <div className="flex gap-2 ml-auto">
-          <button
-            className="flex items-center text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg"
-            onClick={downloadExcel}
-          >
-            <FaFileExcel className="mr-2" /> Excel
-          </button>
-          <button
-            className="flex items-center text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg"
-            onClick={downloadPDF}
-          >
-            <FaFilePdf className="mr-2" /> PDF
-          </button>
-        </div>
-      </div>
-
       {/* Table for Lembur Data */}
       <div className="bg-white shadow rounded-lg px-6 pb-2">
-        <span className="text-sm font-semibold">
-          Detail Rekapan Lembur Karyawan
-        </span>
+        <div className="flex items-center gap-4 mb-2 pt-4">
+          {/* Filter Tanggal */}
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="Pilih Tanggal"
+              value={tanggal}
+              onChange={setTanggal}
+              format="DD/MM/YYYY"
+              className="bg-white rounded-lg"
+              slotProps={{
+                textField: {
+                  size: "small",
+                  sx: { minWidth: 120 },
+                },
+              }}
+            />
+          </LocalizationProvider>
+
+          {/* Filter Pegawai */}
+          <select
+            value={idKaryawanFilter}
+            onChange={(e) => setIdKaryawanFilter(e.target.value)}
+            className="px-2 py-2 border rounded-lg text-sm"
+          >
+            <option value="">Pilih Pegawai</option>
+            {pegawaiList.map((pegawai) => (
+              <option key={pegawai.id_karyawan} value={pegawai.id_karyawan}>
+                {pegawai.nama_karyawan}
+              </option>
+            ))}
+          </select>
+
+          {/* Filter Status Lembur */}
+          <select
+            value={statusLemburFilter}
+            onChange={(e) => setStatusLemburFilter(e.target.value)}
+            className="px-2 py-2 border rounded-lg text-sm"
+          >
+            <option value="">Pilih Status Lembur</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+
+          {/* Lain-lain */}
+          <button
+            className="bg-red-800 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+            onClick={() => {
+              setLemburModal(true);
+              fetchLembur(tanggal); // Fetch lembur with the current filters applied
+            }}
+          >
+            Pengajuan Lembur
+          </button>
+
+          {/* Download Buttons */}
+          <div className="flex gap-2 ml-auto">
+            <button
+              className="flex items-center text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg"
+              onClick={downloadExcel}
+            >
+              <FaFileExcel className="mr-2" /> Excel
+            </button>
+            <button
+              className="flex items-center text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg"
+              onClick={downloadPDF}
+            >
+              <FaFilePdf className="mr-2" /> PDF
+            </button>
+          </div>
+        </div>
 
         <div className="bg-white shadow rounded-lg overflow-x-auto">
           <div className="max-h-80 overflow-y-auto">

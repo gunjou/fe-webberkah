@@ -22,7 +22,8 @@ const kolom = [
   { id: "jumlah_izin", label: "Izin", minWidth: 40 },
   { id: "jumlah_sakit", label: "Sakit", minWidth: 40 },
   { id: "jumlah_alpha", label: "Alpha", minWidth: 40 },
-  { id: "jumlah_setengah_hari", label: "½ Hari", minWidth: 60 },
+  { id: "jumlah_lembur", label: "Lembur", minWidth: 40 },
+  { id: "dinas_luar", label: "Dinas", minWidth: 40 },
   { id: "total_jam_kerja", label: "Kerja", minWidth: 60 },
   { id: "total_jam_kerja_normal", label: "Normal", minWidth: 60 },
   { id: "total_jam_terlambat", label: "Terlambat", minWidth: 60 },
@@ -269,7 +270,8 @@ const Rekapan = () => {
       item.jumlah_izin || "-",
       item.jumlah_sakit || "-",
       item.jumlah_alpha || "-",
-      item.jumlah_setengah_hari || "-",
+      item.jumlah_lembur || "-",
+      item.dinas_luar || "-",
       item.total_jam_kerja === null
         ? "-"
         : formatTerlambat(item.total_jam_kerja),
@@ -314,9 +316,8 @@ const Rekapan = () => {
       row.jumlah_izin || "-",
       row.jumlah_sakit || "-",
       row.jumlah_alpha || "-",
-      row.jumlah_setengah_hari === null
-        ? "-"
-        : formatTerlambat(row.jumlah_setengah_hari),
+      row.jumlah_lembur === null ? "-" : formatTerlambat(row.jumlah_lembur),
+      row.dinas_luar === null ? "-" : formatTerlambat(row.dinas_luar),
       row.total_jam_kerja === null ? "-" : formatTerlambat(row.total_jam_kerja),
       row.total_jam_kerja_normal === null
         ? "-"
@@ -393,9 +394,12 @@ const Rekapan = () => {
               : item.jumlah_alpha}
           </TableCell>
           <TableCell align="left">
-            {item.jumlah_setengah_hari === "0" || !item.jumlah_setengah_hari
+            {item.jumlah_lembur === "0" || !item.jumlah_lembur
               ? "-"
-              : item.jumlah_setengah_hari}
+              : item.jumlah_lembur}
+          </TableCell>
+          <TableCell align="left">
+            {item.di === "0" || !item.dinas_luar ? "-" : item.dinas_luar}
           </TableCell>
           <TableCell align="left">
             {item.total_jam_kerja === "0" || !item.total_jam_kerja
@@ -519,7 +523,7 @@ const Rekapan = () => {
                                 cursor: "pointer",
                                 whiteSpace: "nowrap",
                                 textAlign: "center",
-                                borderRadius: index === 11 ? "0 10px 0 0" : "0",
+                                borderRadius: index === 12 ? "0 10px 0 0" : "0",
                                 border: "1px solid #4d4d4d",
                                 boxSizing: "border-box",
                               }}
@@ -594,7 +598,13 @@ const Rekapan = () => {
                                 sx={{ fontSize: "12px", padding: "6px" }}
                                 align="center"
                               >
-                                {item.jumlah_setengah_hari || "-"}
+                                {item.jumlah_lembur || "-"}
+                              </TableCell>
+                              <TableCell
+                                sx={{ fontSize: "12px", padding: "4px" }}
+                                align="center"
+                              >
+                                {item.dinas_luar || "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "6px" }}
