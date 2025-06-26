@@ -472,7 +472,7 @@ const Rekapan = () => {
           </TableCell>
           <TableCell align="center">
             <button
-              className="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded-[10px] text-xs"
+              className="bg-blue-500 hover:bg-blue-700 text-white px-2 py-0.5 rounded-[10px] text-xs"
               onClick={() => handleOpenModal(item.id_karyawan, item.nama)}
             >
               Detail

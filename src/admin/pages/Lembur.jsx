@@ -338,8 +338,8 @@ const Lembur = () => {
 
         <div className="bg-white shadow rounded-lg overflow-x-auto">
           <div className="max-h-80 overflow-y-auto">
-            <table className="min-w-full text-sm border mt-2">
-              <thead className="bg-gray-100 sticky top-0 z-10">
+            <table className="min-w-full text-sm border">
+              <thead className="bg-gray-100 sticky -top-1 z-10">
                 <tr>
                   <th className="border px-2 py-1">No</th>
                   <th className="border px-2 py-1">Nama</th>
