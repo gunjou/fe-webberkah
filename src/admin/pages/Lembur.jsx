@@ -662,7 +662,7 @@ const Lembur = () => {
                             <div className="flex gap-1">
                               <button
                                 className="bg-green-500 text-white px-2 py-1 rounded text-xs"
-                                onClick={() => item.id_lembur}
+                                onClick={() => handleApprove(item.id_lembur)}
                               >
                                 Approve
                               </button>
