@@ -87,13 +87,22 @@ const Rekapan = () => {
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    const format = (date) => date.toISOString().split("T")[0]; // yyyy-mm-dd
+    const formatYMD = (date) => date.toISOString().split("T")[0]; // yyyy-mm-dd
+    const formatDMY = (date) => {
+      const d = date.getDate().toString().padStart(2, "0");
+      const m = (date.getMonth() + 1).toString().padStart(2, "0");
+      const y = date.getFullYear();
+      return `${d}-${m}-${y}`;
+    };
 
-    const start = format(firstDay);
-    const end = format(lastDay);
-
+    const start = formatYMD(firstDay);
+    const end = formatYMD(lastDay);
     setStartDate(start);
     setEndDate(end);
+
+    // Panggil data langsung
+    fetchData(formatDMY(firstDay), formatDMY(lastDay));
+    resetFilter();
   }, []);
 
   useEffect(() => {
@@ -757,7 +766,7 @@ const Rekapan = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 900,
+            width: 1000,
             bgcolor: "background.paper",
             borderRadius: 5,
             boxShadow: 24,
@@ -796,22 +805,48 @@ const Rekapan = () => {
                 >
                   <TableRow>
                     <TableCell>Tanggal</TableCell>
-                    <TableCell>Lokasi Masuk</TableCell>
-                    <TableCell>Lokasi Pulang</TableCell>
+                    <TableCell>Status</TableCell>
                     <TableCell>Jam Masuk</TableCell>
                     <TableCell>Jam Pulang</TableCell>
                     <TableCell>Keterangan</TableCell>
+                    <TableCell>Lokasi Masuk</TableCell>
+                    <TableCell>Lokasi Pulang</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody className="capitalize">
                   {detailData.map((row, idx) => (
                     <TableRow key={idx}>
                       <TableCell>{row.tanggal || "-"}</TableCell>
-                      <TableCell>{row.lokasi_masuk || "-"}</TableCell>
-                      <TableCell>{row.lokasi_keluar || "-"}</TableCell>
+                      <TableCell
+                        style={{
+                          color:
+                            row.nama_status === "Tidak Hadir"
+                              ? "red"
+                              : row.nama_status === "Hadir"
+                              ? "green"
+                              : row.nama_status === "Izin"
+                              ? "blue"
+                              : row.nama_status === "Sakit"
+                              ? "#d4a328"
+                              : "black",
+                        }}
+                      >
+                        {row.nama_status || "-"}
+                      </TableCell>
                       <TableCell>{row.jam_masuk?.slice(0, 5) || "-"}</TableCell>
                       <TableCell>
                         {row.jam_keluar?.slice(0, 5) || "-"}
+                      </TableCell>
+
+                      <TableCell>{row.lokasi_masuk || "-"}</TableCell>
+                      <TableCell
+                        style={{
+                          color: ["Setengah hari"].includes(row.lokasi_keluar)
+                            ? "#d4a328"
+                            : "black",
+                        }}
+                      >
+                        {row.lokasi_keluar || "-"}
                       </TableCell>
                       <TableCell
                         style={{
