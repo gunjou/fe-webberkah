@@ -74,6 +74,7 @@ const History = () => {
   };
 
   useEffect(() => {
+    if (value !== 0) return;
     const fetchPresensi = async () => {
       const id_karyawan = localStorage.getItem("id_karyawan");
       const token = localStorage.getItem("token");
@@ -103,15 +104,19 @@ const History = () => {
   }, [selectedDate]);
 
   useEffect(() => {
-    const fetchRekapanKaryawan = async () => {
+    if (value !== 1) return; // hanya fetch saat tab "Perhitungan Gaji" aktif
+
+    const fetchPerhitunganGaji = async () => {
       const token = localStorage.getItem("token");
+      const id_karyawan = localStorage.getItem("id_karyawan");
+
+      const now = dayjs();
+      const start = now.startOf("month").format("DD-MM-YYYY");
+      const end = now.endOf("month").format("DD-MM-YYYY");
 
       try {
-        const start = selectedDate.startOf("month").format("DD-MM-YYYY");
-        const end = selectedDate.endOf("month").format("DD-MM-YYYY");
-
         const response = await api.get(
-          `/rekapan/rekap?start=${start}&end=${end}`,
+          `/perhitungan-gaji/?id_karyawan=${id_karyawan}&start=${start}&end=${end}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -119,17 +124,16 @@ const History = () => {
           }
         );
 
-        console.log("Rekapan Response:", response);
-
-        setDataKaryawan(response.data.rekap);
+        console.log("Perhitungan Gaji Response:", response.data);
+        setDataHistory(response.data.data);
       } catch (error) {
-        console.error("Gagal mengambil data rekapan karyawan:", error);
-        setDataKaryawan(null); // biar nggak nunggu loading terus
+        console.error("Gagal mengambil data perhitungan gaji:", error);
+        setDataHistory([]);
       }
     };
 
-    fetchRekapanKaryawan();
-  }, [selectedDate]);
+    fetchPerhitunganGaji();
+  }, [value]);
 
   useEffect(() => {
     const fetchListRekapanKaryawan = async () => {
@@ -369,14 +373,14 @@ const History = () => {
                     <td>Status</td>
                     <td className="flex font-semibold">
                       <p className="pr-2">:</p>
-                      {dataHistory[0].status_presensi}
+                      {dataHistory[0].status_presensi || "-"}
                     </td>
                   </tr>
                   <tr>
                     <td>Jam Masuk</td>
                     <td className="flex font-semibold">
                       <p className="pr-2">:</p>
-                      {dataHistory[0].jam_masuk}
+                      {dataHistory[0].jam_masuk || "-"}
                     </td>
                   </tr>
                   <tr>
@@ -390,7 +394,7 @@ const History = () => {
                     <td>Lokasi Masuk</td>
                     <td className="flex font-semibold">
                       <p className="pr-2">:</p>
-                      {dataHistory[0].lokasi_masuk}
+                      {dataHistory[0].lokasi_masuk || "-"}
                     </td>
                   </tr>
                   <tr>
@@ -404,14 +408,16 @@ const History = () => {
                     <td>Jam Terlambat</td>
                     <td className="flex font-semibold">
                       <p className="pr-2">:</p>
-                      {formatMenitToJamMenit(dataHistory[0].jam_terlambat)}
+                      {formatMenitToJamMenit(
+                        dataHistory[0].jam_terlambat || ""
+                      )}
                     </td>
                   </tr>
                   <tr>
                     <td>Jam Bolos</td>
                     <td className="flex font-semibold">
                       <p className="pr-2">:</p>
-                      {formatMenitToJamMenit(dataHistory[0].jam_bolos)}
+                      {formatMenitToJamMenit(dataHistory[0].jam_bolos || "")}
                     </td>
                   </tr>
                   <tr>
@@ -443,38 +449,17 @@ const History = () => {
                   <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
                     <tbody>
                       <tr>
-                        <td>Status</td>
-                        <td className="flex font-semibold">
+                        <td>Nama</td>
+                        <td className="flex font-semibold capitalize">
                           <p className="pr-2">:</p>
-                          {item.status_presensi}
+                          {item.nama}
                         </td>
                       </tr>
                       <tr>
-                        <td>Jam Masuk</td>
-                        <td className="flex font-semibold">
+                        <td>Tipe</td>
+                        <td className="flex font-semibold capitalize">
                           <p className="pr-2">:</p>
-                          {item.jam_masuk}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Jam Keluar</td>
-                        <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
-                          {item.jam_keluar || "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Jam Kurang</td>
-                        <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
-                          {formatMenitToJamMenit(item.jam_kurang)}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Total Jam Kerja</td>
-                        <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
-                          {formatMenitToJamMenit(item.total_jam_kerja)}
+                          {item.tipe}
                         </td>
                       </tr>
                       <tr>
@@ -485,24 +470,45 @@ const History = () => {
                         </td>
                       </tr>
                       <tr>
-                        <td>Gaji Harian</td>
+                        <td>Jumlah Hadir</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(item.gaji_maks_harian)}
+                          {item.jumlah_hadir} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jam Kerja</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatMenitToJamMenit(item.total_jam_kerja)}
                         </td>
                       </tr>
                       <tr>
                         <td>Potongan</td>
                         <td className="flex font-semibold">
-                          <p className="pr-2">:</p>-
-                          {formatRupiah(item.potongan)}
+                          <p className="pr-2">:</p>
+                          {formatRupiah(item.total_potongan)}
                         </td>
                       </tr>
                       <tr>
-                        <td>Total Gaji Harian</td>
+                        <td>Lembur</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(item.total_gaji_harian)}
+                          {formatRupiah(item.total_bayaran_lembur)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Tunjangan Kehadiran</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(item.tunjangan_kehadiran)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Total Gaji Bersih</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(item.gaji_bersih)}
                         </td>
                       </tr>
                     </tbody>
@@ -513,10 +519,8 @@ const History = () => {
               <p className="text-center">Loading atau tidak ada data.</p>
             )}
           </div>
-          <div className="text-[7pt] align-left text-left">
-            <div>*jam kurang: akumulasi jam terlambat + jam bolos</div>
-          </div>
         </CustomTabPanel>
+
         <CustomTabPanel value={value} index={2}>
           {dataKaryawan ? (
             <div className="overflow-x-auto pb-7">
