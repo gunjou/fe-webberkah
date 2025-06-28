@@ -21,7 +21,7 @@ const toTitleCase = (str) => {
 const FormLembur = () => {
   const [date, setDate] = useState(dayjs());
   const [startTime, setStartTime] = useState(dayjs());
-  const [endTime, setEndTime] = useState(dayjs());
+  const [endTime, setEndTime] = useState(null);
   const [reason, setReason] = useState("");
   const [attachment, setAttachment] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,85 +30,89 @@ const FormLembur = () => {
   const [lemburList, setLemburList] = useState([]);
   const [lemburLoading, setLemburLoading] = useState(false);
   const [lemburError, setLemburError] = useState("");
+  const [sudahApproved, setSudahApproved] = useState(false);
   // const [sudahMengajukan, setSudahMengajukan] = useState(false);
   const navigate = useNavigate();
 
-  // const fetchLembur = async (tanggal) => {
-  //   setLemburLoading(true);
-  //   setLemburError("");
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     const res = await api.get(`/check-lembur?tanggal=${tanggal}`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     const data = res.data.data;
-  //     setLemburList(Array.isArray(data) ? data : data ? [data] : []);
-  //   } catch (err) {
-  //     setLemburError("Gagal memuat data pengajuan lembur.");
-  //     setLemburList([]);
-  //   } finally {
-  //     setLemburLoading(false);
-  //   }
-  // };
+  const fetchLembur = async (tanggal) => {
+    setLemburLoading(true);
+    setLemburError("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get("/lembur/by-karyawan", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  // const handleDeletePengajuan = async (id_lembur) => {
-  //   if (!window.confirm("Yakin ingin menghapus pengajuan ini?")) return;
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     await api.delete(
-  //       `/hapus-pengajuan/${id_lembur}`,
-  //       // const response = await api.get(`/cek_presensi/${id_karyawan}`, {
-  //       {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       }
-  //     );
-  //     alert("Pengajuan berhasil dihapus.");
-  //     // Refresh data setelah hapus
-  //     fetchLembur(lemburTanggal.format("YYYY-MM-DD"));
-  //     // Jika tanggal utama sama dengan tanggal modal, refresh status disable form
-  //     if (date.format("YYYY-MM-DD") === lemburTanggal.format("YYYY-MM-DD")) {
-  //       const res = await api.get(
-  //         `/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
-  //         {
-  //           headers: { Authorization: `Bearer ${token}` },
-  //         }
-  //       );
-  //       const data = res.data.data;
-  //       setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
-  //     }
-  //   } catch (err) {
-  //     alert(
-  //       "Gagal menghapus pengajuan!\n" +
-  //         (err.response?.data?.message || "Terjadi kesalahan.")
-  //     );
-  //   }
-  // };
+      const formatted = tanggal.format("YYYY-MM-DD");
+      const filtered = res.data.data.filter(
+        (item) => item.tanggal === formatted
+      );
 
-  // useEffect(() => {
-  //   if (showLemburModal) {
-  //     fetchLembur(lemburTanggal.format("YYYY-MM-DD"));
-  //   }
-  // }, [showLemburModal, lemburTanggal]);
+      setLemburList(filtered);
+    } catch (err) {
+      console.error("Gagal mengambil lembur:", err);
+      setLemburError("Gagal memuat data pengajuan lembur.");
+      setLemburList([]);
+    } finally {
+      setLemburLoading(false);
+    }
+  };
 
-  // useEffect(() => {
-  //   const cekPengajuanHariIni = async () => {
-  //     try {
-  //       const token = localStorage.getItem("token");
-  //       const res = await api.get(
-  //         `/check-lembur?tanggal=${date.format("YYYY-MM-DD")}`,
-  //         {
-  //           headers: { Authorization: `Bearer ${token}` },
-  //         }
-  //       );
-  //       // Jika ada data pengajuan pada tanggal tersebut, set disable
-  //       const data = res.data.data;
-  //       setSudahMengajukan(Array.isArray(data) ? data.length > 0 : !!data);
-  //     } catch (err) {
-  //       setSudahMengajukan(false); // Jika error, tetap bisa isi
-  //     }
-  //   };
-  //   cekPengajuanHariIni();
-  // }, [date]);
+  useEffect(() => {
+    if (showLemburModal) {
+      fetchLembur(lemburTanggal);
+    }
+  }, [showLemburModal, lemburTanggal]);
+
+  const handleDeletePengajuan = async (id_lembur) => {
+    const confirmDelete = window.confirm(
+      "Yakin ingin menghapus pengajuan ini?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await api.delete(`/lembur/${id_lembur}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      alert("Pengajuan berhasil dihapus.");
+      // Refresh data setelah hapus
+      fetchLembur(lemburTanggal);
+    } catch (err) {
+      console.error("Gagal menghapus pengajuan:", err);
+      alert(
+        "Gagal menghapus pengajuan!\n" +
+          (err.response?.data?.message || "Terjadi kesalahan.")
+      );
+    }
+  };
+
+  const cekPengajuanApproved = async (tanggal) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get("/lembur/by-karyawan", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const formatted = tanggal.format("YYYY-MM-DD");
+      const lemburHariIni = res.data.data.filter(
+        (item) => item.tanggal === formatted
+      );
+
+      const adaApproved = lemburHariIni.some(
+        (item) => item.status_lembur?.toLowerCase() === "approved"
+      );
+
+      setSudahApproved(adaApproved);
+    } catch (err) {
+      console.error("Gagal cek pengajuan approved:", err);
+      setSudahApproved(false); // fallback: tetap bisa kirim kalau error
+    }
+  };
+  useEffect(() => {
+    cekPengajuanApproved(date);
+  }, [date]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -279,13 +283,21 @@ const FormLembur = () => {
             accept="image/*,application/pdf"
           />
         </div>
-        <button
-          type="submit"
-          className="w-full bg-custom-merah text-white py-2 rounded-lg hover:bg-custom-gelap"
-          disabled={isLoading}
-        >
-          {isLoading ? "Mengirim..." : "Kirim"}
-        </button>
+        {sudahApproved && (
+          <p className="text-red-600 text-sm font-semibold mb-2">
+            Anda sudah mengajukan lembur dan disetujui untuk tanggal ini.
+          </p>
+        )}
+
+        {!sudahApproved && (
+          <button
+            type="submit"
+            className="w-full bg-custom-merah text-white py-2 rounded-lg hover:bg-custom-gelap"
+            disabled={isLoading}
+          >
+            {isLoading ? "Mengirim..." : "Kirim"}
+          </button>
+        )}
       </form>
       {showLemburModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -360,8 +372,8 @@ const FormLembur = () => {
                           </span>
                           <span className="mr-2">:</span>
                           <span>
-                            {item.nama
-                              ? item.nama.replace(/\b\w/g, (c) =>
+                            {item.nama_karyawan
+                              ? item.nama_karyawan.replace(/\b\w/g, (c) =>
                                   c.toUpperCase()
                                 )
                               : ""}
@@ -379,14 +391,14 @@ const FormLembur = () => {
                             Jam Mulai
                           </span>
                           <span className="mr-2">:</span>
-                          <span>{jamMulai}</span>
+                          <span>{jamMulai?.slice(0, 5)}</span>
                         </div>
                         <div className="mb-1 flex">
                           <span className="font-semibold w-36 inline-block">
                             Jam Selesai
                           </span>
                           <span className="mr-2">:</span>
-                          <span>{jamSelesai}</span>
+                          <span>{jamSelesai?.slice(0, 5)}</span>
                         </div>
                         <div className="mb-1 flex">
                           <span className="font-semibold w-36 inline-block">
@@ -439,15 +451,21 @@ const FormLembur = () => {
                           </div>
                         )}
                         <div className="flex justify-end mt-2">
-                          <button
-                            className="bg-red-500 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
-                            // onClick={() =>
-                            //   handleDeletePengajuan(item.id_lembur || item.id)
-                            // }
-                            type="button"
-                          >
-                            Hapus Pengajuan
-                          </button>
+                          {item.status_lembur?.toLowerCase() !== "approved" && (
+                            <div className="flex justify-end mt-2">
+                              <button
+                                className="bg-red-500 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
+                                onClick={() =>
+                                  handleDeletePengajuan(
+                                    item.id_lembur || item.id
+                                  )
+                                }
+                                type="button"
+                              >
+                                Hapus Pengajuan
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
