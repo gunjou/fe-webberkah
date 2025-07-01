@@ -171,10 +171,14 @@ const History = () => {
       const token = localStorage.getItem("token");
       const id_karyawan = localStorage.getItem("id_karyawan");
 
+      const start = selectedDate.startOf("month").format("YYYY-MM-DD");
+      const end = selectedDate.endOf("month").format("YYYY-MM-DD");
+
       try {
-        const res = await api.get(`/lembur/?id_karyawan=${id_karyawan}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get(
+          `/lembur/?id_karyawan=${id_karyawan}&start_date=${start}&end_date=${end}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         const approved = res.data.data.filter(
           (item) => item.status_lembur === "approved"
         );
@@ -193,10 +197,14 @@ const History = () => {
       const token = localStorage.getItem("token");
       const id_karyawan = localStorage.getItem("id_karyawan");
 
+      const start = selectedDate.startOf("month").format("YYYY-MM-DD");
+      const end = selectedDate.endOf("month").format("YYYY-MM-DD");
+
       try {
-        const res = await api.get(`/perizinan/?id_karyawan=${id_karyawan}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get(
+          `/perizinan/?id_karyawan=${id_karyawan}&start_date=${start}&end_date=${end}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         const approved = res.data.data.filter(
           (item) => item.status_izin === "approved"
         );
@@ -580,10 +588,7 @@ const History = () => {
             <div className="overflow-x-auto pb-7">
               {dataHistory && dataHistory.length > 0 ? (
                 dataHistory.map((item, index) => (
-                  <div
-                    key={index}
-                    className="mb-4 border-b border-t border-white pb-2"
-                  >
+                  <div key={index} className="mb-4 pb-2">
                     <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
                       <tbody>
                         <tr>
