@@ -808,9 +808,9 @@ const Rekapan = () => {
                     <TableCell>Status</TableCell>
                     <TableCell>Jam Masuk</TableCell>
                     <TableCell>Jam Pulang</TableCell>
-                    <TableCell>Keterangan</TableCell>
                     <TableCell>Lokasi Masuk</TableCell>
                     <TableCell>Lokasi Pulang</TableCell>
+                    <TableCell>Keterangan</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody className="capitalize">

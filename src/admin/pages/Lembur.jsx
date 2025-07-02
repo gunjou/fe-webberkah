@@ -43,14 +43,24 @@ const Lembur = () => {
         let data = res.data.data;
         const list = Array.isArray(data) ? data : data ? [data] : [];
 
-        // Filter by Tanggal
+        // Tambahkan di dalam fetchLembur sebelum filter
+        let startDate = null;
+        let endDate = null;
+
+        if (tgl) {
+          startDate = dayjs(tgl).startOf("month");
+          endDate = dayjs(tgl).endOf("month");
+        }
+
+        // Filter berdasarkan rentang tanggal bulan
         let filteredList = tgl
-          ? list.filter(
-              (item) =>
-                item.tanggal &&
-                dayjs(item.tanggal).format("YYYY-MM-DD") ===
-                  dayjs(tgl).format("YYYY-MM-DD")
-            )
+          ? list.filter((item) => {
+              const itemDate = dayjs(item.tanggal);
+              return (
+                itemDate.isAfter(startDate.subtract(1, "day")) &&
+                itemDate.isBefore(endDate.add(1, "day"))
+              );
+            })
           : list;
 
         // Filter by ID Karyawan
@@ -69,21 +79,21 @@ const Lembur = () => {
 
         setLemburList(filteredList);
 
-        // Ambil daftar id_karyawan dan nama_karyawan yang unik untuk dropdown
-        const pegawaiList = filteredList.reduce((acc, item) => {
-          // Memastikan hanya nama_karyawan yang unik yang ditambahkan
-          if (
-            !acc.some((pegawai) => pegawai.id_karyawan === item.id_karyawan)
-          ) {
-            acc.push({
-              id_karyawan: item.id_karyawan,
-              nama_karyawan: item.nama_karyawan,
-            });
-          }
-          return acc;
-        }, []);
+        // // Ambil daftar id_karyawan dan nama_karyawan yang unik untuk dropdown
+        // const pegawaiList = filteredList.reduce((acc, item) => {
+        //   // Memastikan hanya nama_karyawan yang unik yang ditambahkan
+        //   if (
+        //     !acc.some((pegawai) => pegawai.id_karyawan === item.id_karyawan)
+        //   ) {
+        //     acc.push({
+        //       id_karyawan: item.id_karyawan,
+        //       nama_karyawan: item.nama_karyawan,
+        //     });
+        //   }
+        //   return acc;
+        // }, []);
 
-        setPegawaiList(pegawaiList);
+        // setPegawaiList(pegawaiList);
       } catch {
         setLemburList([]);
       } finally {
@@ -99,10 +109,7 @@ const Lembur = () => {
       const res = await api.get("/pegawai/", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      console.log("DATA PEGAWAI:", res.data); // 👈 log hasil
-
-      setPegawaiList(res.data);
+      setPegawaiList(res.data); // tergantung struktur response
     } catch (error) {
       console.error("Gagal ambil data pegawai:", error);
     }
@@ -290,8 +297,12 @@ const Lembur = () => {
           >
             <option value="">Pilih Pegawai</option>
             {pegawaiList.map((pegawai) => (
-              <option key={pegawai.id_karyawan} value={pegawai.id_karyawan}>
-                {pegawai.nama_karyawan}
+              <option
+                key={pegawai.id_karyawan}
+                value={pegawai.id_karyawan}
+                className="capitalize"
+              >
+                {pegawai.nama}
               </option>
             ))}
           </select>

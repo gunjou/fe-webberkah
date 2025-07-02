@@ -17,7 +17,6 @@ import api from "../../shared/Api";
 import { FaCheck, FaPlus } from "react-icons/fa";
 import ModalHadir from "../components/ModalHadir";
 
-
 const Presensi = () => {
   const [openHadir, setOpenHadir] = useState(false);
   const handleOpenHadir = (type) => {
@@ -120,6 +119,12 @@ const Presensi = () => {
     fetchNotifCount();
   }, []);
 
+  const getMonthDateRange = (date) => {
+    const start = dayjs(date).startOf("month").format("YYYY-MM-DD");
+    const end = dayjs(date).endOf("month").format("YYYY-MM-DD");
+    return { start, end };
+  };
+
   const fetchIzinList = async (tgl = null) => {
     setIzinLoading(true);
     setIzinError("");
@@ -128,8 +133,10 @@ const Presensi = () => {
       let url = `/perizinan/`;
 
       if (tgl) {
-        url += `?tanggal=${dayjs(tgl).format("YYYY-MM-DD")}`;
+        const { start, end } = getMonthDateRange(tgl);
+        url += `?start_date=${start}&end_date=${end}`;
       }
+
       const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -635,21 +642,20 @@ const Presensi = () => {
                 <IoMdClose size={25} />
               </button>
             </div>
-            {/* <div className="px-6 pt-4 pb-2 flex items-center gap-2">
+            <div className="px-6 pt-4 pb-2 flex items-center gap-2">
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="Filter Tanggal"
+                  views={["year", "month"]}
+                  label="Filter Bulan"
                   value={izinFilterTanggal}
-                  onChange={setIzinFilterTanggal}
-                  format="DD/MM/YYYY"
+                  onChange={(newDate) => setIzinFilterTanggal(newDate)}
+                  format="MM/YYYY"
                   slotProps={{
                     textField: {
                       size: "small",
-                      className: "w-30",
-                      placeholder: "Pilih tanggal",
+                      sx: { minWidth: 140 },
                     },
                   }}
-                  clearable
                 />
               </LocalizationProvider>
               {izinFilterTanggal && (
@@ -661,7 +667,8 @@ const Presensi = () => {
                   Reset
                 </button>
               )}
-            </div> */}
+            </div>
+
             <div className="px-6 py-2 overflow-y-auto flex-1">
               {izinLoading ? (
                 <div className="flex justify-center py-8">
