@@ -127,8 +127,8 @@ const FormLembur = () => {
     try {
       const formData = new FormData();
       formData.append("tanggal", date.format("DD-MM-YYYY"));
-      formData.append("jam_mulai", startTime.format("HH:MM"));
-      formData.append("jam_selesai", endTime.format("HH:MM"));
+      formData.append("jam_mulai", startTime.format("HH:mm"));
+      formData.append("jam_selesai", endTime.format("HH:mm"));
       formData.append("keterangan", reason);
       if (attachment) {
         formData.append("file", attachment);

@@ -12,6 +12,9 @@ import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 const Lembur = () => {
   const [fileBlobs, setFileBlobs] = useState({});
   const [tanggal, setTanggal] = useState(null);
+
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [lemburList, setLemburList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [lemburModal, setLemburModal] = useState(false);
@@ -32,76 +35,47 @@ const Lembur = () => {
   });
 
   // Function to fetch lembur data
-  const fetchLembur = useCallback(
-    async (tgl) => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const res = await api.get(`/lembur/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        let data = res.data.data;
-        const list = Array.isArray(data) ? data : data ? [data] : [];
+  const fetchLembur = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
 
-        // Tambahkan di dalam fetchLembur sebelum filter
-        let startDate = null;
-        let endDate = null;
+      const start = `${selectedYear}-${String(selectedMonth).padStart(
+        2,
+        "0"
+      )}-01`;
+      const end = new Date(selectedYear, selectedMonth, 0)
+        .toISOString()
+        .split("T")[0];
 
-        if (tgl) {
-          startDate = dayjs(tgl).startOf("month");
-          endDate = dayjs(tgl).endOf("month");
-        }
+      const res = await api.get("/lembur/", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { start_date: start, end_date: end },
+      });
 
-        // Filter berdasarkan rentang tanggal bulan
-        let filteredList = tgl
-          ? list.filter((item) => {
-              const itemDate = dayjs(item.tanggal);
-              return (
-                itemDate.isAfter(startDate.subtract(1, "day")) &&
-                itemDate.isBefore(endDate.add(1, "day"))
-              );
-            })
-          : list;
+      let data = res.data.data;
+      const list = Array.isArray(data) ? data : data ? [data] : [];
 
-        // Filter by ID Karyawan
-        if (idKaryawanFilter) {
-          filteredList = filteredList.filter(
-            (item) => item.id_karyawan === parseInt(idKaryawanFilter)
-          );
-        }
-
-        // Filter by Status Lembur
-        if (statusLemburFilter) {
-          filteredList = filteredList.filter(
-            (item) => item.status_lembur === statusLemburFilter
-          );
-        }
-
-        setLemburList(filteredList);
-
-        // // Ambil daftar id_karyawan dan nama_karyawan yang unik untuk dropdown
-        // const pegawaiList = filteredList.reduce((acc, item) => {
-        //   // Memastikan hanya nama_karyawan yang unik yang ditambahkan
-        //   if (
-        //     !acc.some((pegawai) => pegawai.id_karyawan === item.id_karyawan)
-        //   ) {
-        //     acc.push({
-        //       id_karyawan: item.id_karyawan,
-        //       nama_karyawan: item.nama_karyawan,
-        //     });
-        //   }
-        //   return acc;
-        // }, []);
-
-        // setPegawaiList(pegawaiList);
-      } catch {
-        setLemburList([]);
-      } finally {
-        setLoading(false);
+      let filteredList = list;
+      if (idKaryawanFilter && !isNaN(parseInt(idKaryawanFilter))) {
+        filteredList = filteredList.filter(
+          (item) => item.id_karyawan === parseInt(idKaryawanFilter)
+        );
       }
-    },
-    [tanggal, idKaryawanFilter, statusLemburFilter]
-  );
+      if (statusLemburFilter) {
+        filteredList = filteredList.filter(
+          (item) => item.status_lembur === statusLemburFilter
+        );
+      }
+
+      setLemburList(filteredList);
+    } catch (err) {
+      console.error("Gagal fetch lembur:", err);
+      setLemburList([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedMonth, selectedYear, idKaryawanFilter, statusLemburFilter]);
 
   const fetchPegawaiList = async () => {
     try {
@@ -116,9 +90,9 @@ const Lembur = () => {
   };
 
   useEffect(() => {
-    fetchLembur(tanggal);
-    fetchPegawaiList(); // <- penting!
-  }, [tanggal, idKaryawanFilter, statusLemburFilter, fetchLembur]);
+    fetchLembur();
+    fetchPegawaiList();
+  }, [selectedMonth, selectedYear, idKaryawanFilter, statusLemburFilter]);
 
   // Excel download functionality
   const downloadExcel = () => {
@@ -273,21 +247,32 @@ const Lembur = () => {
       <div className="bg-white shadow rounded-lg px-6 pb-2">
         <div className="flex items-center gap-4 mb-2 pt-4">
           {/* Filter Tanggal */}
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="Pilih Tanggal"
-              value={tanggal}
-              onChange={setTanggal}
-              format="DD/MM/YYYY"
-              className="bg-white rounded-lg"
-              slotProps={{
-                textField: {
-                  size: "small",
-                  sx: { minWidth: 120 },
-                },
-              }}
-            />
-          </LocalizationProvider>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="px-2 py-2 border rounded-lg text-sm"
+          >
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {new Date(0, i).toLocaleString("id-ID", { month: "long" })}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="px-2 py-2 border rounded-lg text-sm"
+          >
+            {Array.from({ length: 5 }, (_, i) => {
+              const year = new Date().getFullYear() - i;
+              return (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              );
+            })}
+          </select>
 
           {/* Filter Pegawai */}
           <select

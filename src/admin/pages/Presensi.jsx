@@ -41,6 +41,13 @@ const Presensi = () => {
   const [izinLoading, setIzinLoading] = useState(false);
   const [izinError, setIzinError] = useState("");
   const [izinFilterTanggal, setIzinFilterTanggal] = useState(null);
+
+  const [izinSelectedMonth, setIzinSelectedMonth] = useState(
+    new Date().getMonth() + 1
+  );
+  const [izinSelectedYear, setIzinSelectedYear] = useState(
+    new Date().getFullYear()
+  );
   const [izinActionLoading, setIzinActionLoading] = useState(null);
   const [rejectId, setRejectId] = useState(null);
   const [alasanReject, setAlasanReject] = useState({});
@@ -125,32 +132,33 @@ const Presensi = () => {
     return { start, end };
   };
 
-  const fetchIzinList = async (tgl = null) => {
+  const fetchIzinList = async () => {
     setIzinLoading(true);
     setIzinError("");
     try {
       const token = localStorage.getItem("token");
-      let url = `/perizinan/`;
 
-      if (tgl) {
-        const { start, end } = getMonthDateRange(tgl);
-        url += `?start_date=${start}&end_date=${end}`;
-      }
+      const start = `${izinSelectedYear}-${String(izinSelectedMonth).padStart(
+        2,
+        "0"
+      )}-01`;
+      const end = new Date(izinSelectedYear, izinSelectedMonth, 0)
+        .toISOString()
+        .split("T")[0];
+
+      const url = `/perizinan/?start_date=${start}&end_date=${end}`;
 
       const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setIzinList(Array.isArray(res.data) ? res.data : []);
-      res.data.data?.forEach((item) => {
-        if (item.path_lampiran) {
-          fetchFileWithToken(item.path_lampiran, item.id_izin);
-        }
-      });
 
-      let data = res.data.data;
-      if (!data) setIzinList([]);
-      else if (Array.isArray(data)) setIzinList(data);
-      else setIzinList([data]);
+      const data = res.data.data;
+      setIzinList(Array.isArray(data) ? data : data ? [data] : []);
+
+      (data || []).forEach((item) => {
+        if (item.path_lampiran)
+          fetchFileWithToken(item.path_lampiran, item.id_izin);
+      });
     } catch (err) {
       setIzinError("Gagal memuat data pengajuan izin.");
       setIzinList([]);
@@ -181,8 +189,8 @@ const Presensi = () => {
   };
 
   useEffect(() => {
-    if (izinModal) fetchIzinList(izinFilterTanggal);
-  }, [izinModal, izinFilterTanggal]);
+    if (izinModal) fetchIzinList();
+  }, [izinModal, izinSelectedMonth, izinSelectedYear]);
 
   const handleViewFile = async (path, id_izin) => {
     if (fileBlobs[id_izin]) {
@@ -643,21 +651,33 @@ const Presensi = () => {
               </button>
             </div>
             <div className="px-6 pt-4 pb-2 flex items-center gap-2">
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  views={["year", "month"]}
-                  label="Filter Bulan"
-                  value={izinFilterTanggal}
-                  onChange={(newDate) => setIzinFilterTanggal(newDate)}
-                  format="MM/YYYY"
-                  slotProps={{
-                    textField: {
-                      size: "small",
-                      sx: { minWidth: 140 },
-                    },
-                  }}
-                />
-              </LocalizationProvider>
+              <select
+                value={izinSelectedMonth}
+                onChange={(e) => setIzinSelectedMonth(Number(e.target.value))}
+                className="px-2 py-2 border rounded-lg text-sm"
+              >
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {new Date(0, i).toLocaleString("id-ID", { month: "long" })}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={izinSelectedYear}
+                onChange={(e) => setIzinSelectedYear(Number(e.target.value))}
+                className="px-2 py-2 border rounded-lg text-sm"
+              >
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = new Date().getFullYear() - i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+
               {izinFilterTanggal && (
                 <button
                   className="ml-2 text-xs text-red-500 underline"
