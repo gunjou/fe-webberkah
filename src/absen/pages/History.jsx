@@ -65,7 +65,8 @@ function a11yProps(index) {
 const History = () => {
   const [dataLembur, setDataLembur] = useState([]);
   const [dataIzin, setDataIzin] = useState([]);
-
+  const [perhitunganGaji, setPerhitunganGaji] = useState(null);
+  const [rekapanData, setRekapanData] = useState(null);
   const navigate = useNavigate();
   const [dataHistory, setDataHistory] = useState(null);
   const [value, setValue] = React.useState(0);
@@ -107,17 +108,15 @@ const History = () => {
   }, [selectedDate]);
 
   useEffect(() => {
-    const fetchPerhitunganGaji = async () => {
+    const fetchPerhitunganGajiHarian = async () => {
       const token = localStorage.getItem("token");
       const id_karyawan = localStorage.getItem("id_karyawan");
 
-      const now = dayjs();
-      const start = now.startOf("month").format("DD-MM-YYYY");
-      const end = now.endOf("month").format("DD-MM-YYYY");
+      const today = dayjs().format("DD-MM-YYYY");
 
       try {
         const response = await api.get(
-          `/perhitungan-gaji/?id_karyawan=${id_karyawan}&start=${start}&end=${end}`,
+          `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}&tanggal=${today}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -125,27 +124,31 @@ const History = () => {
           }
         );
 
-        console.log("Perhitungan Gaji Response:", response.data);
-        setDataHistory(response.data.data);
+        console.log("Perhitungan Gaji Harian Response:", response.data);
+
+        // Assuming the response structure is something like: response.data.data
+        if (response.data && response.data.data) {
+          setPerhitunganGaji(response.data.data); // Set the perhitungan gaji data
+        } else {
+          setPerhitunganGaji(null); // If no data, set to null
+        }
       } catch (error) {
-        console.error("Gagal mengambil data perhitungan gaji:", error);
-        setDataHistory([]);
+        console.error("Gagal mengambil data perhitungan gaji harian:", error);
+        setPerhitunganGaji(null); // Handle errors gracefully
       }
     };
 
-    fetchPerhitunganGaji();
-  }, [selectedDate]);
+    fetchPerhitunganGajiHarian();
+  }, []); // Only run on component mount
 
   useEffect(() => {
-    const fetchListRekapanKaryawan = async () => {
+    const fetchRekapan = async () => {
       const token = localStorage.getItem("token");
+      const id_karyawan = localStorage.getItem("id_karyawan");
 
       try {
-        const start = selectedDate.startOf("month").format("DD-MM-YYYY");
-        const end = selectedDate.endOf("month").format("DD-MM-YYYY");
-
         const response = await api.get(
-          `/rekapan/person?start=${start}&end=${end}`,
+          `/perhitungan-gaji/rekapan?id_karyawan=${id_karyawan}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -153,17 +156,22 @@ const History = () => {
           }
         );
 
-        console.log("Rekapan Response:", response);
+        console.log("Rekapan Data Response:", response.data);
 
-        setListDataKaryawan(response.data.data_absensi);
+        // Check if data is present and update state
+        if (response.data && response.data.data) {
+          setRekapanData(response.data.data[0]); // Assuming only one item in the array
+        } else {
+          setRekapanData(null);
+        }
       } catch (error) {
-        console.error("Gagal mengambil list data rekapan karyawan:", error);
-        setListDataKaryawan(null); // biar nggak nunggu loading terus
+        console.error("Gagal mengambil data rekapan:", error);
+        setRekapanData(null);
       }
     };
 
-    fetchListRekapanKaryawan();
-  }, [selectedDate]);
+    fetchRekapan();
+  }, []);
 
   // Fetch lembur
   useEffect(() => {
@@ -254,71 +262,53 @@ const History = () => {
     return text.length > limit ? text.substring(0, limit) + "..." : text;
   };
 
-  const downloadPDF = () => {
-    const nama = localStorage.getItem("nama");
-    const confirmDownload = window.confirm(
-      "Apakah Anda yakin ingin mengunduh data sebagai file PDF?"
-    );
-    if (!confirmDownload) return;
-
+  const downloadPDFRekapan = () => {
+    if (!rekapanData) return;
+    const nama = rekapanData.nama || localStorage.getItem("nama") || "-";
     const doc = new jsPDF();
     const title = "Rekapan Presensi";
-    const dateStr = getFormattedDate(); // misalnya: April 2025
+    const periode = `${rekapanData.periode_awal} - ${rekapanData.periode_akhir}`;
 
     doc.setFontSize(14);
     doc.text(title, 14, 15);
     doc.setFontSize(10);
-    doc.text(`Periode: ${dateStr}`, 14, 22);
+    doc.text(`Nama: ${nama}`, 14, 22);
+    doc.text(`Periode: ${periode}`, 14, 28);
 
-    const tableColumn = [
-      "No",
-      "Tanggal",
-      "Nama",
-      "Tipe Pegawai",
-      "Status",
-      "Jam Masuk",
-      "Jam Keluar",
-      "Terlambat",
-      "Jam Kurang",
-      "Total Jam Kerja",
-      "Lokasi Masuk",
-      "Lokasi Keluar",
+    const tableRows = [
+      ["Jumlah Hadir", `${rekapanData.jumlah_hadir} hari`],
+      ["Jumlah Izin", `${rekapanData.jumlah_izin} hari`],
+      ["Jumlah Sakit", `${rekapanData.jumlah_sakit} hari`],
+      ["Jumlah Alpha", `${rekapanData.jumlah_alpha} hari`],
+      ["Total Jam Kerja", formatMenitToJamMenit(rekapanData.total_jam_kerja)],
+      ["Jam Normal", formatMenitToJamMenit(rekapanData.jam_normal)],
+      ["Jam Terlambat", `${rekapanData.jam_terlambat} menit`],
+      ["Jam Kurang", `${rekapanData.jam_kurang} menit`],
+      ["Gaji Pokok", formatRupiah(rekapanData.gaji_pokok)],
+      ["Potongan", formatRupiah(rekapanData.potongan)],
+      ["Tunjangan Kehadiran", formatRupiah(rekapanData.tunjangan_kehadiran)],
+      ["Total Lembur", `${rekapanData.total_lembur} hari`],
+      ["Total Bayaran Lembur", formatRupiah(rekapanData.total_bayaran_lembur)],
+      ["Total Gaji Bersih", formatRupiah(rekapanData.gaji_bersih)],
     ];
 
-    const tableRows = listDataKaryawan.map((row, index) => [
-      index + 1,
-      new Date(row.tanggal).toLocaleDateString("id-ID", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-      row.nama || "-",
-      row.tipe || "-",
-      row.nama_status || "-",
-      row.jam_masuk || "-",
-      row.jam_keluar || "-",
-      row.jam_terlambat || "-",
-      row.jam_kurang || "-",
-      row.total_jam_kerja || "-",
-      row.lokasi_masuk || "-",
-      row.lokasi_keluar || "-",
-    ]);
-
     doc.autoTable({
-      head: [tableColumn],
+      head: [["Keterangan", "Nilai"]],
       body: tableRows,
-      startY: 30,
-      styles: { fontSize: 8 },
+      startY: 35,
+      styles: { fontSize: 10 },
       headStyles: {
         fillColor: [139, 0, 0],
         textColor: [255, 255, 255],
         halign: "center",
         valign: "middle",
       },
+      bodyStyles: {
+        textColor: [0, 0, 0],
+      },
     });
 
-    doc.save(`Rekapan Presensi ${toTitleCase(nama)}.pdf`);
+    doc.save(`Rekapan Presensi ${nama}.pdf`);
   };
 
   return (
@@ -456,10 +446,10 @@ const History = () => {
                 <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
                   <tbody>
                     <tr>
-                      <td>Status</td>
-                      <td className="flex font-semibold">
+                      <td>Nama</td>
+                      <td className="flex font-semibold capitalize">
                         <p className="pr-2">:</p>
-                        {dataHistory[0].status_presensi || "-"}
+                        {dataHistory[0].nama || "-"}
                       </td>
                     </tr>
                     <tr>
@@ -584,230 +574,224 @@ const History = () => {
             )}
           </CustomTabPanel>
 
+          {/* Perhitungan Gaji Tab */}
           <CustomTabPanel value={value} index={3}>
             <div className="overflow-x-auto pb-7">
-              {dataHistory && dataHistory.length > 0 ? (
-                dataHistory.map((item, index) => (
-                  <div key={index} className="mb-4 pb-2">
-                    <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
-                      <tbody>
-                        <tr>
-                          <td>Nama</td>
-                          <td className="flex font-semibold capitalize">
-                            <p className="pr-2">:</p>
-                            {item.nama}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Tipe</td>
-                          <td className="flex font-semibold capitalize">
-                            <p className="pr-2">:</p>
-                            {item.tipe}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Gaji Pokok</td>
-                          <td className="flex font-semibold">
-                            <p className="pr-2">:</p>
-                            {formatRupiah(item.gaji_pokok)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Jumlah Hadir</td>
-                          <td className="flex font-semibold">
-                            <p className="pr-2">:</p>
-                            {item.jumlah_hadir} hari
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Jam Kerja</td>
-                          <td className="flex font-semibold">
-                            <p className="pr-2">:</p>
-                            {formatMenitToJamMenit(item.total_jam_kerja)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Potongan</td>
-                          <td className="flex font-semibold">
-                            <p className="pr-2">:</p>
-                            {formatRupiah(item.total_potongan)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Lembur</td>
-                          <td className="flex font-semibold">
-                            <p className="pr-2">:</p>
-                            {formatRupiah(item.total_bayaran_lembur)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Tunjangan Kehadiran</td>
-                          <td className="flex font-semibold">
-                            <p className="pr-2">:</p>
-                            {formatRupiah(item.tunjangan_kehadiran)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Total Gaji Bersih</td>
-                          <td className="flex font-semibold">
-                            <p className="pr-2">:</p>
-                            {formatRupiah(item.gaji_bersih)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                ))
+              {perhitunganGaji ? (
+                <div key={0} className="mb-4 pb-2">
+                  <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
+                    <tbody>
+                      <tr>
+                        <td>Nama</td>
+                        <td className="flex font-semibold capitalize">
+                          <p className="pr-2">:</p>
+                          {perhitunganGaji.nama || "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Gaji Harian</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {perhitunganGaji.gaji_harian
+                            ? formatRupiah(perhitunganGaji.gaji_harian)
+                            : "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jam Terlambat</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {perhitunganGaji.jam_terlambat
+                            ? formatMenitToJamMenit(
+                                perhitunganGaji.jam_terlambat
+                              )
+                            : "0 menit"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jam Kurang</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {perhitunganGaji.jam_kurang
+                            ? formatMenitToJamMenit(perhitunganGaji.jam_kurang)
+                            : "0 menit"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Total Jam Kerja</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {perhitunganGaji.total_jam_kerja
+                            ? formatMenitToJamMenit(
+                                perhitunganGaji.total_jam_kerja
+                              )
+                            : "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Tunjangan Kehadiran</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {perhitunganGaji.tunjangan_kehadiran
+                            ? formatRupiah(perhitunganGaji.tunjangan_kehadiran)
+                            : "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Upah Bersih</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {perhitunganGaji.upah_bersih
+                            ? formatRupiah(perhitunganGaji.upah_bersih)
+                            : "-"}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               ) : (
-                <p className="text-center">Loading atau tidak ada data.</p>
+                <p className="text-center">
+                  Loading atau tidak ada data perhitungan gaji.
+                </p>
               )}
             </div>
           </CustomTabPanel>
-
+          {/* Rekapan Tab */}
           <CustomTabPanel value={value} index={4}>
-            {dataKaryawan ? (
-              <div className="overflow-x-auto pb-7">
-                <table className="min-w-full text-left text-white border-separate border-spacing-y-1 text-sm">
-                  <tbody>
-                    <tr>
-                      <td>Nama</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {toTitleCase(dataKaryawan.nama)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Periode</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {selectedDate.startOf("month").format("DD MMM YYYY")} -
-                      </td>
-                    </tr>
-                    <tr>
-                      <td> </td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {selectedDate.endOf("month").format("DD MMM YYYY")}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Total Hadir</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {dataKaryawan.jumlah_hadir} hari
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Total Dinas Luar</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {dataKaryawan.dinas_luar} hari
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Izin / Sakit</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {dataKaryawan.jumlah_izin +
-                          dataKaryawan.jumlah_sakit}{" "}
-                        hari
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Alpha</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {dataKaryawan.jumlah_alpha} hari
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Jam Kerja</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {formatMenitToJamMenit(dataKaryawan.total_jam_kerja)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Jam Normal</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {formatMenitToJamMenit(
-                          dataKaryawan.total_jam_kerja_normal
-                        )}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Jam Terlambat</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {formatMenitToJamMenit(
-                          dataKaryawan.total_jam_terlambat
-                        )}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Jam Kurang</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {formatMenitToJamMenit(dataKaryawan.total_jam_kurang)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Gaji Pokok</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {formatRupiah(dataKaryawan.gaji_pokok)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Gaji Harian</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {formatRupiah(dataKaryawan.gaji_per_hari)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Hari Dibayar</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {dataKaryawan.hari_dibayar} hari
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Potongan</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>-{" "}
-                        {formatRupiah(dataKaryawan.potongan)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Total Gaji Bersih</td>
-                      <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {formatRupiah(dataKaryawan.gaji_bersih)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colSpan={2} className="text-center pt-4">
-                        <button
-                          type="button"
-                          className="flex items-center justify-center mx-auto text-[12px] bg-red-700 text-white hover:bg-red-500 rounded-[20px] px-4 py-2"
-                          onClick={downloadPDF}
-                        >
-                          <span className="text-xs pr-2">
-                            <FaFilePdf />
-                          </span>
-                          Unduh PDF
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-center text-sm">
-                Loading atau tidak ada data.
-              </p>
+            <div className="overflow-x-auto pb-7">
+              {rekapanData ? (
+                <div key={0} className="mb-4 pb-2">
+                  <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
+                    <tbody>
+                      <tr>
+                        <td>Nama</td>
+                        <td className="flex font-semibold capitalize">
+                          <p className="pr-2">:</p>
+                          {rekapanData.nama || "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Periode</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.periode_awal} -{" "}
+                          {rekapanData.periode_akhir}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jumlah Hadir</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jumlah_hadir} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jumlah Izin</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jumlah_izin} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jumlah Sakit</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jumlah_sakit} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jumlah Alpha</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jumlah_alpha} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Total Jam Kerja</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatMenitToJamMenit(rekapanData.total_jam_kerja)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jam Normal</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatMenitToJamMenit(rekapanData.jam_normal)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jam Terlambat</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jam_terlambat} menit
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jam Kurang</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jam_kurang} menit
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Gaji Pokok</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.gaji_pokok)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Potongan</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.potongan)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Tunjangan Kehadiran</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.tunjangan_kehadiran)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Total Lembur</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.total_lembur} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Total Bayaran Lembur</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.total_bayaran_lembur)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Total Gaji Bersih</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.gaji_bersih)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-center">
+                  Loading atau tidak ada data rekapan.
+                </p>
+              )}
+            </div>
+            {rekapanData && (
+              <button
+                className="flex items-center mb-2 bg-red-700 hover:bg-red-800 text-white px-3 py-2 rounded text-sm"
+                onClick={downloadPDFRekapan}
+              >
+                <FaFilePdf className="mr-2" /> Download PDF
+              </button>
             )}
           </CustomTabPanel>
         </SwipeableViews>
