@@ -12,7 +12,7 @@ import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 const Lembur = () => {
   const [fileBlobs, setFileBlobs] = useState({});
   const [tanggal, setTanggal] = useState(null);
-
+  const [editLemburId, setEditLemburId] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [lemburList, setLemburList] = useState([]);
@@ -93,6 +93,19 @@ const Lembur = () => {
     fetchLembur();
     fetchPegawaiList();
   }, [selectedMonth, selectedYear, idKaryawanFilter, statusLemburFilter]);
+
+  const handleEdit = (item) => {
+    setEditLemburId(item.id_lembur);
+    setFormData({
+      id_karyawan: item.id_karyawan,
+      tanggal: item.tanggal, // pastikan format yyyy-mm-dd
+      jam_mulai: item.jam_mulai,
+      jam_selesai: item.jam_selesai,
+      keterangan: item.keterangan,
+      file: "", // file tidak diisi saat edit kecuali user upload baru
+    });
+    setShowFormModal(true);
+  };
 
   // Excel download functionality
   const downloadExcel = () => {
@@ -345,12 +358,13 @@ const Lembur = () => {
                   <th className="border px-2 py-1">Deskripsi</th>
                   <th className="border px-2 py-1">Lampiran</th>
                   <th className="border px-2 py-1">Status</th>
+                  <th className="border px-2 py-1">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {lemburList.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="text-center py-4 text-gray-500">
+                    <td colSpan="9" className="text-center py-4 text-gray-500">
                       Tidak ada data lembur.
                     </td>
                   </tr>
@@ -406,6 +420,14 @@ const Lembur = () => {
                             : "-"}
                         </span>
                       </td>
+                      <td className="border px-2 py-1 text-center">
+                        <button
+                          className="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1"
+                          onClick={() => handleEdit(item)}
+                        >
+                          Edit
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -426,13 +448,26 @@ const Lembur = () => {
       {showFormModal && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center"
-          onClick={() => setShowFormModal(false)}
+          onClick={() => {
+            setShowFormModal(false);
+            setEditLemburId(null);
+            setFormData({
+              id_karyawan: "",
+              tanggal: "",
+              jam_mulai: "",
+              jam_selesai: "",
+              keterangan: "",
+              file: "",
+            });
+          }}
         >
           <div
             className="bg-white rounded-lg w-full max-w-lg p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold mb-4">Form Tambah Lembur</h2>
+            <h2 className="text-lg font-bold mb-4">
+              {editLemburId ? "Edit Lembur" : "Form Tambah Lembur"}
+            </h2>
             <form
               className="flex flex-col gap-2"
               onSubmit={async (e) => {
@@ -445,24 +480,36 @@ const Lembur = () => {
 
                 form.append("id_karyawan", formData.id_karyawan);
                 form.append("tanggal", formattedDate);
-                form.append("jam_mulai", formData.jam_mulai);
-                form.append("jam_selesai", formData.jam_selesai);
+                form.append("jam_mulai", formData.jam_mulai.slice(0, 5));
+                form.append("jam_selesai", formData.jam_selesai.slice(0, 5));
                 form.append("keterangan", formData.keterangan);
                 if (formData.file) {
                   form.append("file", formData.file);
                 }
 
                 try {
-                  await api.post("/lembur/pengajuan", form, {
-                    headers: {
-                      "Content-Type": "multipart/form-data",
-                      Authorization: `Bearer ${token}`,
-                    },
-                  });
-
-                  alert("Lembur berhasil ditambahkan!");
+                  if (editLemburId) {
+                    // Edit mode
+                    await api.put(`/lembur/${editLemburId}`, form, {
+                      headers: {
+                        "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${token}`,
+                      },
+                    });
+                    alert("Lembur berhasil diupdate!");
+                  } else {
+                    // Tambah mode
+                    await api.post("/lembur/pengajuan", form, {
+                      headers: {
+                        "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${token}`,
+                      },
+                    });
+                    alert("Lembur berhasil ditambahkan!");
+                  }
                   fetchLembur(tanggal);
                   setShowFormModal(false);
+                  setEditLemburId(null);
                   setFormData({
                     id_karyawan: "",
                     tanggal: "",
@@ -472,7 +519,11 @@ const Lembur = () => {
                     file: "",
                   });
                 } catch {
-                  alert("Gagal menambahkan lembur.");
+                  alert(
+                    editLemburId
+                      ? "Gagal mengupdate lembur."
+                      : "Gagal menambahkan lembur."
+                  );
                 }
               }}
             >
@@ -515,9 +566,10 @@ const Lembur = () => {
                 <label className="block font-medium">Jam Mulai</label>
                 <input
                   required
-                  //type="time"
-                  value={formData.jam_mulai}
-                  placeholder="HH:MM"
+                  type="time"
+                  value={
+                    formData.jam_mulai ? formData.jam_mulai.slice(0, 5) : ""
+                  }
                   onChange={(e) =>
                     setFormData({ ...formData, jam_mulai: e.target.value })
                   }
@@ -530,9 +582,10 @@ const Lembur = () => {
                 <label className="block font-medium">Jam Selesai</label>
                 <input
                   required
-                  // type="time"
-                  placeholder="HH:MM"
-                  value={formData.jam_selesai}
+                  type="time"
+                  value={
+                    formData.jam_selesai ? formData.jam_selesai.slice(0, 5) : ""
+                  }
                   onChange={(e) =>
                     setFormData({ ...formData, jam_selesai: e.target.value })
                   }
@@ -571,7 +624,18 @@ const Lembur = () => {
                 <button
                   type="button"
                   className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
-                  onClick={() => setShowFormModal(false)}
+                  onClick={() => {
+                    setShowFormModal(false);
+                    setEditLemburId(null);
+                    setFormData({
+                      id_karyawan: "",
+                      tanggal: "",
+                      jam_mulai: "",
+                      jam_selesai: "",
+                      keterangan: "",
+                      file: "",
+                    });
+                  }}
                 >
                   Batal
                 </button>
@@ -579,7 +643,7 @@ const Lembur = () => {
                   type="submit"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
                 >
-                  Simpan
+                  {editLemburId ? "Update" : "Simpan"}
                 </button>
               </div>
             </form>
