@@ -31,7 +31,7 @@ const kolom = [
   { id: "tunjangan_kehadiran", label: "Tunjangan Hadir", minWidth: 40 },
   { id: "total_lembur", label: "Total Lembur", minWidth: 30 },
   { id: "total_menit_lembur", label: "Waktu Lembur", minWidth: 30 },
-  { id: "total_bayaran_lembur", label: "Jumlah Lembur", minWidth: 40 },
+  { id: "total_bayaran_lembur", label: "Gaji Lembur", minWidth: 40 },
   { id: "gaji_bersih", label: "Gaji Bersih", minWidth: 50 },
 ];
 
@@ -695,7 +695,8 @@ const PerhitunganGaji = () => {
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="center"
                               >
-                                {item.total_menit_lembur ?? "-"}
+                                {formatTerlambat(item.total_menit_lembur) ??
+                                  "-"}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
