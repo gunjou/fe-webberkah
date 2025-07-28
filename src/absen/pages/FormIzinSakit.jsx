@@ -187,6 +187,7 @@ const FormIzinSakit = () => {
 
       await api.post("/perizinan/", formData, {
         headers: {
+          "Content-Type": undefined,
           Authorization: `Bearer ${token}`,
         },
       });
