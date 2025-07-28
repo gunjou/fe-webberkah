@@ -83,7 +83,22 @@ const Lembur = () => {
       const res = await api.get("/pegawai/", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setPegawaiList(res.data); // tergantung struktur response
+
+      // Urutkan dan kapitalisasi nama
+      const sortedCapitalized = res.data
+        .map((pegawai) => ({
+          ...pegawai,
+          nama: pegawai.nama
+            .split(" ")
+            .map(
+              (word) =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            )
+            .join(" "),
+        }))
+        .sort((a, b) => a.nama.localeCompare(b.nama)); // urut berdasarkan nama
+
+      setPegawaiList(sortedCapitalized);
     } catch (error) {
       console.error("Gagal ambil data pegawai:", error);
     }

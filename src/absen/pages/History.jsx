@@ -115,14 +115,20 @@ const History = () => {
       const today = dayjs().format("DD-MM-YYYY");
 
       try {
-        const response = await api.get(
-          `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}&tanggal=${today}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        let endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}`;
+
+        if (selectedDate) {
+          const tanggal = selectedDate.format("DD-MM-YYYY");
+          endpoint += `&tanggal=${tanggal}`;
+        } else {
+          endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}&tanggal=${today}`;
+        }
+
+        const response = await api.get(endpoint, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         console.log("Perhitungan Gaji Harian Response:", response.data);
 
@@ -139,7 +145,7 @@ const History = () => {
     };
 
     fetchPerhitunganGajiHarian();
-  }, []); // Only run on component mount
+  }, [selectedDate]); // Only run on component mount
 
   useEffect(() => {
     const fetchRekapan = async () => {
