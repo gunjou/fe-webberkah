@@ -513,14 +513,12 @@ const Lembur = () => {
                       <td className="border px-2 py-1 capitalize text-xs">
                         {formatJamLembur(item.jam_lembur)}
                       </td>
-
                       <td className="border px-2 py-1 text-right text-xs">
                         Rp.{item.bayaran_perjam?.toLocaleString("id-ID") ?? "-"}
                       </td>
                       <td className="border px-2 py-1 text-right text-xs">
                         Rp.{item.total_bayaran?.toLocaleString("id-ID") ?? "-"}
                       </td>
-
                       <td className="border px-2 py-1 text-xs">
                         {item.keterangan}
                       </td>
@@ -561,21 +559,31 @@ const Lembur = () => {
                       </td>
                       <td className="border px-2 py-1 text-center">
                         <div className="flex gap-1 justify-center">
-                          <button
-                            className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
-                            onClick={() => handleEdit(item)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            disabled={lemburActionLoading === item.id_lembur}
-                            className="bg-red-600 text-white px-2 py-1 rounded text-xs disabled:opacity-50"
-                            onClick={() => handleDelete(item.id_lembur)}
-                          >
-                            {lemburActionLoading === item.id_lembur
-                              ? "Menghapus..."
-                              : "Hapus"}
-                          </button>
+                          {item.status_lembur === "pending" ? (
+                            <span className="text-red-700 font-semibold text-xs">
+                              Menunggu Persetujuan
+                            </span>
+                          ) : (
+                            <>
+                              <button
+                                className="bg-yellow-500 text-white px-2 py-1 rounded-lg text-xs"
+                                onClick={() => handleEdit(item)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                disabled={
+                                  lemburActionLoading === item.id_lembur
+                                }
+                                className="bg-red-600 text-white px-2 py-1 rounded-lg text-xs disabled:opacity-50"
+                                onClick={() => handleDelete(item.id_lembur)}
+                              >
+                                {lemburActionLoading === item.id_lembur
+                                  ? "Menghapus..."
+                                  : "Hapus"}
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
