@@ -570,7 +570,7 @@ const Rekapan = () => {
             <div className="overflow-x-auto mt-2 pl-2">
               <div className="bg-white rounded-lg shadow-md mr-2 overflow-y-auto overflow-x-auto ">
                 <Paper sx={{ width: "100%", overflow: "hidden" }}>
-                  <TableContainer sx={{ maxHeight: 300 }}>
+                  <TableContainer sx={{ maxHeight: 300, maxWidth: 900 }}>
                     <Table stickyHeader>
                       <TableHead className="bg-[#e8ebea]">
                         <TableRow sx={{ height: "36px" }}>

@@ -122,67 +122,173 @@ const Lembur = () => {
     setShowFormModal(true);
   };
 
+  const formatJamLembur = (jamLembur) => {
+    if (!jamLembur || isNaN(jamLembur)) return "-";
+
+    const jam = Math.floor(jamLembur);
+    const menit = Math.round((jamLembur - jam) * 60);
+
+    if (jam > 0 && menit > 0) return `${jam} jam ${menit} menit`;
+    if (jam > 0) return `${jam} jam`;
+    if (menit > 0) return `${menit} menit`;
+
+    return "0 menit";
+  };
+
+  const totalKeseluruhanBayaran = lemburList.reduce(
+    (total, item) => total + (item.total_bayaran || 0),
+    0
+  );
+
   // Excel download functionality
   const downloadExcel = () => {
+    const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString(
+      "id-ID",
+      { month: "long" }
+    );
+    const fileName = `Data_Lembur_${monthName}_${selectedYear}`;
+
+    const titleRow = ["Data Lembur Pegawai"];
+    const periodeRow = [`Bulan: ${monthName} ${selectedYear}`];
+
+    const formatJamLembur = (jamLembur) => {
+      if (!jamLembur || isNaN(jamLembur)) return "-";
+      const jam = Math.floor(jamLembur);
+      const menit = Math.round((jamLembur - jam) * 60);
+      if (jam > 0 && menit > 0) return `${jam} jam ${menit} menit`;
+      if (jam > 0) return `${jam} jam`;
+      if (menit > 0) return `${menit} menit`;
+      return "0 menit";
+    };
+
     const header = [
       "No",
       "Nama",
       "Tanggal",
       "Jam Mulai",
       "Jam Selesai",
+      "Jam Lembur",
+      "Bayar/Jam",
+      "Total Bayaran",
       "Deskripsi",
       "Lampiran",
       "Status",
     ];
+
     const rows = lemburList.map((item, idx) => [
       idx + 1,
       item.nama_karyawan || "-",
       item.tanggal,
-      item.jam_mulai,
-      item.jam_selesai,
+      item.jam_mulai?.slice(0, 5),
+      item.jam_selesai?.slice(0, 5),
+      formatJamLembur(item.jam_lembur),
+      item.bayaran_perjam?.toLocaleString("id-ID") ?? "-",
+      item.total_bayaran?.toLocaleString("id-ID") ?? "-",
       item.keterangan || "-",
       item.path_lampiran || "-",
       item.status_lembur,
     ]);
-    const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+
+    const totalPembayaran = lemburList.reduce(
+      (sum, item) => sum + (item.total_bayaran || 0),
+      0
+    );
+
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      titleRow,
+      periodeRow,
+      [],
+      header,
+      ...rows,
+      [],
+      [
+        `Total Pembayaran Keseluruhan: Rp ${totalPembayaran.toLocaleString(
+          "id-ID"
+        )}`,
+      ],
+    ]);
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data Lembur");
-    XLSX.writeFile(workbook, "Data_Lembur.xlsx");
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
   };
 
   // PDF download functionality
   const downloadPDF = () => {
     const doc = new jsPDF("landscape");
+
+    const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString(
+      "id-ID",
+      { month: "long" }
+    );
+    const fileName = `Data_Lembur_${monthName}_${selectedYear}`;
+    const title = "Data Lembur Pegawai";
+    const periodeText = `Bulan: ${monthName} ${selectedYear}`;
+
     doc.setFontSize(14);
-    doc.text("Data Lembur Pegawai", 14, 15);
+    doc.text(title, 14, 15);
+    doc.setFontSize(11);
+    doc.text(periodeText, 14, 22);
+
+    const formatJamLembur = (jamLembur) => {
+      if (!jamLembur || isNaN(jamLembur)) return "-";
+      const jam = Math.floor(jamLembur);
+      const menit = Math.round((jamLembur - jam) * 60);
+      if (jam > 0 && menit > 0) return `${jam} jam ${menit} menit`;
+      if (jam > 0) return `${jam} jam`;
+      if (menit > 0) return `${menit} menit`;
+      return "0 menit";
+    };
+
     const tableHead = [
       "No",
       "Nama",
       "Tanggal",
       "Jam Mulai",
       "Jam Selesai",
+      "Jam Lembur",
+      "Bayar/Jam",
+      "Total Bayaran",
       "Deskripsi",
       "Lampiran",
       "Status",
     ];
+
     const tableBody = lemburList.map((item, idx) => [
       idx + 1,
       item.nama_karyawan || "-",
       item.tanggal,
-      item.jam_mulai,
-      item.jam_selesai,
+      item.jam_mulai?.slice(0, 5),
+      item.jam_selesai?.slice(0, 5),
+      formatJamLembur(item.jam_lembur),
+      item.bayaran_perjam?.toLocaleString("id-ID") ?? "-",
+      item.total_bayaran?.toLocaleString("id-ID") ?? "-",
       item.keterangan || "-",
       item.path_lampiran || "-",
       item.status_lembur,
     ]);
+
+    const totalPembayaran = lemburList.reduce(
+      (sum, item) => sum + (item.total_bayaran || 0),
+      0
+    );
+
     doc.autoTable({
       head: [tableHead],
       body: tableBody,
-      startY: 25,
+      startY: 28,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255] },
     });
-    doc.save("Data_Lembur.pdf");
+
+    const totalText = `Total Pembayaran Keseluruhan: Rp ${totalPembayaran.toLocaleString(
+      "id-ID"
+    )}`;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(totalText, 14, doc.lastAutoTable.finalY + 10);
+
+    doc.save(`${fileName}.pdf`);
   };
 
   // Handle actions like approve, reject, and delete
@@ -365,15 +471,18 @@ const Lembur = () => {
             <table className="min-w-full text-sm border">
               <thead className="bg-gray-100 sticky -top-1 z-10">
                 <tr>
-                  <th className="border px-2 py-1">No</th>
-                  <th className="border px-2 py-1">Nama</th>
-                  <th className="border px-2 py-1">Tanggal</th>
-                  <th className="border px-2 py-1">Jam Mulai</th>
-                  <th className="border px-2 py-1">Jam Selesai</th>
-                  <th className="border px-2 py-1">Deskripsi</th>
-                  <th className="border px-2 py-1">Lampiran</th>
-                  <th className="border px-2 py-1">Status</th>
-                  <th className="border px-2 py-1">Aksi</th>
+                  <th className="border px-2 py-1 text-xs">No</th>
+                  <th className="border px-2 py-1 text-xs">Nama</th>
+                  <th className="border px-2 py-1 text-xs">Tanggal</th>
+                  <th className="border px-2 py-1 text-xs">Jam Mulai</th>
+                  <th className="border px-2 py-1 text-xs">Jam Selesai</th>
+                  <th className="border px-2 py-1 text-xs">Jam Lembur</th>
+                  <th className="border px-2 py-1 text-xs">Bayar/Jam</th>
+                  <th className="border px-2 py-1 text-xs">Total Bayaran</th>
+                  <th className="border px-2 py-1 text-xs">Deskripsi</th>
+                  <th className="border px-2 py-1 text-xs">Lampiran</th>
+                  <th className="border px-2 py-1 text-xs">Status</th>
+                  <th className="border px-2 py-1 text-xs">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -386,20 +495,35 @@ const Lembur = () => {
                 ) : (
                   lemburList.map((item, index) => (
                     <tr key={item.id_lembur}>
-                      <td className="border px-2 py-1 text-center">
+                      <td className="border px-2 py-1 text-center text-xs">
                         {index + 1}
                       </td>
-                      <td className="border px-2 py-1 capitalize">
+                      <td className="border px-2 py-1 capitalize text-xs">
                         {item.nama_karyawan}
                       </td>
-                      <td className="border px-2 py-1">{item.tanggal}</td>
-                      <td className="border px-2 py-1">
+                      <td className="border px-2 py-1 text-xs">
+                        {item.tanggal}
+                      </td>
+                      <td className="border px-2 py-1 text-xs">
                         {item.jam_mulai?.slice(0, 5)}
                       </td>
-                      <td className="border px-2 py-1">
+                      <td className="border px-2 py-1  text-xs">
                         {item.jam_selesai?.slice(0, 5)}
                       </td>
-                      <td className="border px-2 py-1">{item.keterangan}</td>
+                      <td className="border px-2 py-1 capitalize text-xs">
+                        {formatJamLembur(item.jam_lembur)}
+                      </td>
+
+                      <td className="border px-2 py-1 text-right text-xs">
+                        Rp.{item.bayaran_perjam?.toLocaleString("id-ID") ?? "-"}
+                      </td>
+                      <td className="border px-2 py-1 text-right text-xs">
+                        Rp.{item.total_bayaran?.toLocaleString("id-ID") ?? "-"}
+                      </td>
+
+                      <td className="border px-2 py-1 text-xs">
+                        {item.keterangan}
+                      </td>
                       <td className="border px-2 py-1 text-center">
                         {item.path_lampiran ? (
                           <button
@@ -417,7 +541,7 @@ const Lembur = () => {
                           "-"
                         )}
                       </td>
-                      <td className="border px-2 py-1 font-semibold">
+                      <td className="border px-2 py-1 font-semibold text-xs text-center">
                         <span
                           className={
                             item.status_lembur === "approved"
@@ -436,12 +560,23 @@ const Lembur = () => {
                         </span>
                       </td>
                       <td className="border px-2 py-1 text-center">
-                        <button
-                          className="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1"
-                          onClick={() => handleEdit(item)}
-                        >
-                          Edit
-                        </button>
+                        <div className="flex gap-1 justify-center">
+                          <button
+                            className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
+                            onClick={() => handleEdit(item)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            disabled={lemburActionLoading === item.id_lembur}
+                            className="bg-red-600 text-white px-2 py-1 rounded text-xs disabled:opacity-50"
+                            onClick={() => handleDelete(item.id_lembur)}
+                          >
+                            {lemburActionLoading === item.id_lembur
+                              ? "Menghapus..."
+                              : "Hapus"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -450,15 +585,24 @@ const Lembur = () => {
             </table>
           </div>
         </div>
-        <button
-          className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 mt-2 rounded-lg text-sm"
-          onClick={() => {
-            fetchPegawaiList(); // <- langsung panggil sebelum form muncul
-            setShowFormModal(true);
-          }}
-        >
-          Tambah Lembur
-        </button>
+        <div className="flex items-center justify-between mt-2">
+          <div className="text-sm font-medium text-gray-700">
+            Total Pembayaran:{" "}
+            <span className="text-blue-700 font-semibold">
+              Rp {totalKeseluruhanBayaran.toLocaleString("id-ID")}
+            </span>
+          </div>
+
+          <button
+            className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
+            onClick={() => {
+              fetchPegawaiList();
+              setShowFormModal(true);
+            }}
+          >
+            Tambah Lembur
+          </button>
+        </div>
       </div>
       {showFormModal && (
         <div
