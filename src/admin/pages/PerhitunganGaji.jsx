@@ -22,17 +22,18 @@ const kolom = [
   { id: "jumlah_izin", label: "Izin", minWidth: 10 },
   { id: "jumlah_sakit", label: "Sakit", minWidth: 10 },
   { id: "jumlah_alpha", label: "Alpha", minWidth: 10 },
-  { id: "total_jam_kerja", label: "Jam Kerja", minWidth: 50 },
-  { id: "jam_normal", label: "Normal", minWidth: 40 },
-  { id: "jam_terlambat", label: "Terlambat", minWidth: 40 },
+  // { id: "total_jam_kerja", label: "Jam Kerja", minWidth: 50 },
+  // { id: "jam_normal", label: "Normal", minWidth: 40 },
+  //  { id: "jam_terlambat", label: "Terlambat", minWidth: 40 },
   { id: "jam_kurang", label: "Kurang", minWidth: 40 },
   { id: "gaji_pokok", label: "Gaji Pokok", minWidth: 50 },
   { id: "potongan", label: "Potongan", minWidth: 40 },
   { id: "tunjangan_kehadiran", label: "Tunjangan Hadir", minWidth: 40 },
+  { id: "gaji_bersih", label: "Gaji Bersih", minWidth: 50 },
   { id: "total_lembur", label: "Total Lembur", minWidth: 30 },
   { id: "total_menit_lembur", label: "Waktu Lembur", minWidth: 30 },
   { id: "total_bayaran_lembur", label: "Gaji Lembur", minWidth: 40 },
-  { id: "gaji_bersih", label: "Gaji Bersih", minWidth: 50 },
+  { id: "total_gaji", label: "Total Gaji", minWidth: 40 },
 ];
 
 const formatTerlambat = (menit) => {
@@ -257,12 +258,13 @@ const PerhitunganGaji = () => {
       item.jumlah_sakit ?? "-",
       item.jumlah_alpha ?? "-",
       formatTerlambat(item.total_jam_kerja),
-      formatTerlambat(item.jam_normal),
-      formatTerlambat(item.jam_terlambat),
-      formatTerlambat(item.jam_kurang),
+      // formatTerlambat(item.jam_normal),
+      // formatTerlambat(item.jam_terlambat),
+      formatTerlambat(item.jam_terlambat + item.jam_kurang),
       formatRupiah(item.gaji_pokok),
       formatRupiah(item.potongan),
       formatRupiah(item.tunjangan_kehadiran),
+      formatRupiah(item.gaji_pokok - item.potongan + item.tunjangan_kehadiran),
       item.total_lembur ?? "-",
       item.total_menit_lembur ?? "-",
       formatRupiah(item.total_bayaran_lembur),
@@ -291,8 +293,12 @@ const PerhitunganGaji = () => {
     doc.setFontSize(10);
     doc.text(dateStr, 14, 22);
 
-    // downloadExcel
-    const header = kolom.map((k) => k.label);
+    const header = kolom.map((k) =>
+      k.label
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    );
     const rows = filteredData.map((item, idx) => [
       idx + 1,
       item.nama,
@@ -301,13 +307,14 @@ const PerhitunganGaji = () => {
       item.jumlah_izin ?? "-",
       item.jumlah_sakit ?? "-",
       item.jumlah_alpha ?? "-",
-      formatTerlambat(item.total_jam_kerja),
-      formatTerlambat(item.jam_normal),
-      formatTerlambat(item.jam_terlambat),
-      formatTerlambat(item.jam_kurang),
+      // formatTerlambat(item.total_jam_kerja),
+      // formatTerlambat(item.jam_normal),
+      // formatTerlambat(item.jam_terlambat),
+      formatTerlambat(item.jam_terlambat + item.jam_kurang),
       formatRupiah(item.gaji_pokok),
       formatRupiah(item.potongan),
       formatRupiah(item.tunjangan_kehadiran),
+      formatRupiah(item.gaji_pokok - item.potongan + item.tunjangan_kehadiran),
       item.total_lembur ?? "-",
       item.total_menit_lembur ?? "-",
       formatRupiah(item.total_bayaran_lembur),
@@ -326,19 +333,22 @@ const PerhitunganGaji = () => {
         // halign: "center",
       },
       columnStyles: {
-        0: { halign: "center" }, // No
-        1: { halign: "left" }, // Nama
-        2: { halign: "left" }, // status
-        3: { halign: "center" }, // Hadir
-        4: { halign: "center" }, // Izin
-        5: { halign: "center" }, // Sakit
-        6: { halign: "center" }, // Alpha
-        7: { halign: "left" }, // kerja
-        8: { halign: "left" }, // kurang
-        9: { halign: "left" }, // pokok
-        10: { halign: "left" }, // Normal
-        11: { halign: "left" }, // Terlambat
-        12: { halign: "left" }, // Bolos
+        0: { halign: "center" },
+        1: { halign: "left" },
+        2: { halign: "left" },
+        3: { halign: "center" },
+        4: { halign: "center" },
+        5: { halign: "center" },
+        6: { halign: "center" },
+        7: { halign: "left" },
+        8: { halign: "left", cellWidth: 25 },
+        9: { halign: "left", cellWidth: 25 },
+        10: { halign: "left", cellWidth: 25 },
+        11: { halign: "left", cellWidth: 25 },
+        12: { halign: "left" },
+        13: { halign: "left" },
+        14: { halign: "left", cellWidth: 25 },
+        15: { halign: "left", cellWidth: 25 },
       },
     });
 
@@ -643,7 +653,7 @@ const PerhitunganGaji = () => {
                               >
                                 {item.jumlah_alpha ?? "-"}
                               </TableCell>
-                              <TableCell
+                              {/* <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="center"
                               >
@@ -654,19 +664,21 @@ const PerhitunganGaji = () => {
                                 align="center"
                               >
                                 {formatTerlambat(item.jam_normal)}
-                              </TableCell>
+                              </TableCell> */}
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="center"
                               >
-                                {formatTerlambat(item.jam_terlambat)}
+                                {formatTerlambat(
+                                  item.jam_terlambat + item.jam_kurang
+                                )}
                               </TableCell>
-                              <TableCell
+                              {/* <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="center"
                               >
                                 {formatTerlambat(item.jam_kurang)}
-                              </TableCell>
+                              </TableCell> */}
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="left"
@@ -684,6 +696,16 @@ const PerhitunganGaji = () => {
                                 align="left"
                               >
                                 {formatRupiah(item.tunjangan_kehadiran)}
+                              </TableCell>
+                              <TableCell
+                                sx={{ fontSize: "12px", padding: "4px" }}
+                                align="left"
+                              >
+                                {formatRupiah(
+                                  item.gaji_pokok -
+                                    item.potongan +
+                                    item.tunjangan_kehadiran
+                                )}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
@@ -708,7 +730,7 @@ const PerhitunganGaji = () => {
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="left"
                               >
-                                {formatRupiah(item.gaji_bersih)}
+                                {formatRupiah(item.gaji_bersih ?? "-")}
                               </TableCell>
                             </TableRow>
                           ))

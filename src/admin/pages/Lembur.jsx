@@ -122,17 +122,11 @@ const Lembur = () => {
     setShowFormModal(true);
   };
 
-  const formatJamLembur = (jamLembur) => {
-    if (!jamLembur || isNaN(jamLembur)) return "-";
+  const convertMenitToJamMenit = (menit) => {
+    const jam = Math.floor(menit / 60); // Mendapatkan jumlah jam
+    const sisaMenit = menit % 60; // Mendapatkan sisa menit
 
-    const jam = Math.floor(jamLembur);
-    const menit = Math.round((jamLembur - jam) * 60);
-
-    if (jam > 0 && menit > 0) return `${jam} jam ${menit} menit`;
-    if (jam > 0) return `${jam} jam`;
-    if (menit > 0) return `${menit} menit`;
-
-    return "0 menit";
+    return `${jam} jam ${sisaMenit} menit`;
   };
 
   const totalKeseluruhanBayaran = lemburList.reduce(
@@ -181,7 +175,7 @@ const Lembur = () => {
       item.tanggal,
       item.jam_mulai?.slice(0, 5),
       item.jam_selesai?.slice(0, 5),
-      formatJamLembur(item.jam_lembur),
+      convertMenitToJamMenit(item.menit_lembur),
       item.bayaran_perjam?.toLocaleString("id-ID") ?? "-",
       item.total_bayaran?.toLocaleString("id-ID") ?? "-",
       item.keterangan || "-",
@@ -260,7 +254,7 @@ const Lembur = () => {
       item.tanggal,
       item.jam_mulai?.slice(0, 5),
       item.jam_selesai?.slice(0, 5),
-      formatJamLembur(item.jam_lembur),
+      convertMenitToJamMenit(item.menit_lembur),
       item.bayaran_perjam?.toLocaleString("id-ID") ?? "-",
       item.total_bayaran?.toLocaleString("id-ID") ?? "-",
       item.keterangan || "-",
@@ -440,7 +434,7 @@ const Lembur = () => {
 
           {/* Lain-lain */}
           <button
-            className="bg-red-800 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+            className="bg-red-800 hover:bg-red-600 text-white px-4 py-2 rounded-[15px] text-sm"
             onClick={() => {
               setLemburModal(true);
               fetchLembur(tanggal); // Fetch lembur with the current filters applied
@@ -452,13 +446,13 @@ const Lembur = () => {
           {/* Download Buttons */}
           <div className="flex gap-2 ml-auto">
             <button
-              className="flex items-center text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg"
+              className="flex items-center text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-[15px]"
               onClick={downloadExcel}
             >
               <FaFileExcel className="mr-2" /> Excel
             </button>
             <button
-              className="flex items-center text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg"
+              className="flex items-center text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-[15px]"
               onClick={downloadPDF}
             >
               <FaFilePdf className="mr-2" /> PDF
@@ -511,7 +505,7 @@ const Lembur = () => {
                         {item.jam_selesai?.slice(0, 5)}
                       </td>
                       <td className="border px-2 py-1 capitalize text-xs">
-                        {formatJamLembur(item.jam_lembur)}
+                        {convertMenitToJamMenit(item.menit_lembur)}
                       </td>
                       <td className="border px-2 py-1 text-right text-xs">
                         Rp.{item.bayaran_perjam?.toLocaleString("id-ID") ?? "-"}
@@ -602,7 +596,7 @@ const Lembur = () => {
           </div>
 
           <button
-            className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
+            className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 rounded-[15px] text-sm"
             onClick={() => {
               fetchPegawaiList();
               setShowFormModal(true);
