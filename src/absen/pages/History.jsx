@@ -272,7 +272,7 @@ const History = () => {
     if (!rekapanData) return;
     const nama = rekapanData.nama || localStorage.getItem("nama") || "-";
     const doc = new jsPDF();
-    const title = "Rekapan Presensi";
+    const title = "Rekapan Gaji";
     const periode = `${rekapanData.periode_awal} - ${rekapanData.periode_akhir}`;
 
     doc.setFontSize(14);
@@ -314,7 +314,99 @@ const History = () => {
       },
     });
 
-    doc.save(`Rekapan Presensi ${nama}.pdf`);
+    doc.save(`Rekapan Gaji ${nama}.pdf`);
+  };
+
+  const downloadPDFBulanan = () => {
+    if (!rekapanData) return;
+    const nama = rekapanData.nama || localStorage.getItem("nama") || "-";
+    const doc = new jsPDF();
+    const title = "Rekapan Gaji Bulanan";
+    const periode = `${rekapanData.periode_awal} - ${rekapanData.periode_akhir}`;
+
+    doc.setFontSize(14);
+    doc.text(title, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Nama: ${nama}`, 14, 22);
+    doc.text(`Periode: ${periode}`, 14, 28);
+
+    const tableRows = [
+      ["Jumlah Hadir", `${rekapanData.jumlah_hadir} hari`],
+      ["Jumlah Izin", `${rekapanData.jumlah_izin} hari`],
+      ["Jumlah Sakit", `${rekapanData.jumlah_sakit} hari`],
+      ["Jumlah Alpha", `${rekapanData.jumlah_alpha} hari`],
+      ["Total Jam Kerja", formatMenitToJamMenit(rekapanData.total_jam_kerja)],
+      ["Jam Normal", formatMenitToJamMenit(rekapanData.jam_normal)],
+      ["Jam Terlambat", `${rekapanData.jam_terlambat} menit`],
+      ["Jam Kurang", `${rekapanData.jam_kurang} menit`],
+      ["Gaji Pokok", formatRupiah(rekapanData.gaji_pokok)],
+      ["Potongan", formatRupiah(rekapanData.potongan)],
+      ["Tunjangan Kehadiran", formatRupiah(rekapanData.tunjangan_kehadiran)],
+      [
+        "Total Gaji Bersih",
+        formatRupiah(
+          rekapanData.gaji_pokok -
+            rekapanData.potongan +
+            rekapanData.tunjangan_kehadiran
+        ),
+      ],
+    ];
+
+    doc.autoTable({
+      head: [["Keterangan", "Nilai"]],
+      body: tableRows,
+      startY: 35,
+      styles: { fontSize: 10 },
+      headStyles: {
+        fillColor: [139, 0, 0],
+        textColor: [255, 255, 255],
+        halign: "center",
+        valign: "middle",
+      },
+      bodyStyles: {
+        textColor: [0, 0, 0],
+      },
+    });
+
+    doc.save(`Rekapan Gaji Bulanan ${nama}.pdf`);
+  };
+
+  const downloadPDFLembur = () => {
+    if (!rekapanData) return;
+    const nama = rekapanData.nama || localStorage.getItem("nama") || "-";
+    const doc = new jsPDF();
+    const title = "Rekapan Gaji Lembur";
+    const periode = `${rekapanData.periode_awal} - ${rekapanData.periode_akhir}`;
+
+    doc.setFontSize(14);
+    doc.text(title, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Nama: ${nama}`, 14, 22);
+    doc.text(`Periode: ${periode}`, 14, 28);
+
+    const tableRows = [
+      ["Total Lembur", `${rekapanData.total_lembur} hari`],
+      ["Waktu Lembur", formatMenitToJamMenit(rekapanData.total_menit_lembur)],
+      ["Total Bayaran Lembur", formatRupiah(rekapanData.total_bayaran_lembur)],
+    ];
+
+    doc.autoTable({
+      head: [["Keterangan", "Nilai"]],
+      body: tableRows,
+      startY: 35,
+      styles: { fontSize: 10 },
+      headStyles: {
+        fillColor: [139, 0, 0],
+        textColor: [255, 255, 255],
+        halign: "center",
+        valign: "middle",
+      },
+      bodyStyles: {
+        textColor: [0, 0, 0],
+      },
+    });
+
+    doc.save(`Gaji Lembur ${nama}.pdf`);
   };
 
   return (
@@ -430,11 +522,31 @@ const History = () => {
               }}
             />
             <Tab
-              label="Rekapan"
+              label="Gaji Bulanan"
               {...a11yProps(4)}
               sx={{
                 color: "white",
                 fontWeight: value === 4 ? "600" : "400",
+                minWidth: "33.33%",
+                textTransform: "none",
+              }}
+            />
+            <Tab
+              label="Gaji Lemburan "
+              {...a11yProps(5)}
+              sx={{
+                color: "white",
+                fontWeight: value === 5 ? "600" : "400",
+                minWidth: "33.33%",
+                textTransform: "none",
+              }}
+            />
+            <Tab
+              label="Rekapan Gaji"
+              {...a11yProps(6)}
+              sx={{
+                color: "white",
+                fontWeight: value === 6 ? "600" : "400",
                 minWidth: "33.33%",
                 textTransform: "none",
               }}
@@ -696,8 +808,199 @@ const History = () => {
               </p>
             )}
           </CustomTabPanel>
-          {/* Rekapan Tab */}
           <CustomTabPanel value={value} index={4}>
+            <div className="overflow-x-auto pb-7">
+              {rekapanData ? (
+                <div key={0} className="mb-4 pb-2">
+                  <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
+                    <tbody>
+                      <tr>
+                        <td>Nama</td>
+                        <td className="flex font-semibold capitalize">
+                          <p className="pr-2">:</p>
+                          {rekapanData.nama || "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Periode</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.periode_awal} -{" "}
+                          {rekapanData.periode_akhir}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jumlah Hadir</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jumlah_hadir} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jumlah Izin</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jumlah_izin} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jumlah Sakit</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jumlah_sakit} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jumlah Alpha</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jumlah_alpha} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Total Jam Kerja</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatMenitToJamMenit(rekapanData.total_jam_kerja)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jam Normal</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatMenitToJamMenit(rekapanData.jam_normal)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jam Terlambat</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jam_terlambat} menit
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Jam Kurang</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.jam_kurang} menit
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Gaji Pokok</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.gaji_pokok)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Potongan</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.potongan)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Tunjangan Kehadiran</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.tunjangan_kehadiran)}
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td>Total Gaji Bersih</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(
+                            rekapanData.gaji_pokok -
+                              rekapanData.potongan +
+                              rekapanData.tunjangan_kehadiran
+                          )}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-center">
+                  Loading atau tidak ada data rekapan.
+                </p>
+              )}
+            </div>
+            {rekapanData && (
+              <button
+                className="flex items-center mb-2 bg-red-700 hover:bg-red-800 text-white px-3 py-2 rounded text-sm"
+                onClick={downloadPDFBulanan}
+              >
+                <FaFilePdf className="mr-2" /> Download PDF
+              </button>
+            )}
+          </CustomTabPanel>
+          <CustomTabPanel value={value} index={5}>
+            <div className="overflow-x-auto pb-7">
+              {rekapanData ? (
+                <div key={0} className="mb-4 pb-2">
+                  <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
+                    <tbody>
+                      <tr>
+                        <td>Nama</td>
+                        <td className="flex font-semibold capitalize">
+                          <p className="pr-2">:</p>
+                          {rekapanData.nama || "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Periode</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.periode_awal} -{" "}
+                          {rekapanData.periode_akhir}
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td>Total Lembur</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {rekapanData.total_lembur} hari
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Waktu Lembur</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatMenitToJamMenit(
+                            rekapanData.total_menit_lembur
+                          )}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Total Bayaran Lembur</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.total_bayaran_lembur)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-center">
+                  Loading atau tidak ada data rekapan.
+                </p>
+              )}
+            </div>
+            {rekapanData && (
+              <button
+                className="flex items-center mb-2 bg-red-700 hover:bg-red-800 text-white px-3 py-2 rounded text-sm"
+                onClick={downloadPDFLembur}
+              >
+                <FaFilePdf className="mr-2" /> Download PDF
+              </button>
+            )}
+          </CustomTabPanel>
+          {/* Rekapan Tab */}
+          <CustomTabPanel value={value} index={6}>
             <div className="overflow-x-auto pb-7">
               {rekapanData ? (
                 <div key={0} className="mb-4 pb-2">
