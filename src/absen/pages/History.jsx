@@ -895,7 +895,7 @@ const History = () => {
                       <tr>
                         <td>Potongan</td>
                         <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
+                          <p className="pr-2">:</p>-
                           {formatRupiah(rekapanData.potongan)}
                         </td>
                       </tr>
@@ -1087,7 +1087,7 @@ const History = () => {
                       <tr>
                         <td>Potongan</td>
                         <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
+                          <p className="pr-2">:</p>-
                           {formatRupiah(rekapanData.potongan)}
                         </td>
                       </tr>
