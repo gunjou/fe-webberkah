@@ -145,16 +145,6 @@ const Lembur = () => {
     const titleRow = ["Data Lembur Pegawai"];
     const periodeRow = [`Bulan: ${monthName} ${selectedYear}`];
 
-    const formatJamLembur = (jamLembur) => {
-      if (!jamLembur || isNaN(jamLembur)) return "-";
-      const jam = Math.floor(jamLembur);
-      const menit = Math.round((jamLembur - jam) * 60);
-      if (jam > 0 && menit > 0) return `${jam} jam ${menit} menit`;
-      if (jam > 0) return `${jam} jam`;
-      if (menit > 0) return `${menit} menit`;
-      return "0 menit";
-    };
-
     const header = [
       "No",
       "Nama",

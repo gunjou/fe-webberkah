@@ -376,7 +376,7 @@ const Pegawai = () => {
           {toTitleCase(item.tipe)}
         </TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
-          {toTitleCase(item.username)}
+          {item.username}
         </TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
           {item.kode_pemulihan}

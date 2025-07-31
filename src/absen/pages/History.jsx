@@ -399,7 +399,7 @@ const History = () => {
               }}
             />
             <Tab
-              label="Lembur"
+              label="Gaji Harian"
               {...a11yProps(1)}
               sx={{
                 color: "white",
@@ -418,8 +418,9 @@ const History = () => {
                 textTransform: "none",
               }}
             />
+
             <Tab
-              label="Perhitungan Gaji"
+              label="Lembur"
               {...a11yProps(3)}
               sx={{
                 color: "white",
@@ -522,66 +523,9 @@ const History = () => {
               <div>**jam bolos: absen keluar sebelum jam 17:00 wita</div>
             </div>
           </CustomTabPanel>
-          <CustomTabPanel value={value} index={1}>
-            {dataLembur.length > 0 ? (
-              <table className="min-w-full text-left text-white border-separate border-spacing-y-1 text-sm">
-                <thead>
-                  <tr>
-                    <th>Tgl</th>
-                    <th>Mulai</th>
-                    <th>Selesai</th>
-                    <th>Ket</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dataLembur.map((item, i) => (
-                    <tr key={i}>
-                      <td>{formatTanggalBulan(item.tanggal)}</td>
-                      <td>{item.jam_mulai?.slice(0, 5)}</td>
-                      <td>{item.jam_selesai?.slice(0, 5)}</td>
-                      <td>{potongTeks(item.keterangan, 25)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="text-center text-sm">
-                loading atau Tidak ada data lembur.
-              </p>
-            )}
-          </CustomTabPanel>
-
-          <CustomTabPanel value={value} index={2}>
-            {dataIzin.length > 0 ? (
-              <table className="min-w-full text-left text-white border-separate border-spacing-y-1 text-sm">
-                <thead>
-                  <tr>
-                    <th>Mulai</th>
-                    <th>Selesai</th>
-                    <th>Status</th>
-                    <th>Ket</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dataIzin.map((item, i) => (
-                    <tr key={i}>
-                      <td>{formatTanggalBulan(item.tgl_mulai)}</td>
-                      <td>{formatTanggalBulan(item.tgl_selesai)}</td>
-                      <td>{item.nama_status}</td>
-                      <td>{potongTeks(item.keterangan, 25)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="text-center text-sm">
-                Loading atau Tidak ada data izin.
-              </p>
-            )}
-          </CustomTabPanel>
 
           {/* Perhitungan Gaji Tab */}
-          <CustomTabPanel value={value} index={3}>
+          <CustomTabPanel value={value} index={1}>
             <div className="overflow-x-auto pb-7">
               {perhitunganGaji ? (
                 <div key={0} className="mb-4 pb-2">
@@ -661,6 +605,96 @@ const History = () => {
                 </p>
               )}
             </div>
+          </CustomTabPanel>
+
+          <CustomTabPanel value={value} index={2}>
+            {dataIzin.length > 0 ? (
+              <table className="min-w-full text-left text-white border-separate border-spacing-y-1 text-sm">
+                <thead>
+                  <tr>
+                    <th>Mulai</th>
+                    <th>Selesai</th>
+                    <th>Status</th>
+                    <th>Ket</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dataIzin.map((item, i) => (
+                    <tr key={i}>
+                      <td>{formatTanggalBulan(item.tgl_mulai)}</td>
+                      <td>{formatTanggalBulan(item.tgl_selesai)}</td>
+                      <td>{item.nama_status}</td>
+                      <td>{potongTeks(item.keterangan, 25)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-center text-sm">
+                Loading atau Tidak ada data izin.
+              </p>
+            )}
+          </CustomTabPanel>
+
+          <CustomTabPanel value={value} index={3}>
+            {dataLembur.length > 0 ? (
+              <>
+                {/* Menampilkan List Lembur */}
+                <div className="flex flex-col gap-4">
+                  {dataLembur.map((item, i) => (
+                    <div
+                      key={i}
+                      className="p-4 rounded-lg shadow-md text-left text-white"
+                    >
+                      <h3 className="text-sm font-semibold mb-2">
+                        {formatTanggalBulan(item.tanggal)},{" "}
+                        {item.jam_mulai?.slice(0, 5)} -{" "}
+                        {item.jam_selesai?.slice(0, 5)} Wita
+                      </h3>
+                      <p className="text-xs">
+                        <strong className="mr-2 inline-block">
+                          Jam Lembur:
+                        </strong>{" "}
+                        {formatMenitToJamMenit(item.menit_lembur)}
+                      </p>
+                      <p className="text-xs">
+                        <strong className="mr-2 inline-block">
+                          Bayar/Jam:
+                        </strong>{" "}
+                        {formatRupiah(item.bayaran_perjam)}
+                      </p>
+                      <p className="text-xs">
+                        <strong className="mr-2 inline-block">
+                          Total Bayaran:
+                        </strong>{" "}
+                        {formatRupiah(item.total_bayaran)}
+                      </p>
+                      <p className="text-xs">
+                        <strong className="mr-2 inline-block">
+                          Keterangan:
+                        </strong>{" "}
+                        {potongTeks(item.keterangan, 25)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Menampilkan Total Keseluruhan Bayaran */}
+                <div className="mt-4 text-sm text-white">
+                  <strong>Total Keseluruhan Bayaran Lembur: </strong>
+                  {formatRupiah(
+                    dataLembur.reduce(
+                      (total, item) => total + item.total_bayaran,
+                      0
+                    )
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-xs">
+                loading atau Tidak ada data lembur.
+              </p>
+            )}
           </CustomTabPanel>
           {/* Rekapan Tab */}
           <CustomTabPanel value={value} index={4}>
