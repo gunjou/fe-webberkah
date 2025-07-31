@@ -871,7 +871,9 @@ const PerhitunganGaji = () => {
 
                       {/* Total Gaji */}
                       <div>
-                        <h3 className="font-semibold mb-1">Total Gaji</h3>
+                        <h3 className="font-semibold mb-1">
+                          Total Gaji (Bersih + Lembur)
+                        </h3>
                         <div className="flex justify-between">
                           <span>Pegawai Tetap</span>
                           <span>{formatRupiah(totalGaji.total.tetap)}</span>
