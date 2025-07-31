@@ -345,7 +345,7 @@ const History = () => {
       [
         "Total Gaji Bersih",
         formatRupiah(
-          rekapanData.gaji_pokok -
+          rekapanData.gaji_kotor -
             rekapanData.potongan +
             rekapanData.tunjangan_kehadiran
         ),
@@ -893,6 +893,13 @@ const History = () => {
                         </td>
                       </tr>
                       <tr>
+                        <td>Gaji Kotor</td>
+                        <td className="flex font-semibold">
+                          <p className="pr-2">:</p>
+                          {formatRupiah(rekapanData.gaji_kotor)}
+                        </td>
+                      </tr>
+                      <tr>
                         <td>Potongan</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>-
@@ -912,7 +919,7 @@ const History = () => {
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
                           {formatRupiah(
-                            rekapanData.gaji_pokok -
+                            rekapanData.gaji_kotor -
                               rekapanData.potongan +
                               rekapanData.tunjangan_kehadiran
                           )}

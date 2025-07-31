@@ -84,10 +84,7 @@ const PerhitunganGaji = () => {
 
   const totalGaji = absen.reduce(
     (acc, item) => {
-      const gajiBersihManual =
-        (item.gaji_pokok || 0) -
-        (item.potongan || 0) +
-        (item.tunjangan_kehadiran || 0);
+      const gajiBersihManual = item.gaji_bersih_tanpa_lembur || 0;
       const lembur = item.total_bayaran_lembur || 0;
       const total = item.gaji_bersih || 0;
 
@@ -366,7 +363,7 @@ const PerhitunganGaji = () => {
       formatRupiah(item.tunjangan_kehadiran),
       formatRupiah(item.gaji_pokok - item.potongan + item.tunjangan_kehadiran),
       item.total_lembur ?? "-",
-      item.total_menit_lembur ?? "-",
+      formatTerlambat(item.total_menit_lembur) ?? "-",
       formatRupiah(item.total_bayaran_lembur),
       formatRupiah(item.gaji_bersih),
     ]);
@@ -777,11 +774,7 @@ const PerhitunganGaji = () => {
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="left"
                               >
-                                {formatRupiah(
-                                  item.gaji_pokok -
-                                    item.potongan +
-                                    item.tunjangan_kehadiran
-                                )}
+                                {formatRupiah(item.gaji_bersih_tanpa_lembur)}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
@@ -840,9 +833,7 @@ const PerhitunganGaji = () => {
                     <div className="space-y-4 text-sm">
                       {/* Gaji Bersih */}
                       <div>
-                        <h3 className="font-semibold mb-1">
-                          Gaji Bersih (Pokok - Potongan + Hadir)
-                        </h3>
+                        <h3 className="font-semibold mb-1">Gaji Bersih</h3>
                         <div className="flex justify-between">
                           <span>Pegawai Tetap</span>
                           <span>{formatRupiah(totalGaji.bersih.tetap)}</span>
