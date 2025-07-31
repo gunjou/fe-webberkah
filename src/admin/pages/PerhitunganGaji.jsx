@@ -13,6 +13,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 import api from "../../shared/Api";
+import { FiX } from "react-icons/fi";
 
 const kolom = [
   { id: "no", label: "No", minWidth: 20 },
@@ -55,6 +56,10 @@ const PerhitunganGaji = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  const [showModal, setShowModal] = useState(false);
+  const handleOpenModal = () => setShowModal(true);
+  const handleCloseModal = () => setShowModal(false);
+
   const fetchData = (start = "", end = "") => {
     const token = localStorage.getItem("token");
     if (!start || !end) return;
@@ -79,15 +84,34 @@ const PerhitunganGaji = () => {
 
   const totalGaji = absen.reduce(
     (acc, item) => {
+      const gajiBersihManual =
+        (item.gaji_pokok || 0) -
+        (item.potongan || 0) +
+        (item.tunjangan_kehadiran || 0);
+      const lembur = item.total_bayaran_lembur || 0;
+      const total = item.gaji_bersih || 0;
+
       if (item.tipe === "pegawai tetap") {
-        acc.tetap += item.gaji_bersih;
+        acc.bersih.tetap += gajiBersihManual;
+        acc.lembur.tetap += lembur;
+        acc.total.tetap += total;
       } else if (item.tipe === "pegawai tidak tetap") {
-        acc.tidaktetap += item.gaji_bersih;
+        acc.bersih.tidaktetap += gajiBersihManual;
+        acc.lembur.tidaktetap += lembur;
+        acc.total.tidaktetap += total;
       }
-      acc.total += item.gaji_bersih;
+
+      acc.bersih.total += gajiBersihManual;
+      acc.lembur.total += lembur;
+      acc.total.total += total;
+
       return acc;
     },
-    { tetap: 0, tidaktetap: 0, total: 0 }
+    {
+      bersih: { tetap: 0, tidaktetap: 0, total: 0 },
+      lembur: { tetap: 0, tidaktetap: 0, total: 0 },
+      total: { tetap: 0, tidaktetap: 0, total: 0 },
+    }
   );
 
   useEffect(() => {
@@ -270,8 +294,34 @@ const PerhitunganGaji = () => {
       formatRupiah(item.total_bayaran_lembur),
       formatRupiah(item.gaji_bersih),
     ]);
+    const summaryRows = [
+      [],
+      ["RINGKASAN TOTAL GAJI"],
+      ["Gaji Bersih Pegawai Tetap", formatRupiah(totalGaji.bersih.tetap)],
+      [
+        "Gaji Bersih Pegawai Tidak Tetap",
+        formatRupiah(totalGaji.bersih.tidaktetap),
+      ],
+      ["Gaji Bersih Total Semua Pegawai", formatRupiah(totalGaji.bersih.total)],
+      ["Gaji Lembur Pegawai Tetap", formatRupiah(totalGaji.lembur.tetap)],
+      [
+        "Gaji Lembur Pegawai Tidak Tetap",
+        formatRupiah(totalGaji.lembur.tidaktetap),
+      ],
+      ["Gaji Lembur Total Semua Pegawai", formatRupiah(totalGaji.lembur.total)],
+      ["Total Gaji Pegawai Tetap", formatRupiah(totalGaji.total.tetap)],
+      [
+        "Total Gaji Pegawai Tidak Tetap",
+        formatRupiah(totalGaji.total.tidaktetap),
+      ],
+      ["Total Gaji Semua Pegawai", formatRupiah(totalGaji.total.total)],
+    ];
 
-    const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      header,
+      ...rows,
+      ...summaryRows,
+    ]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
     XLSX.writeFile(workbook, `${getFileName(startDate, endDate)}.xlsx`);
@@ -352,105 +402,131 @@ const PerhitunganGaji = () => {
       },
     });
 
-    let y = doc.lastAutoTable.finalY + 14; // Ambil posisi Y terakhir tabel, lalu tambahkan spasi
+    let y = doc.lastAutoTable.finalY + 10; // Ambil posisi Y terakhir tabel, lalu tambahkan spasi
 
     const labels = [
+      "Gaji Bersih Pegawai Tetap",
+      "Gaji Bersih Pegawai Tidak Tetap",
+      "Gaji Bersih Total Semua Pegawai",
+
+      "Gaji Lembur Pegawai Tetap",
+      "Gaji Lembur Pegawai Tidak Tetap",
+      "Gaji Lembur Total Semua Pegawai",
+
       "Total Gaji Pegawai Tetap",
       "Total Gaji Pegawai Tidak Tetap",
       "Total Gaji Semua Pegawai",
     ];
 
     const values = [
-      formatRupiah(totalGaji.tetap),
-      formatRupiah(totalGaji.tidaktetap),
-      formatRupiah(totalGaji.total),
+      formatRupiah(totalGaji.bersih.tetap),
+      formatRupiah(totalGaji.bersih.tidaktetap),
+      formatRupiah(totalGaji.bersih.total),
+
+      formatRupiah(totalGaji.lembur.tetap),
+      formatRupiah(totalGaji.lembur.tidaktetap),
+      formatRupiah(totalGaji.lembur.total),
+
+      formatRupiah(totalGaji.total.tetap),
+      formatRupiah(totalGaji.total.tidaktetap),
+      formatRupiah(totalGaji.total.total),
     ];
 
+    let lineSpacing = 5;
+    let groupGap = 2;
+    let groupBreaks = [2, 5, 8]; // setelah index 2 dan 5
+
     labels.forEach((label, index) => {
+      const yOffset =
+        y +
+        index * lineSpacing +
+        groupBreaks.filter((b) => index > b).length * groupGap;
+
       doc.setFont("helvetica", "normal");
-      doc.text(label, 14, y + index * 6);
+      doc.text(label, 14, yOffset);
+
       doc.setFont("helvetica", "bold");
-      doc.text(`: ${values[index]}`, 75, y + index * 6); // Geser nilai agar rata ke kanan
+      doc.text(`: ${values[index]}`, 75, yOffset);
     });
 
     doc.save(`${getFileName(startDate, endDate)}.pdf`);
   };
 
-  currentRows.length === 0 ? (
-    <TableRow>
-      <TableCell colSpan={kolom.length} align="center">
-        Tidak ada yang cocok dengan pencarian Anda.
-      </TableCell>
-    </TableRow>
-  ) : (
-    currentRows.map((item, index) => (
-      <TableRow key={index}>
-        <TableCell align="center">{indexOfFirstRow + index + 1}</TableCell>
-        <TableCell className="capitalize">{item.nama}</TableCell>
-        <TableCell className="capitalize">{item.tipe}</TableCell>
-        <TableCell align="center">
-          {item.jumlah_hadir === "0" || !item.jumlah_hadir
-            ? "-"
-            : item.jumlah_hadir}
-        </TableCell>
-        <TableCell align="center">
-          {item.jumlah_izin === "0" || !item.jumlah_izin
-            ? "-"
-            : item.jumlah_izin}
-        </TableCell>
-        <TableCell align="center">
-          {item.jumlah_sakit === "0" || !item.jumlah_sakit
-            ? "-"
-            : item.jumlah_sakit}
-        </TableCell>
-        <TableCell align="center">
-          {item.jumlah_alpha === "0" || !item.jumlah_alpha
-            ? "-"
-            : item.jumlah_alpha}
-        </TableCell>
-        <TableCell align="center">
-          {item.total_jam_kerja === "0" || !item.total_jam_kerja
-            ? "-"
-            : formatTerlambat(item.total_jam_kerja)}
-        </TableCell>
-        <TableCell align="left">
-          {item.jam_kurang === "0" || !item.jam_kurang
-            ? "-"
-            : formatTerlambat(item.jam_kurang)}
-        </TableCell>
-        <TableCell align="left">
-          {item.gaji_pokok === "0" || !item.gaji_pokok
-            ? "-"
-            : formatRupiah(item.gaji_pokok)}
-        </TableCell>
-        <TableCell align="center">
-          {item.gaji_perhari === "0" || !item.gaji_perhari
-            ? "-"
-            : formatRupiah(item.gaji_perhari)}
-        </TableCell>
-        <TableCell align="left">
-          {item.total_bayaran_lembur === "0" || !item.total_bayaran_lembur
-            ? "-"
-            : formatRupiah(item.total_bayaran_lembur)}
-        </TableCell>
-        <TableCell align="left">
-          {item.total_potongan === "0" || !item.total_potongan
-            ? "-"
-            : formatRupiah(item.total_potongan)}
-        </TableCell>
-        <TableCell align="left">
-          {item.tunjangan_kehadiran === "0" || !item.tunjangan_kehadiran
-            ? "-"
-            : formatRupiah(item.tunjangan_kehadiran)}
-        </TableCell>
-        <TableCell align="left">
-          {item.gaji_bersih === "0" || !item.gaji_bersih
-            ? "-"
-            : formatRupiah(item.gaji_bersih)}
-        </TableCell>
-      </TableRow>
-    ))
-  );
+  // currentRows.length === 0 ? (
+  //   <TableRow>
+  //     <TableCell colSpan={kolom.length} align="center">
+  //       Tidak ada yang cocok dengan pencarian Anda.
+  //     </TableCell>
+  //   </TableRow>
+  // ) : (
+  //   currentRows.map((item, index) => (
+  //     <TableRow key={index}>
+  //       <TableCell align="center">{indexOfFirstRow + index + 1}</TableCell>
+  //       <TableCell className="capitalize">{item.nama}</TableCell>
+  //       <TableCell className="capitalize">{item.tipe}</TableCell>
+  //       <TableCell align="center">
+  //         {item.jumlah_hadir === "0" || !item.jumlah_hadir
+  //           ? "-"
+  //           : item.jumlah_hadir}
+  //       </TableCell>
+  //       <TableCell align="center">
+  //         {item.jumlah_izin === "0" || !item.jumlah_izin
+  //           ? "-"
+  //           : item.jumlah_izin}
+  //       </TableCell>
+  //       <TableCell align="center">
+  //         {item.jumlah_sakit === "0" || !item.jumlah_sakit
+  //           ? "-"
+  //           : item.jumlah_sakit}
+  //       </TableCell>
+  //       <TableCell align="center">
+  //         {item.jumlah_alpha === "0" || !item.jumlah_alpha
+  //           ? "-"
+  //           : item.jumlah_alpha}
+  //       </TableCell>
+  //       <TableCell align="center">
+  //         {item.total_jam_kerja === "0" || !item.total_jam_kerja
+  //           ? "-"
+  //           : formatTerlambat(item.total_jam_kerja)}
+  //       </TableCell>
+  //       <TableCell align="left">
+  //         {item.jam_kurang === "0" || !item.jam_kurang
+  //           ? "-"
+  //           : formatTerlambat(item.jam_kurang)}
+  //       </TableCell>
+  //       <TableCell align="left">
+  //         {item.gaji_pokok === "0" || !item.gaji_pokok
+  //           ? "-"
+  //           : formatRupiah(item.gaji_pokok)}
+  //       </TableCell>
+  //       <TableCell align="center">
+  //         {item.gaji_perhari === "0" || !item.gaji_perhari
+  //           ? "-"
+  //           : formatRupiah(item.gaji_perhari)}
+  //       </TableCell>
+  //       <TableCell align="left">
+  //         {item.total_bayaran_lembur === "0" || !item.total_bayaran_lembur
+  //           ? "-"
+  //           : formatRupiah(item.total_bayaran_lembur)}
+  //       </TableCell>
+  //       <TableCell align="left">
+  //         {item.total_potongan === "0" || !item.total_potongan
+  //           ? "-"
+  //           : formatRupiah(item.total_potongan)}
+  //       </TableCell>
+  //       <TableCell align="left">
+  //         {item.tunjangan_kehadiran === "0" || !item.tunjangan_kehadiran
+  //           ? "-"
+  //           : formatRupiah(item.tunjangan_kehadiran)}
+  //       </TableCell>
+  //       <TableCell align="left">
+  //         {item.gaji_bersih === "0" || !item.gaji_bersih
+  //           ? "-"
+  //           : formatRupiah(item.gaji_bersih)}
+  //       </TableCell>
+  //     </TableRow>
+  //   ))
+  // );
 
   // Tambahkan useEffect untuk fetch otomatis saat tanggal berubah
   useEffect(() => {
@@ -740,8 +816,100 @@ const PerhitunganGaji = () => {
                   </TableContainer>
                 </Paper>
               </div>
+              <div className="mt-2 mb-2 flex justify-start">
+                <button
+                  onClick={handleOpenModal}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-[20px] text-sm hover:bg-blue-700"
+                >
+                  Lihat Ringkasan Gaji
+                </button>
+              </div>
 
-              <div className="mt-2 ml-2 text-left space-y-0.5 text-sm font-semibold w-fit">
+              {showModal && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black bg-opacity-50"
+                  onClick={handleCloseModal}
+                >
+                  <div
+                    className="bg-white rounded-xl shadow-lg p-6 w-[90%] max-w-md relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h2 className="text-lg font-semibold mb-4">
+                      Ringkasan Total Gaji
+                    </h2>
+                    <div className="space-y-4 text-sm">
+                      {/* Gaji Bersih */}
+                      <div>
+                        <h3 className="font-semibold mb-1">
+                          Gaji Bersih (Pokok - Potongan + Hadir)
+                        </h3>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tetap</span>
+                          <span>{formatRupiah(totalGaji.bersih.tetap)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tidak Tetap</span>
+                          <span>
+                            {formatRupiah(totalGaji.bersih.tidaktetap)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-medium border-t pt-1">
+                          <span>Total Semua</span>
+                          <span>{formatRupiah(totalGaji.bersih.total)}</span>
+                        </div>
+                      </div>
+
+                      {/* Gaji Lembur */}
+                      <div>
+                        <h3 className="font-semibold mb-1">Gaji Lembur</h3>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tetap</span>
+                          <span>{formatRupiah(totalGaji.lembur.tetap)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tidak Tetap</span>
+                          <span>
+                            {formatRupiah(totalGaji.lembur.tidaktetap)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-medium border-t pt-1">
+                          <span>Total Semua</span>
+                          <span>{formatRupiah(totalGaji.lembur.total)}</span>
+                        </div>
+                      </div>
+
+                      {/* Total Gaji */}
+                      <div>
+                        <h3 className="font-semibold mb-1">Total Gaji</h3>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tetap</span>
+                          <span>{formatRupiah(totalGaji.total.tetap)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tidak Tetap</span>
+                          <span>
+                            {formatRupiah(totalGaji.total.tidaktetap)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-bold border-t pt-1">
+                          <span>Total Semua</span>
+                          <span>{formatRupiah(totalGaji.total.total)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tombol Close dengan Icon */}
+                    <button
+                      onClick={handleCloseModal}
+                      className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-xl"
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* <div className="mt-2 ml-2 text-left space-y-0.5 text-sm font-semibold w-fit">
                 <div className="flex">
                   <span className="w-56 text-xs">Total Gaji Pegawai Tetap</span>
                   <span className="mr-1">:</span>
@@ -765,7 +933,7 @@ const PerhitunganGaji = () => {
                     {formatRupiah(totalGaji.total)}
                   </span>
                 </div>
-              </div>
+              </div> */}
 
               {/* Move buttons below pagination */}
             </div>
