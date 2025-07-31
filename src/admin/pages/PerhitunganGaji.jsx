@@ -473,7 +473,7 @@ const PerhitunganGaji = () => {
             Perhitungan Gaji
           </div>
           <div className="tabel rounded-[20px] mt-2 mr-4 ml-4 px-2 shadow-md bg-white w-full h-full">
-            <div className="ml-2 mb-6 pt-4 flex items-start justify-start gap-4 flex-wrap">
+            <div className="ml-2 mb-2 pt-4 flex items-start justify-start gap-4 flex-wrap">
               <div className="flex flex-col">
                 <span className="text-sm font-semibold">
                   Detail Gaji Pegawai Berkah Angsana
@@ -565,7 +565,7 @@ const PerhitunganGaji = () => {
             <div className="overflow-x-auto mt-2 pl-2">
               <div className="bg-white rounded-lg shadow-md mr-2 overflow-y-auto overflow-x-auto ">
                 <Paper sx={{ width: "100%", overflow: "hidden" }}>
-                  <TableContainer sx={{ maxHeight: 300, maxWidth: 900 }}>
+                  <TableContainer sx={{ maxHeight: 280, maxWidth: 900 }}>
                     {" "}
                     <Table stickyHeader>
                       <TableHead className="bg-[#e8ebea]">
@@ -741,30 +741,29 @@ const PerhitunganGaji = () => {
                 </Paper>
               </div>
 
-              <div className="flex justify-between items-center mt-2 px-4">
-                <span className="text-sm text-gray-500">
-                  Showing {indexOfFirstRow + 1}-
-                  {Math.min(indexOfLastRow, absen.length)} of {absen.length}
-                </span>
-                <div className="flex items-center pb-3 px-4">
-                  <button
-                    type="button"
-                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-l-[20px] text-[10px] px-2 py-1 border border-black"
-                    onClick={prevPage}
-                    disabled={currentPage === 1}
-                  >
-                    <GrFormPrevious />
-                  </button>
-                  <button
-                    type="button"
-                    className="bg-gray-300 text-gray-700 hover:bg-gray-400 focus:ring-4 focus:ring-gray-200 font-medium rounded-r-[20px] text-[10px] px-2 py-1 border border-black"
-                    onClick={nextPage}
-                    disabled={
-                      currentPage === Math.ceil(absen.length / rowsPerPage)
-                    }
-                  >
-                    <GrFormNext />
-                  </button>
+              <div className="mt-2 ml-2 text-left space-y-0.5 text-sm font-semibold w-fit">
+                <div className="flex">
+                  <span className="w-56 text-xs">Total Gaji Pegawai Tetap</span>
+                  <span className="mr-1">:</span>
+                  <span className="font-bold text-xs">
+                    {formatRupiah(totalGaji.tetap)}
+                  </span>
+                </div>
+                <div className="flex">
+                  <span className="w-56 text-xs">
+                    Total Gaji Pegawai Tidak Tetap
+                  </span>
+                  <span className="mr-1">:</span>
+                  <span className="font-bold text-xs">
+                    {formatRupiah(totalGaji.tidaktetap)}
+                  </span>
+                </div>
+                <div className="flex">
+                  <span className="w-56 text-xs">Total Gaji Semua Pegawai</span>
+                  <span className="mr-1">:</span>
+                  <span className="font-bold text-xs">
+                    {formatRupiah(totalGaji.total)}
+                  </span>
                 </div>
               </div>
 
