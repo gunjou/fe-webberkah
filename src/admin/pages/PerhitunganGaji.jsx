@@ -53,8 +53,8 @@ const PerhitunganGaji = () => {
   const rowsPerPage = 50;
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const [showModal, setShowModal] = useState(false);
   const handleOpenModal = () => setShowModal(true);
@@ -114,23 +114,16 @@ const PerhitunganGaji = () => {
   );
 
   useEffect(() => {
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-    const format = (date) =>
-      `${String(date.getDate()).padStart(2, "0")}-${String(
-        date.getMonth() + 1
-      ).padStart(2, "0")}-${date.getFullYear()}`;
-
-    const start = format(firstDay);
-    const end = format(lastDay);
-
-    setStartDate(start.split("-").reverse().join("-")); // untuk input type date (yyyy-mm-dd)
-    setEndDate(end.split("-").reverse().join("-"));
-
-    fetchData(start, end); // API expects dd-mm-yyyy
-  }, []);
+    const start = `01-${String(selectedMonth).padStart(
+      2,
+      "0"
+    )}-${selectedYear}`;
+    const endDateObj = new Date(selectedYear, selectedMonth, 0); // last day of month
+    const end = `${String(endDateObj.getDate()).padStart(2, "0")}-${String(
+      selectedMonth
+    ).padStart(2, "0")}-${selectedYear}`;
+    fetchData(start, end);
+  }, [selectedMonth, selectedYear]);
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -181,75 +174,20 @@ const PerhitunganGaji = () => {
     return `${day}/${month}/${year}`;
   };
 
-  const getDateLabel = (startDate, endDate) => {
-    const [startYear, startMonth, startDay] = startDate.split("-");
-    const [endYear, endMonth, endDay] = endDate.split("-");
-    const bulan = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
-    ];
-    const sameMonth = startMonth === endMonth && startYear === endYear;
-
-    const isFullMonth =
-      startDay === "01" &&
-      endDay ===
-        new Date(endYear, parseInt(endMonth), 0)
-          .getDate()
-          .toString()
-          .padStart(2, "0");
-
-    if (sameMonth && isFullMonth) {
-      return `Bulan ${bulan[parseInt(startMonth, 10) - 1]} ${startYear}`;
-    } else {
-      return `${formatTanggalSlash(startDate)} - ${formatTanggalSlash(
-        endDate
-      )}`;
-    }
+  const getDateLabel = () => {
+    const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString(
+      "id-ID",
+      { month: "long" }
+    );
+    return `Bulan ${monthName} ${selectedYear}`;
   };
 
-  const getFileName = (startDate, endDate) => {
-    const [startYear, startMonth, startDay] = startDate.split("-");
-    const [endYear, endMonth, endDay] = endDate.split("-");
-    const bulan = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
-    ];
-    // Cek apakah berada di bulan dan tahun yang sama
-    const sameMonth = startMonth === endMonth && startYear === endYear;
-    // Cek apakah range mencakup keseluruhan bulan (1 sampai tanggal terakhir)
-    const isFullMonth =
-      startDay === "01" &&
-      endDay ===
-        new Date(endYear, parseInt(endMonth), 0)
-          .getDate()
-          .toString()
-          .padStart(2, "0");
-
-    if (sameMonth && isFullMonth) {
-      return `Rekapan Gaji Bulan ${bulan[parseInt(startMonth) - 1]}`;
-    } else {
-      return `Rekapan Gaji ${startDay}-${startMonth}-${startYear} sampai ${endDay}-${endMonth}-${endYear}`;
-    }
+  const getFileName = () => {
+    const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString(
+      "id-ID",
+      { month: "long" }
+    );
+    return `Rekapan Gaji Bulan ${monthName} ${selectedYear}`;
   };
 
   const formatRupiah = (angka) => {
@@ -371,7 +309,7 @@ const PerhitunganGaji = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Gaji");
 
     // Menyimpan file Excel
-    XLSX.writeFile(workbook, `${getFileName(startDate, endDate)}.xlsx`);
+    XLSX.writeFile(workbook, `${getFileName()}.xlsx`);
   };
 
   const downloadPDF = () => {
@@ -383,7 +321,7 @@ const PerhitunganGaji = () => {
     const doc = new jsPDF({ orientation: "landscape" });
 
     const title = "Rekapan Gaji";
-    const dateStr = getDateLabel(startDate, endDate);
+    const dateStr = getDateLabel();
 
     doc.setFontSize(14);
     doc.text(title, 14, 15);
@@ -507,97 +445,21 @@ const PerhitunganGaji = () => {
       y += 3; // spasi antar section
     });
 
-    doc.save(`${getFileName(startDate, endDate)}.pdf`);
+    doc.save(`${getFileName()}.pdf`);
   };
-
-  // currentRows.length === 0 ? (
-  //   <TableRow>
-  //     <TableCell colSpan={kolom.length} align="center">
-  //       Tidak ada yang cocok dengan pencarian Anda.
-  //     </TableCell>
-  //   </TableRow>
-  // ) : (
-  //   currentRows.map((item, index) => (
-  //     <TableRow key={index}>
-  //       <TableCell align="center">{indexOfFirstRow + index + 1}</TableCell>
-  //       <TableCell className="capitalize">{item.nama}</TableCell>
-  //       <TableCell className="capitalize">{item.tipe}</TableCell>
-  //       <TableCell align="center">
-  //         {item.jumlah_hadir === "0" || !item.jumlah_hadir
-  //           ? "-"
-  //           : item.jumlah_hadir}
-  //       </TableCell>
-  //       <TableCell align="center">
-  //         {item.jumlah_izin === "0" || !item.jumlah_izin
-  //           ? "-"
-  //           : item.jumlah_izin}
-  //       </TableCell>
-  //       <TableCell align="center">
-  //         {item.jumlah_sakit === "0" || !item.jumlah_sakit
-  //           ? "-"
-  //           : item.jumlah_sakit}
-  //       </TableCell>
-  //       <TableCell align="center">
-  //         {item.jumlah_alpha === "0" || !item.jumlah_alpha
-  //           ? "-"
-  //           : item.jumlah_alpha}
-  //       </TableCell>
-  //       <TableCell align="center">
-  //         {item.total_jam_kerja === "0" || !item.total_jam_kerja
-  //           ? "-"
-  //           : formatTerlambat(item.total_jam_kerja)}
-  //       </TableCell>
-  //       <TableCell align="left">
-  //         {item.jam_kurang === "0" || !item.jam_kurang
-  //           ? "-"
-  //           : formatTerlambat(item.jam_kurang)}
-  //       </TableCell>
-  //       <TableCell align="left">
-  //         {item.gaji_pokok === "0" || !item.gaji_pokok
-  //           ? "-"
-  //           : formatRupiah(item.gaji_pokok)}
-  //       </TableCell>
-  //       <TableCell align="center">
-  //         {item.gaji_perhari === "0" || !item.gaji_perhari
-  //           ? "-"
-  //           : formatRupiah(item.gaji_perhari)}
-  //       </TableCell>
-  //       <TableCell align="left">
-  //         {item.total_bayaran_lembur === "0" || !item.total_bayaran_lembur
-  //           ? "-"
-  //           : formatRupiah(item.total_bayaran_lembur)}
-  //       </TableCell>
-  //       <TableCell align="left">
-  //         {item.total_potongan === "0" || !item.total_potongan
-  //           ? "-"
-  //           : formatRupiah(item.total_potongan)}
-  //       </TableCell>
-  //       <TableCell align="left">
-  //         {item.tunjangan_kehadiran === "0" || !item.tunjangan_kehadiran
-  //           ? "-"
-  //           : formatRupiah(item.tunjangan_kehadiran)}
-  //       </TableCell>
-  //       <TableCell align="left">
-  //         {item.gaji_bersih === "0" || !item.gaji_bersih
-  //           ? "-"
-  //           : formatRupiah(item.gaji_bersih)}
-  //       </TableCell>
-  //     </TableRow>
-  //   ))
-  // );
 
   // Tambahkan useEffect untuk fetch otomatis saat tanggal berubah
   useEffect(() => {
-    if (startDate && endDate) {
-      // Ubah dari yyyy-mm-dd (input) ke dd-mm-yyyy (API)
-      const formatDate = (str) => {
-        const [year, month, day] = str.split("-");
-        return `${day}-${month}-${year}`;
-      };
-      fetchData(formatDate(startDate), formatDate(endDate));
-    }
-    // eslint-disable-next-line
-  }, [startDate, endDate]);
+    const start = `01-${String(selectedMonth).padStart(
+      2,
+      "0"
+    )}-${selectedYear}`;
+    const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+    const end = `${String(lastDay).padStart(2, "0")}-${String(
+      selectedMonth
+    ).padStart(2, "0")}-${selectedYear}`;
+    fetchData(start, end);
+  }, [selectedMonth, selectedYear]);
 
   return (
     <div className="Perhitungan Gaji">
@@ -613,55 +475,47 @@ const PerhitunganGaji = () => {
                   Detail Gaji Pegawai Berkah Angsana
                 </span>
                 <div className="flex gap-2 mt-2">
-                  <div className="flex items-center text-sm gap-1">
-                    <label htmlFor="startDate">Dari:</label>
-                    <input
-                      id="startDate"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="border rounded-[20px] px-2 py-1 text-sm"
-                    />
-                  </div>
-                  <div className="flex items-center text-sm gap-1">
-                    <label htmlFor="endDate">Sampai:</label>
-                    <input
-                      id="endDate"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="border rounded-[20px] px-2 py-1 text-sm"
-                    />
-                  </div>
-                  {/* Tombol Reset */}
-                  <button
-                    onClick={() => {
-                      const today = new Date();
-                      const firstDay = new Date(
-                        today.getFullYear(),
-                        today.getMonth(),
-                        1
-                      );
-                      const lastDay = new Date(
-                        today.getFullYear(),
-                        today.getMonth() + 1,
-                        0
-                      );
-                      const toInput = (date) =>
-                        `${date.getFullYear()}-${String(
-                          date.getMonth() + 1
-                        ).padStart(2, "0")}-${String(date.getDate()).padStart(
-                          2,
-                          "0"
-                        )}`;
-                      setStartDate(toInput(firstDay));
-                      setEndDate(toInput(lastDay));
-                    }}
-                    className="bg-red-400 hover:bg-red-500 text-white text-[12px] rounded-[20px] px-4 py-2"
-                    type="button"
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="px-2 py-1 border rounded-lg text-sm"
                   >
-                    Reset
-                  </button>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {new Date(0, i).toLocaleString("id-ID", {
+                          month: "long",
+                        })}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="px-2 py-1 border rounded-lg text-sm"
+                  >
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const year = new Date().getFullYear() - i;
+                      return (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      );
+                    })}
+                  </select>
+
+                  <select
+                    value={tipeFilter}
+                    onChange={(e) => setTipeFilter(e.target.value)}
+                    className="border rounded-lg px-2 py-1 text-sm"
+                  >
+                    <option value="semua">Semua Tipe</option>
+                    <option value="pegawai tetap">Pegawai Tetap</option>
+                    <option value="pegawai tidak tetap">
+                      Pegawai Tidak Tetap
+                    </option>
+                  </select>
+
                   <div className="flex items-center ml-4 justify-end space-x-2 flex-wrap w-full">
                     <input
                       type="text"
@@ -877,17 +731,6 @@ const PerhitunganGaji = () => {
                 >
                   Lihat Ringkasan Gaji
                 </button>
-                <select
-                  value={tipeFilter}
-                  onChange={(e) => setTipeFilter(e.target.value)}
-                  className="border rounded-[20px] px-2 py-1 text-sm"
-                >
-                  <option value="semua">Semua Tipe</option>
-                  <option value="pegawai tetap">Pegawai Tetap</option>
-                  <option value="pegawai tidak tetap">
-                    Pegawai Tidak Tetap
-                  </option>
-                </select>
               </div>
 
               {showModal && (
