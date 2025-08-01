@@ -65,171 +65,221 @@ function a11yProps(index) {
 const History = () => {
   const [dataLembur, setDataLembur] = useState([]);
   const [dataIzin, setDataIzin] = useState([]);
-  const [perhitunganGaji, setPerhitunganGaji] = useState(null);
-  const [rekapanData, setRekapanData] = useState(null);
+  const [perhitunganGaji, setPerhitunganGaji] = useState([]);
+  const [rekapanBulanan, setRekapanBulanan] = useState([]);
+  const [rekapanLembur, setRekapanLembur] = useState([]);
+  const [rekapanGabungan, setRekapanGabungan] = useState([]);
   const navigate = useNavigate();
-  const [dataHistory, setDataHistory] = useState(null);
+  const [dataHistory, setDataHistory] = useState([]);
   const [value, setValue] = React.useState(0);
-  const [selectedDate, setSelectedDate] = React.useState(dayjs());
-  const [dataKaryawan, setDataKaryawan] = useState(dayjs());
-  const [listDataKaryawan, setListDataKaryawan] = useState(dayjs());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const selectedDate = dayjs(
+    `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-01`
+  );
+
+  // const [dataKaryawan, setDataKaryawan] = useState(dayjs());
+  // const [listDataKaryawan, setListDataKaryawan] = useState(dayjs());
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
 
-  useEffect(() => {
-    const fetchPresensi = async () => {
-      const id_karyawan = localStorage.getItem("id_karyawan");
-      const token = localStorage.getItem("token");
+  const fetchPresensi = async () => {
+    const id_karyawan = localStorage.getItem("id_karyawan");
+    const token = localStorage.getItem("token");
 
-      try {
-        let endpoint = `/absensi/history/${id_karyawan}`;
+    try {
+      let endpoint = `/absensi/history/${id_karyawan}`;
 
-        if (selectedDate) {
-          const tanggal = selectedDate.format("DD-MM-YYYY");
-          endpoint += `?tanggal=${tanggal}`;
-        }
+      if (selectedDate) {
+        const tanggal = selectedDate.format("DD-MM-YYYY");
+        endpoint += `?tanggal=${tanggal}`;
+      }
 
-        const response = await api.get(endpoint, {
+      const response = await api.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log(response.data.history);
+      setDataHistory(response.data.history);
+    } catch (err) {
+      console.error("Gagal mengambil data History.");
+      setDataHistory([]);
+    }
+  };
+
+  const fetchPerhitunganGajiHarian = async () => {
+    const token = localStorage.getItem("token");
+    const id_karyawan = localStorage.getItem("id_karyawan");
+
+    const today = dayjs().format("DD-MM-YYYY");
+
+    try {
+      let endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}`;
+
+      if (selectedDate) {
+        const tanggal = selectedDate.format("DD-MM-YYYY");
+        endpoint += `&tanggal=${tanggal}`;
+      } else {
+        endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}&tanggal=${today}`;
+      }
+
+      const response = await api.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("Perhitungan Gaji Harian Response:", response.data);
+
+      // Assuming the response structure is something like: response.data.data
+      if (response.data && response.data.data) {
+        setPerhitunganGaji(response.data.data); // Set the perhitungan gaji data
+      } else {
+        setPerhitunganGaji(null); // If no data, set to null
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data perhitungan gaji harian:", error);
+      setPerhitunganGaji(null); // Handle errors gracefully
+    }
+  };
+
+  const fetchRekapanBulanan = async () => {
+    const token = localStorage.getItem("token");
+    const id_karyawan = localStorage.getItem("id_karyawan");
+
+    const start = selectedDate.startOf("month").format("DD-MM-YYYY");
+    const end = selectedDate.endOf("month").format("DD-MM-YYYY");
+
+    try {
+      const response = await api.get(
+        `/perhitungan-gaji/rekapan?start=${start}&end=${end}&id_karyawan=${id_karyawan}`,
+        {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        });
-
-        console.log(response.data.history);
-        setDataHistory(response.data.history);
-      } catch (err) {
-        console.error("Gagal mengambil data History.");
-      }
-    };
-
-    fetchPresensi();
-  }, [selectedDate]);
-
-  useEffect(() => {
-    const fetchPerhitunganGajiHarian = async () => {
-      const token = localStorage.getItem("token");
-      const id_karyawan = localStorage.getItem("id_karyawan");
-
-      const today = dayjs().format("DD-MM-YYYY");
-
-      try {
-        let endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}`;
-
-        if (selectedDate) {
-          const tanggal = selectedDate.format("DD-MM-YYYY");
-          endpoint += `&tanggal=${tanggal}`;
-        } else {
-          endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}&tanggal=${today}`;
         }
+      );
 
-        const response = await api.get(endpoint, {
+      console.log("Rekapan Data Response:", response.data);
+
+      if (response.data && response.data.data?.length > 0) {
+        setRekapanBulanan(response.data.data[0]);
+      } else {
+        setRekapanBulanan(null);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data rekapan:", error);
+      setRekapanBulanan(null);
+    }
+  };
+
+  const fetchRekapanLembur = async () => {
+    const token = localStorage.getItem("token");
+    const id_karyawan = localStorage.getItem("id_karyawan");
+
+    const start = selectedDate.startOf("month").format("DD-MM-YYYY");
+    const end = selectedDate.endOf("month").format("DD-MM-YYYY");
+
+    try {
+      const response = await api.get(
+        `/perhitungan-gaji/rekapan?start=${start}&end=${end}&id_karyawan=${id_karyawan}`,
+        {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        });
-
-        console.log("Perhitungan Gaji Harian Response:", response.data);
-
-        // Assuming the response structure is something like: response.data.data
-        if (response.data && response.data.data) {
-          setPerhitunganGaji(response.data.data); // Set the perhitungan gaji data
-        } else {
-          setPerhitunganGaji(null); // If no data, set to null
         }
-      } catch (error) {
-        console.error("Gagal mengambil data perhitungan gaji harian:", error);
-        setPerhitunganGaji(null); // Handle errors gracefully
+      );
+
+      console.log("Rekapan Data Response:", response.data);
+
+      if (response.data && response.data.data?.length > 0) {
+        setRekapanLembur(response.data.data[0]);
+      } else {
+        setRekapanLembur(null);
       }
-    };
+    } catch (error) {
+      console.error("Gagal mengambil data rekapan:", error);
+      setRekapanLembur(null);
+    }
+  };
 
-    fetchPerhitunganGajiHarian();
-  }, [selectedDate]); // Only run on component mount
+  const fetchRekapanGabungan = async () => {
+    const token = localStorage.getItem("token");
+    const id_karyawan = localStorage.getItem("id_karyawan");
 
-  useEffect(() => {
-    const fetchRekapan = async () => {
-      const token = localStorage.getItem("token");
-      const id_karyawan = localStorage.getItem("id_karyawan");
+    const start = selectedDate.startOf("month").format("DD-MM-YYYY");
+    const end = selectedDate.endOf("month").format("DD-MM-YYYY");
 
-      try {
-        const response = await api.get(
-          `/perhitungan-gaji/rekapan?id_karyawan=${id_karyawan}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        console.log("Rekapan Data Response:", response.data);
-
-        // Check if data is present and update state
-        if (response.data && response.data.data) {
-          setRekapanData(response.data.data[0]); // Assuming only one item in the array
-        } else {
-          setRekapanData(null);
+    try {
+      const response = await api.get(
+        `/perhitungan-gaji/rekapan?start=${start}&end=${end}&id_karyawan=${id_karyawan}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      } catch (error) {
-        console.error("Gagal mengambil data rekapan:", error);
-        setRekapanData(null);
-      }
-    };
+      );
 
-    fetchRekapan();
-  }, []);
+      console.log("Rekapan Data Response:", response.data);
+
+      if (response.data && response.data.data?.length > 0) {
+        setRekapanGabungan(response.data.data[0]);
+      } else {
+        setRekapanGabungan(null);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data rekapan:", error);
+      setRekapanGabungan(null);
+    }
+  };
 
   // Fetch lembur
-  useEffect(() => {
-    const fetchLembur = async () => {
-      const token = localStorage.getItem("token");
-      const id_karyawan = localStorage.getItem("id_karyawan");
+  const fetchLembur = async () => {
+    const token = localStorage.getItem("token");
+    const id_karyawan = localStorage.getItem("id_karyawan");
 
-      const start = selectedDate.startOf("month").format("YYYY-MM-DD");
-      const end = selectedDate.endOf("month").format("YYYY-MM-DD");
+    const start = selectedDate.startOf("month").format("YYYY-MM-DD");
+    const end = selectedDate.endOf("month").format("YYYY-MM-DD");
 
-      try {
-        const res = await api.get(
-          `/lembur/?id_karyawan=${id_karyawan}&start_date=${start}&end_date=${end}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const approved = res.data.data.filter(
-          (item) => item.status_lembur === "approved"
-        );
-        setDataLembur(approved);
-      } catch (error) {
-        console.error("Gagal ambil data lembur:", error);
-      }
-    };
-
-    fetchLembur();
-  }, [selectedDate]);
+    try {
+      const res = await api.get(
+        `/lembur/?id_karyawan=${id_karyawan}&start_date=${start}&end_date=${end}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const approved = res.data.data.filter(
+        (item) => item.status_lembur === "approved"
+      );
+      setDataLembur(approved);
+    } catch (error) {
+      console.error("Gagal ambil data lembur:", error);
+    }
+  };
 
   // Fetch izin
-  useEffect(() => {
-    const fetchIzin = async () => {
-      const token = localStorage.getItem("token");
-      const id_karyawan = localStorage.getItem("id_karyawan");
+  const fetchIzin = async () => {
+    const token = localStorage.getItem("token");
+    const id_karyawan = localStorage.getItem("id_karyawan");
 
-      const start = selectedDate.startOf("month").format("YYYY-MM-DD");
-      const end = selectedDate.endOf("month").format("YYYY-MM-DD");
+    const start = selectedDate.startOf("month").format("YYYY-MM-DD");
+    const end = selectedDate.endOf("month").format("YYYY-MM-DD");
 
-      try {
-        const res = await api.get(
-          `/perizinan/?id_karyawan=${id_karyawan}&start_date=${start}&end_date=${end}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const approved = res.data.data.filter(
-          (item) => item.status_izin === "approved"
-        );
-        setDataIzin(approved);
-      } catch (error) {
-        console.error("Gagal ambil data izin:", error);
-      }
-    };
-
-    fetchIzin();
-  }, [selectedDate]);
+    try {
+      const res = await api.get(
+        `/perizinan/?id_karyawan=${id_karyawan}&start_date=${start}&end_date=${end}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const approved = res.data.data.filter(
+        (item) => item.status_izin === "approved"
+      );
+      setDataIzin(approved);
+    } catch (error) {
+      console.error("Gagal ambil data izin:", error);
+    }
+  };
 
   const formatMenitToJamMenit = (menit) => {
     const jam = Math.floor(menit / 60);
@@ -269,11 +319,11 @@ const History = () => {
   };
 
   const downloadPDFRekapan = () => {
-    if (!rekapanData) return;
-    const nama = rekapanData.nama || localStorage.getItem("nama") || "-";
+    if (!rekapanGabungan) return;
+    const nama = rekapanGabungan.nama || localStorage.getItem("nama") || "-";
     const doc = new jsPDF();
     const title = "Rekapan Gaji";
-    const periode = `${rekapanData.periode_awal} - ${rekapanData.periode_akhir}`;
+    const periode = `${rekapanGabungan.periode_awal} - ${rekapanGabungan.periode_akhir}`;
 
     doc.setFontSize(14);
     doc.text(title, 14, 15);
@@ -282,20 +332,29 @@ const History = () => {
     doc.text(`Periode: ${periode}`, 14, 28);
 
     const tableRows = [
-      ["Jumlah Hadir", `${rekapanData.jumlah_hadir} hari`],
-      ["Jumlah Izin", `${rekapanData.jumlah_izin} hari`],
-      ["Jumlah Sakit", `${rekapanData.jumlah_sakit} hari`],
-      ["Jumlah Alpha", `${rekapanData.jumlah_alpha} hari`],
-      ["Total Jam Kerja", formatMenitToJamMenit(rekapanData.total_jam_kerja)],
-      ["Jam Normal", formatMenitToJamMenit(rekapanData.jam_normal)],
-      ["Jam Terlambat", `${rekapanData.jam_terlambat} menit`],
-      ["Jam Kurang", `${rekapanData.jam_kurang} menit`],
-      ["Gaji Pokok", formatRupiah(rekapanData.gaji_pokok)],
-      ["Potongan", formatRupiah(rekapanData.potongan)],
-      ["Tunjangan Kehadiran", formatRupiah(rekapanData.tunjangan_kehadiran)],
-      ["Total Lembur", `${rekapanData.total_lembur} hari`],
-      ["Total Bayaran Lembur", formatRupiah(rekapanData.total_bayaran_lembur)],
-      ["Total Gaji Bersih", formatRupiah(rekapanData.gaji_bersih)],
+      ["Jumlah Hadir", `${rekapanGabungan.jumlah_hadir} hari`],
+      ["Jumlah Izin", `${rekapanGabungan.jumlah_izin} hari`],
+      ["Jumlah Sakit", `${rekapanGabungan.jumlah_sakit} hari`],
+      ["Jumlah Alpha", `${rekapanGabungan.jumlah_alpha} hari`],
+      [
+        "Total Jam Kerja",
+        formatMenitToJamMenit(rekapanGabungan.total_jam_kerja),
+      ],
+      ["Jam Normal", formatMenitToJamMenit(rekapanGabungan.jam_normal)],
+      ["Jam Terlambat", `${rekapanGabungan.jam_terlambat} menit`],
+      ["Jam Kurang", `${rekapanGabungan.jam_kurang} menit`],
+      ["Gaji Pokok", formatRupiah(rekapanGabungan.gaji_pokok)],
+      ["Potongan", formatRupiah(rekapanGabungan.potongan)],
+      [
+        "Tunjangan Kehadiran",
+        formatRupiah(rekapanGabungan.tunjangan_kehadiran),
+      ],
+      ["Total Lembur", `${rekapanGabungan.total_lembur} hari`],
+      [
+        "Total Bayaran Lembur",
+        formatRupiah(rekapanGabungan.total_bayaran_lembur),
+      ],
+      ["Total Gaji Bersih", formatRupiah(rekapanGabungan.gaji_bersih)],
     ];
 
     doc.autoTable({
@@ -318,11 +377,11 @@ const History = () => {
   };
 
   const downloadPDFBulanan = () => {
-    if (!rekapanData) return;
-    const nama = rekapanData.nama || localStorage.getItem("nama") || "-";
+    if (!rekapanBulanan) return;
+    const nama = rekapanBulanan.nama || localStorage.getItem("nama") || "-";
     const doc = new jsPDF();
     const title = "Rekapan Gaji Bulanan";
-    const periode = `${rekapanData.periode_awal} - ${rekapanData.periode_akhir}`;
+    const periode = `${rekapanBulanan.periode_awal} - ${rekapanBulanan.periode_akhir}`;
 
     doc.setFontSize(14);
     doc.text(title, 14, 15);
@@ -331,23 +390,26 @@ const History = () => {
     doc.text(`Periode: ${periode}`, 14, 28);
 
     const tableRows = [
-      ["Jumlah Hadir", `${rekapanData.jumlah_hadir} hari`],
-      ["Jumlah Izin", `${rekapanData.jumlah_izin} hari`],
-      ["Jumlah Sakit", `${rekapanData.jumlah_sakit} hari`],
-      ["Jumlah Alpha", `${rekapanData.jumlah_alpha} hari`],
-      ["Total Jam Kerja", formatMenitToJamMenit(rekapanData.total_jam_kerja)],
-      ["Jam Normal", formatMenitToJamMenit(rekapanData.jam_normal)],
-      ["Jam Terlambat", `${rekapanData.jam_terlambat} menit`],
-      ["Jam Kurang", `${rekapanData.jam_kurang} menit`],
-      ["Gaji Pokok", formatRupiah(rekapanData.gaji_pokok)],
-      ["Potongan", formatRupiah(rekapanData.potongan)],
-      ["Tunjangan Kehadiran", formatRupiah(rekapanData.tunjangan_kehadiran)],
+      ["Jumlah Hadir", `${rekapanBulanan.jumlah_hadir} hari`],
+      ["Jumlah Izin", `${rekapanBulanan.jumlah_izin} hari`],
+      ["Jumlah Sakit", `${rekapanBulanan.jumlah_sakit} hari`],
+      ["Jumlah Alpha", `${rekapanBulanan.jumlah_alpha} hari`],
+      [
+        "Total Jam Kerja",
+        formatMenitToJamMenit(rekapanBulanan.total_jam_kerja),
+      ],
+      ["Jam Normal", formatMenitToJamMenit(rekapanBulanan.jam_normal)],
+      ["Jam Terlambat", `${rekapanBulanan.jam_terlambat} menit`],
+      ["Jam Kurang", `${rekapanBulanan.jam_kurang} menit`],
+      ["Gaji Pokok", formatRupiah(rekapanBulanan.gaji_pokok)],
+      ["Potongan", formatRupiah(rekapanBulanan.potongan)],
+      ["Tunjangan Kehadiran", formatRupiah(rekapanBulanan.tunjangan_kehadiran)],
       [
         "Total Gaji Bersih",
         formatRupiah(
-          rekapanData.gaji_kotor -
-            rekapanData.potongan +
-            rekapanData.tunjangan_kehadiran
+          rekapanBulanan.gaji_kotor -
+            rekapanBulanan.potongan +
+            rekapanBulanan.tunjangan_kehadiran
         ),
       ],
     ];
@@ -372,11 +434,11 @@ const History = () => {
   };
 
   const downloadPDFLembur = () => {
-    if (!rekapanData) return;
-    const nama = rekapanData.nama || localStorage.getItem("nama") || "-";
+    if (!rekapanLembur) return;
+    const nama = rekapanLembur.nama || localStorage.getItem("nama") || "-";
     const doc = new jsPDF();
     const title = "Rekapan Gaji Lembur";
-    const periode = `${rekapanData.periode_awal} - ${rekapanData.periode_akhir}`;
+    const periode = `${rekapanLembur.periode_awal} - ${rekapanLembur.periode_akhir}`;
 
     doc.setFontSize(14);
     doc.text(title, 14, 15);
@@ -385,9 +447,12 @@ const History = () => {
     doc.text(`Periode: ${periode}`, 14, 28);
 
     const tableRows = [
-      ["Total Lembur", `${rekapanData.total_lembur} hari`],
-      ["Waktu Lembur", formatMenitToJamMenit(rekapanData.total_menit_lembur)],
-      ["Total Bayaran Lembur", formatRupiah(rekapanData.total_bayaran_lembur)],
+      ["Total Lembur", `${rekapanLembur.total_lembur} hari`],
+      ["Waktu Lembur", formatMenitToJamMenit(rekapanLembur.total_menit_lembur)],
+      [
+        "Total Bayaran Lembur",
+        formatRupiah(rekapanLembur.total_bayaran_lembur),
+      ],
     ];
 
     doc.autoTable({
@@ -409,6 +474,16 @@ const History = () => {
     doc.save(`Gaji Lembur ${nama}.pdf`);
   };
 
+  useEffect(() => {
+    fetchPresensi();
+    fetchPerhitunganGajiHarian();
+    fetchRekapanBulanan();
+    fetchRekapanLembur();
+    fetchRekapanGabungan();
+    fetchLembur();
+    fetchIzin();
+  }, [selectedDate]);
+
   return (
     <div className="bg-gradient-to-b text-white from-custom-merah to-custom-gelap min-h-[100dvh] flex flex-col items-center relative">
       <div className="w-full px-4 pt-4 absolute top-0 left-0 flex justify-start">
@@ -424,49 +499,33 @@ const History = () => {
           History Absensi
         </div>
         <div>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <MobileDatePicker
-              value={selectedDate}
-              onChange={(newValue) => setSelectedDate(newValue)}
-              format="DD MMMM YYYY"
-              slotProps={{
-                textField: {
-                  variant: "outlined",
-                  InputProps: {
-                    sx: {
-                      px: 0.5,
-                      py: 0.5,
-                      borderRadius: "20px",
-                      border: "1px solid white",
-                      color: "white",
-                      fontWeight: "bold",
-                      backgroundColor: "rgba(255, 255, 255, 0.05)",
-                      textAlign: "center",
-                      "& input": {
-                        textAlign: "center",
-                        cursor: "pointer",
-                        outline: "none",
-                      },
-                      "& fieldset": {
-                        border: "none",
-                      },
-                      "&.Mui-focused": {
-                        outline: "none",
-                        boxShadow: "none",
-                        border: "1px solid white",
-                      },
-                    },
-                  },
-                  inputProps: {
-                    style: {
-                      padding: "6px 5px",
-                      fontSize: "14px",
-                    },
-                  },
-                },
-              }}
-            />
-          </LocalizationProvider>
+          <div className="flex gap-2 justify-center mt-2">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="px-2 py-1 border rounded-lg text-sm bg-white text-black"
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {new Date(0, i).toLocaleString("id-ID", { month: "long" })}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-2 py-1 border rounded-lg text-sm bg-white text-black"
+            >
+              {Array.from({ length: 5 }, (_, i) => {
+                const year = new Date().getFullYear() - i;
+                return (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs
@@ -558,6 +617,7 @@ const History = () => {
         <SwipeableViews
           index={value}
           onChangeIndex={(index) => setValue(index)}
+          resistance
         >
           <CustomTabPanel value={value} index={0}>
             {dataHistory && dataHistory.length > 0 ? (
@@ -810,7 +870,7 @@ const History = () => {
           </CustomTabPanel>
           <CustomTabPanel value={value} index={4}>
             <div className="overflow-x-auto pb-7">
-              {rekapanData ? (
+              {rekapanBulanan ? (
                 <div key={0} className="mb-4 pb-2">
                   <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
                     <tbody>
@@ -818,99 +878,101 @@ const History = () => {
                         <td>Nama</td>
                         <td className="flex font-semibold capitalize">
                           <p className="pr-2">:</p>
-                          {rekapanData.nama || "-"}
+                          {rekapanBulanan.nama || "-"}
                         </td>
                       </tr>
                       <tr>
                         <td>Periode</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.periode_awal} -{" "}
-                          {rekapanData.periode_akhir}
+                          {rekapanBulanan.periode_awal} -{" "}
+                          {rekapanBulanan.periode_akhir}
                         </td>
                       </tr>
                       <tr>
                         <td>Jumlah Hadir</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jumlah_hadir} hari
+                          {rekapanBulanan.jumlah_hadir} hari
                         </td>
                       </tr>
                       <tr>
                         <td>Jumlah Izin</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jumlah_izin} hari
+                          {rekapanBulanan.jumlah_izin} hari
                         </td>
                       </tr>
                       <tr>
                         <td>Jumlah Sakit</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jumlah_sakit} hari
+                          {rekapanBulanan.jumlah_sakit} hari
                         </td>
                       </tr>
                       <tr>
                         <td>Jumlah Alpha</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jumlah_alpha} hari
+                          {rekapanBulanan.jumlah_alpha} hari
                         </td>
                       </tr>
                       <tr>
                         <td>Total Jam Kerja</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatMenitToJamMenit(rekapanData.total_jam_kerja)}
+                          {formatMenitToJamMenit(
+                            rekapanBulanan.total_jam_kerja
+                          )}
                         </td>
                       </tr>
                       <tr>
                         <td>Jam Normal</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatMenitToJamMenit(rekapanData.jam_normal)}
+                          {formatMenitToJamMenit(rekapanBulanan.jam_normal)}
                         </td>
                       </tr>
                       <tr>
                         <td>Jam Terlambat</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jam_terlambat} menit
+                          {rekapanBulanan.jam_terlambat} menit
                         </td>
                       </tr>
                       <tr>
                         <td>Jam Kurang</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jam_kurang} menit
+                          {rekapanBulanan.jam_kurang} menit
                         </td>
                       </tr>
                       <tr>
                         <td>Gaji Pokok</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(rekapanData.gaji_pokok)}
+                          {formatRupiah(rekapanBulanan.gaji_pokok)}
                         </td>
                       </tr>
                       <tr>
                         <td>Gaji Kotor</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(rekapanData.gaji_kotor)}
+                          {formatRupiah(rekapanBulanan.gaji_kotor)}
                         </td>
                       </tr>
                       <tr>
                         <td>Potongan</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>-
-                          {formatRupiah(rekapanData.potongan)}
+                          {formatRupiah(rekapanBulanan.potongan)}
                         </td>
                       </tr>
                       <tr>
                         <td>Tunjangan Kehadiran</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(rekapanData.tunjangan_kehadiran)}
+                          {formatRupiah(rekapanBulanan.tunjangan_kehadiran)}
                         </td>
                       </tr>
 
@@ -919,9 +981,9 @@ const History = () => {
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
                           {formatRupiah(
-                            rekapanData.gaji_kotor -
-                              rekapanData.potongan +
-                              rekapanData.tunjangan_kehadiran
+                            rekapanBulanan.gaji_kotor -
+                              rekapanBulanan.potongan +
+                              rekapanBulanan.tunjangan_kehadiran
                           )}
                         </td>
                       </tr>
@@ -934,7 +996,7 @@ const History = () => {
                 </p>
               )}
             </div>
-            {rekapanData && (
+            {rekapanBulanan && (
               <button
                 className="flex items-center mb-2 bg-red-700 hover:bg-red-800 text-white px-3 py-2 rounded text-sm"
                 onClick={downloadPDFBulanan}
@@ -945,7 +1007,7 @@ const History = () => {
           </CustomTabPanel>
           <CustomTabPanel value={value} index={5}>
             <div className="overflow-x-auto pb-7">
-              {rekapanData ? (
+              {rekapanLembur ? (
                 <div key={0} className="mb-4 pb-2">
                   <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
                     <tbody>
@@ -953,15 +1015,15 @@ const History = () => {
                         <td>Nama</td>
                         <td className="flex font-semibold capitalize">
                           <p className="pr-2">:</p>
-                          {rekapanData.nama || "-"}
+                          {rekapanLembur.nama || "-"}
                         </td>
                       </tr>
                       <tr>
                         <td>Periode</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.periode_awal} -{" "}
-                          {rekapanData.periode_akhir}
+                          {rekapanLembur.periode_awal} -{" "}
+                          {rekapanLembur.periode_akhir}
                         </td>
                       </tr>
 
@@ -969,7 +1031,7 @@ const History = () => {
                         <td>Total Lembur</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.total_lembur} hari
+                          {rekapanLembur.total_lembur} hari
                         </td>
                       </tr>
                       <tr>
@@ -977,7 +1039,7 @@ const History = () => {
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
                           {formatMenitToJamMenit(
-                            rekapanData.total_menit_lembur
+                            rekapanLembur.total_menit_lembur
                           )}
                         </td>
                       </tr>
@@ -985,7 +1047,7 @@ const History = () => {
                         <td>Total Bayaran Lembur</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(rekapanData.total_bayaran_lembur)}
+                          {formatRupiah(rekapanLembur.total_bayaran_lembur)}
                         </td>
                       </tr>
                     </tbody>
@@ -997,7 +1059,7 @@ const History = () => {
                 </p>
               )}
             </div>
-            {rekapanData && (
+            {rekapanLembur && (
               <button
                 className="flex items-center mb-2 bg-red-700 hover:bg-red-800 text-white px-3 py-2 rounded text-sm"
                 onClick={downloadPDFLembur}
@@ -1009,7 +1071,7 @@ const History = () => {
           {/* Rekapan Tab */}
           <CustomTabPanel value={value} index={6}>
             <div className="overflow-x-auto pb-7">
-              {rekapanData ? (
+              {rekapanGabungan ? (
                 <div key={0} className="mb-4 pb-2">
                   <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
                     <tbody>
@@ -1017,113 +1079,115 @@ const History = () => {
                         <td>Nama</td>
                         <td className="flex font-semibold capitalize">
                           <p className="pr-2">:</p>
-                          {rekapanData.nama || "-"}
+                          {rekapanGabungan.nama || "-"}
                         </td>
                       </tr>
                       <tr>
                         <td>Periode</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.periode_awal} -{" "}
-                          {rekapanData.periode_akhir}
+                          {rekapanGabungan.periode_awal} -{" "}
+                          {rekapanGabungan.periode_akhir}
                         </td>
                       </tr>
                       <tr>
                         <td>Jumlah Hadir</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jumlah_hadir} hari
+                          {rekapanGabungan.jumlah_hadir} hari
                         </td>
                       </tr>
                       <tr>
                         <td>Jumlah Izin</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jumlah_izin} hari
+                          {rekapanGabungan.jumlah_izin} hari
                         </td>
                       </tr>
                       <tr>
                         <td>Jumlah Sakit</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jumlah_sakit} hari
+                          {rekapanGabungan.jumlah_sakit} hari
                         </td>
                       </tr>
                       <tr>
                         <td>Jumlah Alpha</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jumlah_alpha} hari
+                          {rekapanGabungan.jumlah_alpha} hari
                         </td>
                       </tr>
                       <tr>
                         <td>Total Jam Kerja</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatMenitToJamMenit(rekapanData.total_jam_kerja)}
+                          {formatMenitToJamMenit(
+                            rekapanGabungan.total_jam_kerja
+                          )}
                         </td>
                       </tr>
                       <tr>
                         <td>Jam Normal</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatMenitToJamMenit(rekapanData.jam_normal)}
+                          {formatMenitToJamMenit(rekapanGabungan.jam_normal)}
                         </td>
                       </tr>
                       <tr>
                         <td>Jam Terlambat</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jam_terlambat} menit
+                          {rekapanGabungan.jam_terlambat} menit
                         </td>
                       </tr>
                       <tr>
                         <td>Jam Kurang</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.jam_kurang} menit
+                          {rekapanGabungan.jam_kurang} menit
                         </td>
                       </tr>
                       <tr>
                         <td>Gaji Pokok</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(rekapanData.gaji_pokok)}
+                          {formatRupiah(rekapanGabungan.gaji_pokok)}
                         </td>
                       </tr>
                       <tr>
                         <td>Potongan</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>-
-                          {formatRupiah(rekapanData.potongan)}
+                          {formatRupiah(rekapanGabungan.potongan)}
                         </td>
                       </tr>
                       <tr>
                         <td>Tunjangan Kehadiran</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(rekapanData.tunjangan_kehadiran)}
+                          {formatRupiah(rekapanGabungan.tunjangan_kehadiran)}
                         </td>
                       </tr>
                       <tr>
                         <td>Total Lembur</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanData.total_lembur} hari
+                          {rekapanGabungan.total_lembur} hari
                         </td>
                       </tr>
                       <tr>
                         <td>Total Bayaran Lembur</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(rekapanData.total_bayaran_lembur)}
+                          {formatRupiah(rekapanGabungan.total_bayaran_lembur)}
                         </td>
                       </tr>
                       <tr>
                         <td>Total Gaji Bersih</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {formatRupiah(rekapanData.gaji_bersih)}
+                          {formatRupiah(rekapanGabungan.gaji_bersih)}
                         </td>
                       </tr>
                     </tbody>
@@ -1135,7 +1199,7 @@ const History = () => {
                 </p>
               )}
             </div>
-            {rekapanData && (
+            {rekapanGabungan && (
               <button
                 className="flex items-center mb-2 bg-red-700 hover:bg-red-800 text-white px-3 py-2 rounded text-sm"
                 onClick={downloadPDFRekapan}

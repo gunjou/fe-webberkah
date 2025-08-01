@@ -50,8 +50,9 @@ const Rekapan = () => {
   const rowsPerPage = 50;
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
   const [openModal, setOpenModal] = useState(false);
   const [detailData, setDetailData] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -83,58 +84,16 @@ const Rekapan = () => {
   };
 
   useEffect(() => {
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-    const formatYMD = (date) => date.toISOString().split("T")[0]; // yyyy-mm-dd
-    const formatDMY = (date) => {
-      const d = date.getDate().toString().padStart(2, "0");
-      const m = (date.getMonth() + 1).toString().padStart(2, "0");
-      const y = date.getFullYear();
-      return `${d}-${m}-${y}`;
-    };
-
-    const start = formatYMD(firstDay);
-    const end = formatYMD(lastDay);
-    setStartDate(start);
-    setEndDate(end);
-
-    // Panggil data langsung
-    fetchData(formatDMY(firstDay), formatDMY(lastDay));
-    resetFilter();
-  }, []);
-
-  useEffect(() => {
-    if (!startDate || !endDate) return;
-    if (new Date(startDate) > new Date(endDate)) return;
-
-    const formatToDDMMYYYY = (str) => {
-      const [year, month, day] = str.split("-");
-      return `${day}-${month}-${year}`;
-    };
-
-    fetchData(formatToDDMMYYYY(startDate), formatToDDMMYYYY(endDate));
-  }, [startDate, endDate]);
-
-  const resetFilter = () => {
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-    const format = (date) => {
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const year = date.getFullYear();
-      return `${year}-${month}-${day}`; // yyyy-mm-dd untuk input type date
-    };
-
-    const start = format(firstDay);
-    const end = format(lastDay);
-
-    setStartDate(start);
-    setEndDate(end);
-  };
+    const start = `01-${String(selectedMonth).padStart(
+      2,
+      "0"
+    )}-${selectedYear}`;
+    const endDateObj = new Date(selectedYear, selectedMonth, 0);
+    const end = `${String(endDateObj.getDate()).padStart(2, "0")}-${String(
+      selectedMonth
+    ).padStart(2, "0")}-${selectedYear}`;
+    fetchData(start, end);
+  }, [selectedMonth, selectedYear]);
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -191,75 +150,20 @@ const Rekapan = () => {
     return `${day}/${month}/${year}`;
   };
 
-  const getDateLabel = (startDate, endDate) => {
-    const [startYear, startMonth, startDay] = startDate.split("-");
-    const [endYear, endMonth, endDay] = endDate.split("-");
-    const bulan = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
-    ];
-    const sameMonth = startMonth === endMonth && startYear === endYear;
-
-    const isFullMonth =
-      startDay === "01" &&
-      endDay ===
-        new Date(endYear, parseInt(endMonth), 0)
-          .getDate()
-          .toString()
-          .padStart(2, "0");
-
-    if (sameMonth && isFullMonth) {
-      return `Bulan ${bulan[parseInt(startMonth, 10) - 1]} ${startYear}`;
-    } else {
-      return `${formatTanggalSlash(startDate)} - ${formatTanggalSlash(
-        endDate
-      )}`;
-    }
+  const getDateLabel = () => {
+    const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString(
+      "id-ID",
+      { month: "long" }
+    );
+    return `Bulan ${monthName} ${selectedYear}`;
   };
 
-  const getFileName = (startDate, endDate) => {
-    const [startYear, startMonth, startDay] = startDate.split("-");
-    const [endYear, endMonth, endDay] = endDate.split("-");
-    const bulan = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
-    ];
-    // Cek apakah berada di bulan dan tahun yang sama
-    const sameMonth = startMonth === endMonth && startYear === endYear;
-    // Cek apakah range mencakup keseluruhan bulan (1 sampai tanggal terakhir)
-    const isFullMonth =
-      startDay === "01" &&
-      endDay ===
-        new Date(endYear, parseInt(endMonth), 0)
-          .getDate()
-          .toString()
-          .padStart(2, "0");
-
-    if (sameMonth && isFullMonth) {
-      return `Rekapan Presensi Bulan ${bulan[parseInt(startMonth) - 1]}`;
-    } else {
-      return `Rekapan Presensi ${startDay}-${startMonth}-${startYear} sampai ${endDay}-${endMonth}-${endYear}`;
-    }
+  const getFileName = () => {
+    const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString(
+      "id-ID",
+      { month: "long" }
+    );
+    return `Rekapan Presensi Bulan ${monthName} ${selectedYear}`;
   };
 
   const toTitleCase = (str) => {
@@ -306,7 +210,7 @@ const Rekapan = () => {
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
-    XLSX.writeFile(workbook, `${getFileName(startDate, endDate)}.xlsx`);
+    XLSX.writeFile(workbook, `${getFileName()}.xlsx`);
   };
 
   const downloadPDF = () => {
@@ -317,7 +221,7 @@ const Rekapan = () => {
 
     const doc = new jsPDF({ orientation: "landscape" });
     const title = "Rekapan Presensi";
-    const dateStr = getDateLabel(startDate, endDate);
+    const dateStr = getDateLabel();
 
     doc.setFontSize(14);
     doc.text(title, 14, 15);
@@ -374,7 +278,7 @@ const Rekapan = () => {
       },
     });
 
-    doc.save(`${getFileName(startDate, endDate)}.pdf`);
+    doc.save(`${getFileName()}.pdf`);
   };
 
   const handleOpenModal = (id_karyawan, nama) => {
@@ -389,15 +293,13 @@ const Rekapan = () => {
       return `${day}-${month}-${year}`;
     };
 
-    const formattedStart = formatToDDMMYYYY(startDate);
-    const formattedEnd = formatToDDMMYYYY(endDate);
+    const formattedStart = formatToDDMMYYYY();
+    const formattedEnd = formatToDDMMYYYY();
 
     api
       .get("/rekapan/absensi/detail", {
         params: {
           id_karyawan,
-          start_date: formattedStart,
-          end_date: formattedEnd,
         },
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -505,33 +407,40 @@ const Rekapan = () => {
                   Detail Rekapan Absensi Pegawai Berkah Angsana
                 </span>
                 <div className="flex gap-2 mt-2">
-                  <div className="flex items-center text-sm gap-1">
-                    <label htmlFor="startDate">Dari:</label>
-                    <input
-                      id="startDate"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="border rounded-[20px] px-2 py-1 text-sm"
-                    />
+                  <div className="flex items-center text-sm gap-2">
+                    <label htmlFor="bulan">Bulan:</label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                      className="px-2 py-1 border rounded-[20px] text-sm"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {new Date(0, i).toLocaleString("id-ID", {
+                            month: "long",
+                          })}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex items-center text-sm gap-1">
-                    <label htmlFor="endDate">Sampai:</label>
-                    <input
-                      id="endDate"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="border rounded-[20px] px-2 py-1 text-sm"
-                    />
+
+                  <div className="flex items-center text-sm gap-2">
+                    <label htmlFor="tahun">Tahun:</label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(Number(e.target.value))}
+                      className="px-2 py-1 border rounded-[20px] text-sm"
+                    >
+                      {Array.from({ length: 5 }, (_, i) => {
+                        const year = new Date().getFullYear() - i;
+                        return (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        );
+                      })}
+                    </select>
                   </div>
-                  <span
-                    onClick={resetFilter}
-                    className="text-blue-600 text-sm cursor-pointer underline mt-[6px]"
-                    title="Kembalikan ke tanggal default"
-                  >
-                    Reset
-                  </span>
 
                   <div className="flex items-center ml-4 justify-end space-x-2 flex-wrap w-full">
                     <input
