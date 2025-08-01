@@ -285,33 +285,33 @@ const PerhitunganGaji = () => {
       formatRupiah(item.gaji_pokok),
       formatRupiah(item.potongan),
       formatRupiah(item.tunjangan_kehadiran),
-      formatRupiah(item.gaji_pokok - item.potongan + item.tunjangan_kehadiran),
+      formatRupiah(item.gaji_bersih_tanpa_lembur),
       item.total_lembur ?? "-",
       item.total_menit_lembur ?? "-",
       formatRupiah(item.total_bayaran_lembur),
       formatRupiah(item.gaji_bersih),
     ]);
     const summaryRows = [
-      [],
+      [], // Baris kosong sebagai pemisah
       ["RINGKASAN TOTAL GAJI"],
-      ["Gaji Bersih Pegawai Tetap", formatRupiah(totalGaji.bersih.tetap)],
-      [
-        "Gaji Bersih Pegawai Tidak Tetap",
-        formatRupiah(totalGaji.bersih.tidaktetap),
-      ],
-      ["Gaji Bersih Total Semua Pegawai", formatRupiah(totalGaji.bersih.total)],
-      ["Gaji Lembur Pegawai Tetap", formatRupiah(totalGaji.lembur.tetap)],
-      [
-        "Gaji Lembur Pegawai Tidak Tetap",
-        formatRupiah(totalGaji.lembur.tidaktetap),
-      ],
-      ["Gaji Lembur Total Semua Pegawai", formatRupiah(totalGaji.lembur.total)],
-      ["Total Gaji Pegawai Tetap", formatRupiah(totalGaji.total.tetap)],
-      [
-        "Total Gaji Pegawai Tidak Tetap",
-        formatRupiah(totalGaji.total.tidaktetap),
-      ],
-      ["Total Gaji Semua Pegawai", formatRupiah(totalGaji.total.total)],
+      [],
+
+      ["Gaji Bersih"],
+      ["Pegawai Tetap", formatRupiah(totalGaji.bersih.tetap)],
+      ["Pegawai Tidak Tetap", formatRupiah(totalGaji.bersih.tidaktetap)],
+      ["Total Semua", formatRupiah(totalGaji.bersih.total)],
+      [],
+
+      ["Gaji Lembur"],
+      ["Pegawai Tetap", formatRupiah(totalGaji.lembur.tetap)],
+      ["Pegawai Tidak Tetap", formatRupiah(totalGaji.lembur.tidaktetap)],
+      ["Total Semua", formatRupiah(totalGaji.lembur.total)],
+      [],
+
+      ["Total Gaji (Bersih + Lembur)"],
+      ["Pegawai Tetap", formatRupiah(totalGaji.total.tetap)],
+      ["Pegawai Tidak Tetap", formatRupiah(totalGaji.total.tidaktetap)],
+      ["Total Semua", formatRupiah(totalGaji.total.total)],
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet([
@@ -358,7 +358,7 @@ const PerhitunganGaji = () => {
       formatRupiah(item.gaji_pokok),
       formatRupiah(item.potongan),
       formatRupiah(item.tunjangan_kehadiran),
-      formatRupiah(item.gaji_pokok - item.potongan + item.tunjangan_kehadiran),
+      formatRupiah(item.gaji_bersih_tanpa_lembur),
       item.total_lembur ?? "-",
       formatTerlambat(item.total_menit_lembur) ?? "-",
       formatRupiah(item.total_bayaran_lembur),
