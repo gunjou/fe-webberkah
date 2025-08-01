@@ -354,9 +354,6 @@ const PerhitunganGaji = () => {
       item.jumlah_izin ?? "-",
       item.jumlah_sakit ?? "-",
       item.jumlah_alpha ?? "-",
-      // formatTerlambat(item.total_jam_kerja),
-      // formatTerlambat(item.jam_normal),
-      // formatTerlambat(item.jam_terlambat),
       formatTerlambat(item.jam_terlambat + item.jam_kurang),
       formatRupiah(item.gaji_pokok),
       formatRupiah(item.potongan),
@@ -377,7 +374,6 @@ const PerhitunganGaji = () => {
         fillColor: [139, 0, 0],
         textColor: [255, 255, 255],
         valign: "middle",
-        // halign: "center",
       },
       columnStyles: {
         0: { halign: "center" },
@@ -399,51 +395,66 @@ const PerhitunganGaji = () => {
       },
     });
 
-    let y = doc.lastAutoTable.finalY + 10; // Ambil posisi Y terakhir tabel, lalu tambahkan spasi
+    let y = doc.lastAutoTable.finalY + 10;
 
-    const labels = [
-      "Gaji Bersih Pegawai Tetap",
-      "Gaji Bersih Pegawai Tidak Tetap",
-      "Gaji Bersih Total Semua Pegawai",
+    // Estimasi tinggi bagian ringkasan
+    const estimatedRingkasanHeight = 3 * (3 * 5 + 6 + 3); // 3 sections × (3 rows × 5px + 6px title + 3px gap)
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-      "Gaji Lembur Pegawai Tetap",
-      "Gaji Lembur Pegawai Tidak Tetap",
-      "Gaji Lembur Total Semua Pegawai",
+    // Jika bagian ringkasan akan melewati halaman → buat halaman baru
+    if (y + estimatedRingkasanHeight > pageHeight - 10) {
+      doc.addPage();
+      y = 15; // reset posisi y
+    }
 
-      "Total Gaji Pegawai Tetap",
-      "Total Gaji Pegawai Tidak Tetap",
-      "Total Gaji Semua Pegawai",
+    // Ringkasan Total Gaji
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Ringkasan Total Gaji", 14, y);
+    y += 7;
+
+    const sections = [
+      {
+        title: "Gaji Bersih",
+        data: [
+          ["Pegawai Tetap", totalGaji.bersih.tetap],
+          ["Pegawai Tidak Tetap", totalGaji.bersih.tidaktetap],
+          ["Total Semua", totalGaji.bersih.total],
+        ],
+      },
+      {
+        title: "Gaji Lembur",
+        data: [
+          ["Pegawai Tetap", totalGaji.lembur.tetap],
+          ["Pegawai Tidak Tetap", totalGaji.lembur.tidaktetap],
+          ["Total Semua", totalGaji.lembur.total],
+        ],
+      },
+      {
+        title: "Total Gaji (Bersih + Lembur)",
+        data: [
+          ["Pegawai Tetap", totalGaji.total.tetap],
+          ["Pegawai Tidak Tetap", totalGaji.total.tidaktetap],
+          ["Total Semua", totalGaji.total.total],
+        ],
+      },
     ];
 
-    const values = [
-      formatRupiah(totalGaji.bersih.tetap),
-      formatRupiah(totalGaji.bersih.tidaktetap),
-      formatRupiah(totalGaji.bersih.total),
-
-      formatRupiah(totalGaji.lembur.tetap),
-      formatRupiah(totalGaji.lembur.tidaktetap),
-      formatRupiah(totalGaji.lembur.total),
-
-      formatRupiah(totalGaji.total.tetap),
-      formatRupiah(totalGaji.total.tidaktetap),
-      formatRupiah(totalGaji.total.total),
-    ];
-
-    let lineSpacing = 5;
-    let groupGap = 2;
-    let groupBreaks = [2, 5, 8]; // setelah index 2 dan 5
-
-    labels.forEach((label, index) => {
-      const yOffset =
-        y +
-        index * lineSpacing +
-        groupBreaks.filter((b) => index > b).length * groupGap;
-
-      doc.setFont("helvetica", "normal");
-      doc.text(label, 14, yOffset);
-
+    doc.setFontSize(10);
+    sections.forEach((section) => {
       doc.setFont("helvetica", "bold");
-      doc.text(`: ${values[index]}`, 75, yOffset);
+      doc.text(section.title, 14, y);
+      y += 6;
+
+      section.data.forEach(([label, value]) => {
+        doc.setFont("helvetica", "normal");
+        doc.text(`${label}`, 20, y);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${formatRupiah(value)}`, 80, y, { align: "left" });
+        y += 5;
+      });
+
+      y += 3; // spasi antar section
     });
 
     doc.save(`${getFileName(startDate, endDate)}.pdf`);
