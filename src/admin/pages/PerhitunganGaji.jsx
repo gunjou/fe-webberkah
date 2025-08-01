@@ -268,8 +268,28 @@ const PerhitunganGaji = () => {
     );
     if (!confirmDownload) return;
 
-    // downloadExcel
-    const header = kolom.map((k) => k.label);
+    // Header kolom, pastikan sesuai dengan PDF
+    const header = [
+      "No",
+      "Nama",
+      "Tipe",
+      "Jumlah Hadir",
+      "Jumlah Izin",
+      "Jumlah Sakit",
+      "Jumlah Alpha",
+      "Jam Kerja",
+      "Jam Terlambat",
+      "Gaji Pokok",
+      "Potongan",
+      "Tunjangan Kehadiran",
+      "Gaji Bersih Tanpa Lembur",
+      "Lembur",
+      "Menit Lembur",
+      "Bayaran Lembur",
+      "Gaji Bersih",
+    ];
+
+    // Data baris utama, disesuaikan dengan format PDF
     const rows = filteredData.map((item, idx) => [
       idx + 1,
       item.nama,
@@ -279,8 +299,6 @@ const PerhitunganGaji = () => {
       item.jumlah_sakit ?? "-",
       item.jumlah_alpha ?? "-",
       formatTerlambat(item.total_jam_kerja),
-      // formatTerlambat(item.jam_normal),
-      // formatTerlambat(item.jam_terlambat),
       formatTerlambat(item.jam_terlambat + item.jam_kurang),
       formatRupiah(item.gaji_pokok),
       formatRupiah(item.potongan),
@@ -291,36 +309,61 @@ const PerhitunganGaji = () => {
       formatRupiah(item.total_bayaran_lembur),
       formatRupiah(item.gaji_bersih),
     ]);
+
+    // Ringkasan total gaji (mirip dengan PDF)
     const summaryRows = [
-      [], // Baris kosong sebagai pemisah
+      [],
       ["RINGKASAN TOTAL GAJI"],
       [],
-
       ["Gaji Bersih"],
       ["Pegawai Tetap", formatRupiah(totalGaji.bersih.tetap)],
       ["Pegawai Tidak Tetap", formatRupiah(totalGaji.bersih.tidaktetap)],
       ["Total Semua", formatRupiah(totalGaji.bersih.total)],
       [],
-
       ["Gaji Lembur"],
       ["Pegawai Tetap", formatRupiah(totalGaji.lembur.tetap)],
       ["Pegawai Tidak Tetap", formatRupiah(totalGaji.lembur.tidaktetap)],
       ["Total Semua", formatRupiah(totalGaji.lembur.total)],
       [],
-
       ["Total Gaji (Bersih + Lembur)"],
       ["Pegawai Tetap", formatRupiah(totalGaji.total.tetap)],
       ["Pegawai Tidak Tetap", formatRupiah(totalGaji.total.tidaktetap)],
       ["Total Semua", formatRupiah(totalGaji.total.total)],
     ];
 
+    // Gabungkan header, rows, dan ringkasan ke dalam worksheet
     const worksheet = XLSX.utils.aoa_to_sheet([
       header,
       ...rows,
       ...summaryRows,
     ]);
+
+    // Atur lebar kolom agar rapi
+    worksheet["!cols"] = [
+      { wch: 5 }, // Kolom No
+      { wch: 20 }, // Kolom Nama
+      { wch: 10 }, // Kolom Tipe
+      { wch: 12 }, // Kolom Kehadiran
+      { wch: 12 }, // Kolom Izin
+      { wch: 12 }, // Kolom Sakit
+      { wch: 12 }, // Kolom Alpha
+      { wch: 15 }, // Kolom Jam Kerja
+      { wch: 15 }, // Kolom Jam Terlambat
+      { wch: 15 }, // Kolom Gaji Pokok
+      { wch: 15 }, // Kolom Potongan
+      { wch: 20 }, // Kolom Tunjangan Kehadiran
+      { wch: 20 }, // Kolom Gaji Bersih Tanpa Lembur
+      { wch: 10 }, // Kolom Lembur
+      { wch: 10 }, // Kolom Menit Lembur
+      { wch: 20 }, // Kolom Bayaran Lembur
+      { wch: 20 }, // Kolom Gaji Bersih
+    ];
+
+    // Buat workbook dan tambahkan worksheet
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
+
+    // Menyimpan file Excel
     XLSX.writeFile(workbook, `${getFileName(startDate, endDate)}.xlsx`);
   };
 
