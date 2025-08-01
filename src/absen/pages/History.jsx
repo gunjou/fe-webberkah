@@ -152,12 +152,9 @@ const History = () => {
       const token = localStorage.getItem("token");
       const id_karyawan = localStorage.getItem("id_karyawan");
 
-      const start = selectedDate.startOf("month").format("DD-MM-YYYY");
-      const end = selectedDate.endOf("month").format("DD-MM-YYYY");
-
       try {
         const response = await api.get(
-          `/perhitungan-gaji/rekapan?id_karyawan=${id_karyawan}&start_date=${start}&end_date=${end}`,
+          `/perhitungan-gaji/rekapan?id_karyawan=${id_karyawan}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -167,8 +164,9 @@ const History = () => {
 
         console.log("Rekapan Data Response:", response.data);
 
+        // Check if data is present and update state
         if (response.data && response.data.data) {
-          setRekapanData(response.data.data[0]);
+          setRekapanData(response.data.data[0]); // Assuming only one item in the array
         } else {
           setRekapanData(null);
         }
@@ -179,7 +177,7 @@ const History = () => {
     };
 
     fetchRekapan();
-  }, [selectedDate]);
+  }, []);
 
   // Fetch lembur
   useEffect(() => {

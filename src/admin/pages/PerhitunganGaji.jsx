@@ -60,6 +60,8 @@ const PerhitunganGaji = () => {
   const handleOpenModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
 
+  const [tipeFilter, setTipeFilter] = useState("semua");
+
   const fetchData = (start = "", end = "") => {
     const token = localStorage.getItem("token");
     if (!start || !end) return;
@@ -147,9 +149,14 @@ const PerhitunganGaji = () => {
     return 0;
   });
 
-  const filteredData = sortedData.filter((item) =>
-    item.nama.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = sortedData.filter((item) => {
+    const cocokNama = item.nama
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const cocokTipe =
+      tipeFilter === "semua" || item.tipe.toLowerCase() === tipeFilter;
+    return cocokNama && cocokTipe;
+  });
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -361,7 +368,7 @@ const PerhitunganGaji = () => {
 
     // Buat workbook dan tambahkan worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Presensi");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Gaji");
 
     // Menyimpan file Excel
     XLSX.writeFile(workbook, `${getFileName(startDate, endDate)}.xlsx`);
@@ -375,7 +382,7 @@ const PerhitunganGaji = () => {
 
     const doc = new jsPDF({ orientation: "landscape" });
 
-    const title = "Rekapan Presensi";
+    const title = "Rekapan Gaji";
     const dateStr = getDateLabel(startDate, endDate);
 
     doc.setFontSize(14);
@@ -863,13 +870,24 @@ const PerhitunganGaji = () => {
                   </TableContainer>
                 </Paper>
               </div>
-              <div className="mt-2 mb-2 flex justify-start">
+              <div className="mt-2 mb-2 flex justify-start space-x-2">
                 <button
                   onClick={handleOpenModal}
                   className="bg-blue-600 text-white px-4 py-2 rounded-[20px] text-sm hover:bg-blue-700"
                 >
                   Lihat Ringkasan Gaji
                 </button>
+                <select
+                  value={tipeFilter}
+                  onChange={(e) => setTipeFilter(e.target.value)}
+                  className="border rounded-[20px] px-2 py-1 text-sm"
+                >
+                  <option value="semua">Semua Tipe</option>
+                  <option value="pegawai tetap">Pegawai Tetap</option>
+                  <option value="pegawai tidak tetap">
+                    Pegawai Tidak Tetap
+                  </option>
+                </select>
               </div>
 
               {showModal && (
