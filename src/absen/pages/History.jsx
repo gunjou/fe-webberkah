@@ -14,6 +14,7 @@ import { FiArrowLeft } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { FaFilePdf } from "react-icons/fa";
 import SwipeableViews from "react-swipeable-views";
+import { useMemo } from "react"; // pastikan sudah di-import
 
 const getFormattedDate = () => {
   const date = new Date();
@@ -74,9 +75,11 @@ const History = () => {
   const [value, setValue] = React.useState(0);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const selectedDate = dayjs(
-    `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-01`
-  );
+  const selectedDate = useMemo(() => {
+    return dayjs(
+      `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-01`
+    );
+  }, [selectedMonth, selectedYear]);
 
   // const [dataKaryawan, setDataKaryawan] = useState(dayjs());
   // const [listDataKaryawan, setListDataKaryawan] = useState(dayjs());
