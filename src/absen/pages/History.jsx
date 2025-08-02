@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { FaFilePdf } from "react-icons/fa";
 import SwipeableViews from "react-swipeable-views";
 import { useMemo } from "react"; // pastikan sudah di-import
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 const getFormattedDate = () => {
   const date = new Date();
@@ -73,6 +74,9 @@ const History = () => {
   const navigate = useNavigate();
   const [dataHistory, setDataHistory] = useState([]);
   const [value, setValue] = React.useState(0);
+  const [tanggalAbsensi, setTanggalAbsensi] = useState(dayjs());
+  const [tanggalGaji, setTanggalGaji] = useState(dayjs());
+
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const selectedDate = useMemo(() => {
@@ -93,12 +97,8 @@ const History = () => {
     const token = localStorage.getItem("token");
 
     try {
-      let endpoint = `/absensi/history/${id_karyawan}`;
-
-      if (selectedDate) {
-        const tanggal = selectedDate.format("DD-MM-YYYY");
-        endpoint += `?tanggal=${tanggal}`;
-      }
+      const tanggal = tanggalAbsensi.format("DD-MM-YYYY");
+      const endpoint = `/absensi/history/${id_karyawan}?tanggal=${tanggal}`;
 
       const response = await api.get(endpoint, {
         headers: {
@@ -106,7 +106,6 @@ const History = () => {
         },
       });
 
-      console.log(response.data.history);
       setDataHistory(response.data.history);
     } catch (err) {
       console.error("Gagal mengambil data History.");
@@ -118,17 +117,9 @@ const History = () => {
     const token = localStorage.getItem("token");
     const id_karyawan = localStorage.getItem("id_karyawan");
 
-    const today = dayjs().format("DD-MM-YYYY");
-
     try {
-      let endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}`;
-
-      if (selectedDate) {
-        const tanggal = selectedDate.format("DD-MM-YYYY");
-        endpoint += `&tanggal=${tanggal}`;
-      } else {
-        endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}&tanggal=${today}`;
-      }
+      const tanggal = tanggalGaji.format("DD-MM-YYYY");
+      const endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}&tanggal=${tanggal}`;
 
       const response = await api.get(endpoint, {
         headers: {
@@ -136,17 +127,14 @@ const History = () => {
         },
       });
 
-      console.log("Perhitungan Gaji Harian Response:", response.data);
-
-      // Assuming the response structure is something like: response.data.data
       if (response.data && response.data.data) {
-        setPerhitunganGaji(response.data.data); // Set the perhitungan gaji data
+        setPerhitunganGaji(response.data.data);
       } else {
-        setPerhitunganGaji(null); // If no data, set to null
+        setPerhitunganGaji(null);
       }
     } catch (error) {
       console.error("Gagal mengambil data perhitungan gaji harian:", error);
-      setPerhitunganGaji(null); // Handle errors gracefully
+      setPerhitunganGaji(null);
     }
   };
 
@@ -478,14 +466,20 @@ const History = () => {
   };
 
   useEffect(() => {
-    fetchPresensi();
-    fetchPerhitunganGajiHarian();
     fetchRekapanBulanan();
     fetchRekapanLembur();
     fetchRekapanGabungan();
     fetchLembur();
     fetchIzin();
   }, [selectedDate]);
+
+  useEffect(() => {
+    fetchPresensi();
+  }, [tanggalAbsensi]);
+
+  useEffect(() => {
+    fetchPerhitunganGajiHarian();
+  }, [tanggalGaji]);
 
   return (
     <div className="bg-gradient-to-b text-white from-custom-merah to-custom-gelap min-h-[100dvh] flex flex-col items-center relative">
@@ -623,6 +617,37 @@ const History = () => {
           resistance
         >
           <CustomTabPanel value={value} index={0}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <div className="mb-2 flex justify-center text-white">
+                <DatePicker
+                  label="Pilih Tanggal"
+                  value={tanggalAbsensi}
+                  onChange={(newValue) => setTanggalAbsensi(newValue)}
+                  format="DD-MM-YYYY"
+                  slotProps={{
+                    textField: {
+                      InputLabelProps: { style: { color: "white" } },
+                      InputProps: {
+                        sx: {
+                          color: "white",
+                          svg: { color: "white" },
+                          "& .MuiInput-underline:before": {
+                            borderBottomColor: "white",
+                          },
+                          "& .MuiInput-underline:hover:before": {
+                            borderBottomColor: "white",
+                          },
+                          "& .MuiInput-underline:after": {
+                            borderBottomColor: "white",
+                          },
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </LocalizationProvider>
+
             {dataHistory && dataHistory.length > 0 ? (
               <div className="overflow-x-auto pb-7">
                 <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
@@ -701,6 +726,37 @@ const History = () => {
 
           {/* Perhitungan Gaji Tab */}
           <CustomTabPanel value={value} index={1}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <div className="mb-2 flex justify-center">
+                <DatePicker
+                  label="Pilih Tanggal"
+                  value={tanggalGaji}
+                  onChange={(newValue) => setTanggalGaji(newValue)}
+                  format="DD-MM-YYYY"
+                  slotProps={{
+                    textField: {
+                      InputLabelProps: { style: { color: "white" } },
+                      InputProps: {
+                        sx: {
+                          color: "white",
+                          svg: { color: "white" },
+                          "& .MuiInput-underline:before": {
+                            borderBottomColor: "white",
+                          },
+                          "& .MuiInput-underline:hover:before": {
+                            borderBottomColor: "white",
+                          },
+                          "& .MuiInput-underline:after": {
+                            borderBottomColor: "white",
+                          },
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </LocalizationProvider>
+
             <div className="overflow-x-auto pb-7">
               {perhitunganGaji ? (
                 <div key={0} className="mb-4 pb-2">
