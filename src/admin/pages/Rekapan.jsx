@@ -287,19 +287,23 @@ const Rekapan = () => {
     setDetailLoading(true);
     const token = localStorage.getItem("token");
 
-    // Format tanggal ke dd-mm-yyyy
-    const formatToDDMMYYYY = (str) => {
-      const [year, month, day] = str.split("-");
-      return `${day}-${month}-${year}`;
-    };
-
-    const formattedStart = formatToDDMMYYYY();
-    const formattedEnd = formatToDDMMYYYY();
+    // Buat start dan end berdasarkan bulan/tahun yang dipilih
+    const formattedStart = `01-${String(selectedMonth).padStart(
+      2,
+      "0"
+    )}-${selectedYear}`;
+    const endDateObj = new Date(selectedYear, selectedMonth, 0);
+    const formattedEnd = `${String(endDateObj.getDate()).padStart(
+      2,
+      "0"
+    )}-${String(selectedMonth).padStart(2, "0")}-${selectedYear}`;
 
     api
       .get("/rekapan/absensi/detail", {
         params: {
           id_karyawan,
+          start: formattedStart,
+          end: formattedEnd,
         },
         headers: { Authorization: `Bearer ${token}` },
       })
