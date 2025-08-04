@@ -8,6 +8,8 @@ import Box from "@mui/material/Box";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { MobileDatePicker } from "@mui/x-date-pickers/MobileDatePicker";
+import { format, parse } from "date-fns";
+import { id } from "date-fns/locale";
 import dayjs from "dayjs";
 import api from "../../shared/Api";
 import { FiArrowLeft } from "react-icons/fi";
@@ -65,16 +67,18 @@ function a11yProps(index) {
 }
 
 const History = () => {
+  const [tanggalAbsensi, setTanggalAbsensi] = useState(dayjs()); // default hari ini
+  const [dataHistory, setDataHistory] = useState([]);
+  const [perhitunganGaji, setPerhitunganGaji] = useState(null);
   const [dataLembur, setDataLembur] = useState([]);
   const [dataIzin, setDataIzin] = useState([]);
-  const [perhitunganGaji, setPerhitunganGaji] = useState([]);
   const [rekapanBulanan, setRekapanBulanan] = useState([]);
   const [rekapanLembur, setRekapanLembur] = useState([]);
   const [rekapanGabungan, setRekapanGabungan] = useState([]);
+  const [dataRekapan, setDataRekapan] = useState([]);
+  const [loadingRekapan, setLoadingRekapan] = useState(true);
   const navigate = useNavigate();
-  const [dataHistory, setDataHistory] = useState([]);
   const [value, setValue] = React.useState(0);
-  const [tanggalAbsensi, setTanggalAbsensi] = useState(dayjs());
   const [tanggalGaji, setTanggalGaji] = useState(dayjs());
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -92,51 +96,46 @@ const History = () => {
     setValue(newValue);
   };
 
-  const fetchPresensi = async () => {
-    const id_karyawan = localStorage.getItem("id_karyawan");
-    const token = localStorage.getItem("token");
-
-    try {
-      const tanggal = tanggalAbsensi.format("DD-MM-YYYY");
-      const endpoint = `/absensi/history/${id_karyawan}?tanggal=${tanggal}`;
-
-      const response = await api.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setDataHistory(response.data.history);
-    } catch (err) {
-      console.error("Gagal mengambil data History.");
-      setDataHistory([]);
-    }
-  };
-
-  const fetchPerhitunganGajiHarian = async () => {
+  const fetchDataAbsensiDanGaji = async () => {
     const token = localStorage.getItem("token");
     const id_karyawan = localStorage.getItem("id_karyawan");
 
+    if (!tanggalAbsensi || !dayjs(tanggalAbsensi).isValid()) return;
+
+    const tanggal = tanggalAbsensi.format("DD-MM-YYYY");
+
     try {
-      const tanggal = tanggalGaji.format("DD-MM-YYYY");
-      const endpoint = `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}&tanggal=${tanggal}`;
+      const [historyRes, gajiRes] = await Promise.all([
+        api.get(`/absensi/history/${id_karyawan}?tanggal=${tanggal}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        api.get(
+          `/perhitungan-gaji/harian?id_karyawan=${id_karyawan}&tanggal=${tanggal}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ),
+      ]);
 
-      const response = await api.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Set data history
+      setDataHistory(historyRes.data.history || []);
 
-      if (response.data && response.data.data) {
-        setPerhitunganGaji(response.data.data);
+      // Set data gaji
+      if (gajiRes.data && gajiRes.data.data) {
+        setPerhitunganGaji(gajiRes.data.data);
       } else {
         setPerhitunganGaji(null);
       }
     } catch (error) {
-      console.error("Gagal mengambil data perhitungan gaji harian:", error);
+      console.error("Gagal mengambil data absensi dan gaji:", error);
+      setDataHistory([]);
       setPerhitunganGaji(null);
     }
   };
+
+  useEffect(() => {
+    fetchDataAbsensiDanGaji();
+  }, [tanggalAbsensi]);
 
   const fetchRekapanBulanan = async () => {
     const token = localStorage.getItem("token");
@@ -155,7 +154,7 @@ const History = () => {
         }
       );
 
-      console.log("Rekapan Data Response:", response.data);
+      // console.log("Rekapan Data Response:", response.data);
 
       if (response.data && response.data.data?.length > 0) {
         setRekapanBulanan(response.data.data[0]);
@@ -167,6 +166,32 @@ const History = () => {
       setRekapanBulanan(null);
     }
   };
+
+  const fetchRekapanAbsensi = async () => {
+    const token = localStorage.getItem("token");
+    const id_karyawan = localStorage.getItem("id_karyawan");
+
+    const start = selectedDate.startOf("month").format("DD-MM-YYYY");
+    const end = selectedDate.endOf("month").format("DD-MM-YYYY");
+
+    try {
+      const res = await api.get(
+        `/rekapan/absensi/detail?id_karyawan=${id_karyawan}&start_date=${start}&end_date=${end}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("Rekapan Data Response:", res.data);
+      setDataRekapan(res.data.data || []);
+    } catch (error) {
+      console.error("Gagal mengambil data rekapan absensi:", error);
+    } finally {
+      setLoadingRekapan(false);
+    }
+  };
+
+  // Panggil saat mount
+  useEffect(() => {
+    fetchRekapanAbsensi();
+  }, [selectedDate]);
 
   const fetchRekapanLembur = async () => {
     const token = localStorage.getItem("token");
@@ -185,7 +210,7 @@ const History = () => {
         }
       );
 
-      console.log("Rekapan Data Response:", response.data);
+      // console.log("Rekapan Data Response:", response.data);
 
       if (response.data && response.data.data?.length > 0) {
         setRekapanLembur(response.data.data[0]);
@@ -215,7 +240,7 @@ const History = () => {
         }
       );
 
-      console.log("Rekapan Data Response:", response.data);
+      // console.log("Rekapan Data Response:", response.data);
 
       if (response.data && response.data.data?.length > 0) {
         setRekapanGabungan(response.data.data[0]);
@@ -285,15 +310,24 @@ const History = () => {
     }
   };
 
+  const formatPeriodeTanggal = (tanggalString) => {
+    if (!tanggalString) return "-";
+    const parsed = parse(tanggalString, "dd MMM yyyy", new Date());
+    // return format(parsed, "dd/MM/yyyy", { locale: id });
+    return format(parsed, "dd/MM/yy", { locale: id });
+  };
+
   const formatRupiah = (angka) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(angka);
+    return (
+      new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+      }).format(angka) + ",-"
+    );
   };
   const formatTanggalBulan = (tgl) => {
-    return dayjs(tgl).format("DD MMMM"); // hasil: "30 Juni"
+    return dayjs(tgl).format("DD/MM"); // hasil: "30/07"
   };
 
   const toTitleCase = (str) => {
@@ -474,12 +508,16 @@ const History = () => {
   }, [selectedDate]);
 
   useEffect(() => {
-    fetchPresensi();
+    fetchDataAbsensiDanGaji();
   }, [tanggalAbsensi]);
 
-  useEffect(() => {
-    fetchPerhitunganGajiHarian();
-  }, [tanggalGaji]);
+  // useEffect(() => {
+  //   fetchPresensi();
+  // }, [tanggalAbsensi]);
+
+  // useEffect(() => {
+  //   fetchPerhitunganGajiHarian();
+  // }, [tanggalGaji]);
 
   return (
     <div className="bg-gradient-to-b text-white from-custom-merah to-custom-gelap min-h-[100dvh] flex flex-col items-center relative">
@@ -537,7 +575,7 @@ const History = () => {
             }}
           >
             <Tab
-              label="Absensi"
+              label="Absensi Harian"
               {...a11yProps(0)}
               sx={{
                 color: "white",
@@ -547,7 +585,7 @@ const History = () => {
               }}
             />
             <Tab
-              label="Gaji Harian"
+              label="Izin/Sakit"
               {...a11yProps(1)}
               sx={{
                 color: "white",
@@ -557,7 +595,7 @@ const History = () => {
               }}
             />
             <Tab
-              label="Izin/Sakit"
+              label="Rekapan Absensi"
               {...a11yProps(2)}
               sx={{
                 color: "white",
@@ -568,7 +606,7 @@ const History = () => {
             />
 
             <Tab
-              label="Lembur"
+              label="Rekapan Lembur"
               {...a11yProps(3)}
               sx={{
                 color: "white",
@@ -588,7 +626,7 @@ const History = () => {
               }}
             />
             <Tab
-              label="Gaji Lemburan "
+              label="Gaji Lemburan"
               {...a11yProps(5)}
               sx={{
                 color: "white",
@@ -598,7 +636,7 @@ const History = () => {
               }}
             />
             <Tab
-              label="Rekapan Gaji"
+              label="Slip Gaji"
               {...a11yProps(6)}
               sx={{
                 color: "white",
@@ -660,6 +698,15 @@ const History = () => {
                       </td>
                     </tr>
                     <tr>
+                      <td>Gaji Harian</td>
+                      <td className="flex font-semibold">
+                        <p className="pr-2">:</p>
+                        {perhitunganGaji && perhitunganGaji.gaji_harian
+                          ? formatRupiah(perhitunganGaji.gaji_harian)
+                          : "-"}
+                      </td>
+                    </tr>
+                    <tr>
                       <td>Jam Masuk</td>
                       <td className="flex font-semibold">
                         <p className="pr-2">:</p>
@@ -710,6 +757,24 @@ const History = () => {
                         {formatMenitToJamMenit(dataHistory[0].total_jam_kerja)}
                       </td>
                     </tr>
+                    <tr>
+                      <td>Tunjangan Kehadiran</td>
+                      <td className="flex font-semibold">
+                        <p className="pr-2">:</p>
+                        {perhitunganGaji && perhitunganGaji.tunjangan_kehadiran
+                          ? formatRupiah(perhitunganGaji.tunjangan_kehadiran)
+                          : "-"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Upah Bersih</td>
+                      <td className="flex font-semibold">
+                        <p className="pr-2">:</p>
+                        {perhitunganGaji && perhitunganGaji.upah_bersih
+                          ? formatRupiah(perhitunganGaji.upah_bersih)
+                          : "-"}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -726,207 +791,209 @@ const History = () => {
 
           {/* Perhitungan Gaji Tab */}
           <CustomTabPanel value={value} index={1}>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <div className="mb-2 flex justify-center">
-                <DatePicker
-                  label="Pilih Tanggal"
-                  value={tanggalGaji}
-                  onChange={(newValue) => setTanggalGaji(newValue)}
-                  format="DD-MM-YYYY"
-                  slotProps={{
-                    textField: {
-                      InputLabelProps: { style: { color: "white" } },
-                      InputProps: {
-                        sx: {
-                          color: "white",
-                          svg: { color: "white" },
-                          "& .MuiInput-underline:before": {
-                            borderBottomColor: "white",
-                          },
-                          "& .MuiInput-underline:hover:before": {
-                            borderBottomColor: "white",
-                          },
-                          "& .MuiInput-underline:after": {
-                            borderBottomColor: "white",
-                          },
-                        },
-                      },
-                    },
-                  }}
-                />
-              </div>
-            </LocalizationProvider>
+            <div className="h-[calc(100vh-150px)] overflow-y-auto px-2 scroll-hide">
+              {dataIzin.length > 0 ? (
+                <div className="flex flex-col gap-4">
+                  {dataIzin.map((item, i) => (
+                    <div
+                      key={i}
+                      className="p-4 rounded-lg shadow-md text-left text-white"
+                    >
+                      <h3 className="text-sm font-semibold mb-2">
+                        {new Intl.DateTimeFormat("id-ID", {
+                          weekday: "long",
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        }).format(new Date(item.tgl_mulai))}{" "}
+                        -{" "}
+                        {new Intl.DateTimeFormat("id-ID", {
+                          weekday: "long",
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        }).format(new Date(item.tgl_selesai))}
+                      </h3>
 
-            <div className="overflow-x-auto pb-7">
-              {perhitunganGaji ? (
-                <div key={0} className="mb-4 pb-2">
-                  <table className="min-w-full text-left text-white border-separate border-spacing-y-1">
-                    <tbody>
-                      <tr>
-                        <td>Nama</td>
-                        <td className="flex font-semibold capitalize">
-                          <p className="pr-2">:</p>
-                          {perhitunganGaji.nama || "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Gaji Harian</td>
-                        <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
-                          {perhitunganGaji.gaji_harian
-                            ? formatRupiah(perhitunganGaji.gaji_harian)
-                            : "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Jam Terlambat</td>
-                        <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
-                          {perhitunganGaji.jam_terlambat
-                            ? formatMenitToJamMenit(
-                                perhitunganGaji.jam_terlambat
-                              )
-                            : "0 menit"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Jam Kurang</td>
-                        <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
-                          {perhitunganGaji.jam_kurang
-                            ? formatMenitToJamMenit(perhitunganGaji.jam_kurang)
-                            : "0 menit"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Total Jam Kerja</td>
-                        <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
-                          {perhitunganGaji.total_jam_kerja
-                            ? formatMenitToJamMenit(
-                                perhitunganGaji.total_jam_kerja
-                              )
-                            : "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Tunjangan Kehadiran</td>
-                        <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
-                          {perhitunganGaji.tunjangan_kehadiran
-                            ? formatRupiah(perhitunganGaji.tunjangan_kehadiran)
-                            : "-"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Upah Bersih</td>
-                        <td className="flex font-semibold">
-                          <p className="pr-2">:</p>
-                          {perhitunganGaji.upah_bersih
-                            ? formatRupiah(perhitunganGaji.upah_bersih)
-                            : "-"}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                      <p className="text-xs">
+                        <strong className="mr-2 inline-block">Status:</strong>
+                        {item.nama_status}
+                      </p>
+
+                      <p className="text-xs">
+                        <strong className="mr-2 inline-block">
+                          Keterangan:
+                        </strong>
+                        {potongTeks(item.keterangan, 25)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <p className="text-center">
-                  Loading atau tidak ada data perhitungan gaji.
+                <p className="text-center text-xs">
+                  Loading atau Tidak ada data izin.
                 </p>
               )}
             </div>
           </CustomTabPanel>
 
           <CustomTabPanel value={value} index={2}>
-            {dataIzin.length > 0 ? (
-              <table className="min-w-full text-left text-white border-separate border-spacing-y-1 text-sm">
-                <thead>
-                  <tr>
-                    <th>Mulai</th>
-                    <th>Selesai</th>
-                    <th>Status</th>
-                    <th>Ket</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dataIzin.map((item, i) => (
-                    <tr key={i}>
-                      <td>{formatTanggalBulan(item.tgl_mulai)}</td>
-                      <td>{formatTanggalBulan(item.tgl_selesai)}</td>
-                      <td>{item.nama_status}</td>
-                      <td>{potongTeks(item.keterangan, 25)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="text-center text-sm">
-                Loading atau Tidak ada data izin.
-              </p>
-            )}
-          </CustomTabPanel>
-
-          <CustomTabPanel value={value} index={3}>
-            {dataLembur.length > 0 ? (
-              <>
-                {/* Menampilkan List Lembur */}
+            <div className="h-[calc(100vh-150px)] overflow-y-auto px-2 scroll-hide">
+              {dataRekapan.length > 0 ? (
                 <div className="flex flex-col gap-4">
-                  {dataLembur.map((item, i) => (
+                  {dataRekapan.map((item, i) => (
                     <div
                       key={i}
                       className="p-4 rounded-lg shadow-md text-left text-white"
                     >
                       <h3 className="text-sm font-semibold mb-2">
-                        {formatTanggalBulan(item.tanggal)},{" "}
-                        {item.jam_mulai?.slice(0, 5)} -{" "}
-                        {item.jam_selesai?.slice(0, 5)} Wita
+                        {new Intl.DateTimeFormat("id-ID", {
+                          weekday: "long",
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        }).format(new Date(item.tanggal))}
                       </h3>
+
                       <p className="text-xs">
-                        <strong className="mr-2 inline-block">
-                          Jam Lembur:
-                        </strong>{" "}
-                        {formatMenitToJamMenit(item.menit_lembur)}
+                        <strong className="mr-1">Status:</strong>
+                        <span
+                          className={`px-1 rounded font-medium ${
+                            item.nama_status === "Hadir"
+                              ? "bg-green-400 text-black"
+                              : item.nama_status === "Izin" ||
+                                item.nama_status === "Sakit"
+                              ? "bg-yellow-400 text-black"
+                              : item.nama_status === "Tidak Hadir"
+                              ? "bg-red-400 text-black"
+                              : ""
+                          }`}
+                        >
+                          {item.nama_status}
+                        </span>{" "}
+                        ({item.status_hari})
                       </p>
+
+                      {item.jam_masuk && (
+                        <p className="text-xs">
+                          <strong className="mr-1">Jam Masuk:</strong>
+                          {item.jam_masuk.slice(0, 5)} WITA
+                        </p>
+                      )}
+
+                      {item.jam_keluar && (
+                        <p className="text-xs">
+                          <strong className="mr-1">Jam Keluar:</strong>
+                          {item.jam_keluar.slice(0, 5)} WITA
+                        </p>
+                      )}
+
                       <p className="text-xs">
-                        <strong className="mr-2 inline-block">
-                          Bayar/Jam:
-                        </strong>{" "}
-                        {formatRupiah(item.bayaran_perjam)}
+                        {item.jam_masuk != null ? (
+                          <>
+                            <strong className="mr-1">Jam Kurang:</strong>
+                            {(item.jam_terlambat ?? 0) +
+                              (item.jam_kurang ?? 0)}{" "}
+                            menit
+                          </>
+                        ) : (
+                          ""
+                        )}
                       </p>
-                      <p className="text-xs">
-                        <strong className="mr-2 inline-block">
-                          Total Bayaran:
-                        </strong>{" "}
-                        {formatRupiah(item.total_bayaran)}
-                      </p>
-                      <p className="text-xs">
-                        <strong className="mr-2 inline-block">
-                          Keterangan:
-                        </strong>{" "}
-                        {potongTeks(item.keterangan, 25)}
-                      </p>
+
+                      {item.lokasi_masuk && (
+                        <p className="text-xs">
+                          <strong className="mr-1">Lokasi Masuk:</strong>
+                          {item.lokasi_masuk}
+                        </p>
+                      )}
+
+                      {item.lokasi_keluar && (
+                        <p className="text-xs">
+                          <strong className="mr-1">Lokasi Keluar:</strong>
+                          {item.lokasi_keluar}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
-
-                {/* Menampilkan Total Keseluruhan Bayaran */}
-                <div className="mt-4 text-sm text-white">
-                  <strong>Total Keseluruhan Bayaran Lembur: </strong>
-                  {formatRupiah(
-                    dataLembur.reduce(
-                      (total, item) => total + item.total_bayaran,
-                      0
-                    )
-                  )}
-                </div>
-              </>
-            ) : (
-              <p className="text-center text-xs">
-                loading atau Tidak ada data lembur.
-              </p>
-            )}
+              ) : (
+                <p className="text-center text-xs">
+                  Loading atau Tidak ada data absensi.
+                </p>
+              )}
+            </div>
           </CustomTabPanel>
+
+          <CustomTabPanel value={value} index={3}>
+            <div className="h-[calc(100vh-150px)] overflow-y-auto px-2 scroll-hide">
+              {dataLembur.length > 0 ? (
+                <>
+                  {/* Menampilkan List Lembur */}
+                  <div className="flex flex-col gap-4">
+                    {dataLembur.map((item, i) => (
+                      <div
+                        key={i}
+                        className="p-4 rounded-lg shadow-md text-left text-white"
+                      >
+                        <h3 className="text-sm font-semibold mb-2">
+                          {new Intl.DateTimeFormat("id-ID", {
+                            weekday: "long",
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          }).format(new Date(item.tanggal))}
+                        </h3>
+                        <h3 className="text-sm font-semibold mb-2">
+                          {item.jam_mulai?.slice(0, 5)} -{" "}
+                          {item.jam_selesai?.slice(0, 5)} Wita
+                        </h3>
+                        <p className="text-xs">
+                          <strong className="mr-2 inline-block">
+                            Jam Lembur:
+                          </strong>
+                          {formatMenitToJamMenit(item.menit_lembur)}
+                        </p>
+                        <p className="text-xs">
+                          <strong className="mr-2 inline-block">
+                            Bayar/Jam:
+                          </strong>
+                          {formatRupiah(item.bayaran_perjam)}
+                        </p>
+                        <p className="text-xs">
+                          <strong className="mr-2 inline-block">
+                            Total Bayaran:
+                          </strong>
+                          {formatRupiah(item.total_bayaran)}
+                        </p>
+                        <p className="text-xs">
+                          <strong className="mr-2 inline-block">
+                            Keterangan:
+                          </strong>
+                          {potongTeks(item.keterangan, 25)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Menampilkan Total Keseluruhan Bayaran */}
+                  <div className="mt-4 text-sm text-white">
+                    <strong>Total Keseluruhan Bayaran Lembur: </strong>
+                    {formatRupiah(
+                      dataLembur.reduce(
+                        (total, item) => total + item.total_bayaran,
+                        0
+                      )
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-xs">
+                  loading atau Tidak ada data lembur.
+                </p>
+              )}
+            </div>
+          </CustomTabPanel>
+
           <CustomTabPanel value={value} index={4}>
             <div className="overflow-x-auto pb-7">
               {rekapanBulanan ? (
@@ -944,8 +1011,10 @@ const History = () => {
                         <td>Periode</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanBulanan.periode_awal} -{" "}
-                          {rekapanBulanan.periode_akhir}
+                          {formatPeriodeTanggal(
+                            rekapanBulanan.periode_awal
+                          )} -{" "}
+                          {formatPeriodeTanggal(rekapanBulanan.periode_akhir)}
                         </td>
                       </tr>
                       <tr>
@@ -1055,14 +1124,14 @@ const History = () => {
                 </p>
               )}
             </div>
-            {rekapanBulanan && (
+            {/* {rekapanBulanan && (
               <button
                 className="flex items-center mb-2 bg-red-700 hover:bg-red-800 text-white px-3 py-2 rounded text-sm"
                 onClick={downloadPDFBulanan}
               >
                 <FaFilePdf className="mr-2" /> Download PDF
               </button>
-            )}
+            )} */}
           </CustomTabPanel>
           <CustomTabPanel value={value} index={5}>
             <div className="overflow-x-auto pb-7">
@@ -1081,8 +1150,10 @@ const History = () => {
                         <td>Periode</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanLembur.periode_awal} -{" "}
-                          {rekapanLembur.periode_akhir}
+                          {formatPeriodeTanggal(
+                            rekapanLembur.periode_awal
+                          )} -{" "}
+                          {formatPeriodeTanggal(rekapanLembur.periode_akhir)}
                         </td>
                       </tr>
 
@@ -1118,14 +1189,14 @@ const History = () => {
                 </p>
               )}
             </div>
-            {rekapanLembur && (
+            {/* {rekapanLembur && (
               <button
                 className="flex items-center mb-2 bg-red-700 hover:bg-red-800 text-white px-3 py-2 rounded text-sm"
                 onClick={downloadPDFLembur}
               >
                 <FaFilePdf className="mr-2" /> Download PDF
               </button>
-            )}
+            )} */}
           </CustomTabPanel>
           {/* Rekapan Tab */}
           <CustomTabPanel value={value} index={6}>
@@ -1145,8 +1216,10 @@ const History = () => {
                         <td>Periode</td>
                         <td className="flex font-semibold">
                           <p className="pr-2">:</p>
-                          {rekapanGabungan.periode_awal} -{" "}
-                          {rekapanGabungan.periode_akhir}
+                          {formatPeriodeTanggal(
+                            rekapanGabungan.periode_awal
+                          )} -{" "}
+                          {formatPeriodeTanggal(rekapanGabungan.periode_akhir)}
                         </td>
                       </tr>
                       <tr>

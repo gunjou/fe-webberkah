@@ -17,8 +17,9 @@ import { FiX } from "react-icons/fi";
 
 const kolom = [
   { id: "no", label: "No", minWidth: 20 },
+  { id: "nip", label: "NIP", minWidth: 30 },
   { id: "nama", label: "Nama", minWidth: 40 },
-  { id: "tipe", label: "Status", minWidth: 80 },
+  { id: "tipe", label: "Tipe", minWidth: 20 },
   { id: "jumlah_hadir", label: "Hadir", minWidth: 10 },
   { id: "jumlah_izin", label: "Izin", minWidth: 10 },
   { id: "jumlah_sakit", label: "Sakit", minWidth: 10 },
@@ -35,6 +36,8 @@ const kolom = [
   { id: "total_menit_lembur", label: "Waktu Lembur", minWidth: 30 },
   { id: "total_bayaran_lembur", label: "Gaji Lembur", minWidth: 40 },
   { id: "total_gaji", label: "Total Gaji", minWidth: 40 },
+  { id: "bank", label: "Bank", minWidth: 40 },
+  { id: "no_rekening", label: "Norek", minWidth: 40 },
 ];
 
 const formatTerlambat = (menit) => {
@@ -151,6 +154,67 @@ const PerhitunganGaji = () => {
     return cocokNama && cocokTipe;
   });
 
+  const getFilteredSections = () => {
+    if (tipeFilter === "pegawai tetap") {
+      return [
+        {
+          title: "Gaji Bersih",
+          data: [["Pegawai Tetap", totalGaji.bersih.tetap]],
+        },
+        {
+          title: "Gaji Lembur",
+          data: [["Pegawai Tetap", totalGaji.lembur.tetap]],
+        },
+        {
+          title: "Total Gaji (Bersih + Lembur)",
+          data: [["Pegawai Tetap", totalGaji.total.tetap]],
+        },
+      ];
+    } else if (tipeFilter === "pegawai tidak tetap") {
+      return [
+        {
+          title: "Gaji Bersih",
+          data: [["Pegawai Tidak Tetap", totalGaji.bersih.tidaktetap]],
+        },
+        {
+          title: "Gaji Lembur",
+          data: [["Pegawai Tidak Tetap", totalGaji.lembur.tidaktetap]],
+        },
+        {
+          title: "Total Gaji (Bersih + Lembur)",
+          data: [["Pegawai Tidak Tetap", totalGaji.total.tidaktetap]],
+        },
+      ];
+    } else {
+      return [
+        {
+          title: "Gaji Bersih",
+          data: [
+            ["Pegawai Tetap", totalGaji.bersih.tetap],
+            ["Pegawai Tidak Tetap", totalGaji.bersih.tidaktetap],
+            ["Total Semua", totalGaji.bersih.total],
+          ],
+        },
+        {
+          title: "Gaji Lembur",
+          data: [
+            ["Pegawai Tetap", totalGaji.lembur.tetap],
+            ["Pegawai Tidak Tetap", totalGaji.lembur.tidaktetap],
+            ["Total Semua", totalGaji.lembur.total],
+          ],
+        },
+        {
+          title: "Total Gaji (Bersih + Lembur)",
+          data: [
+            ["Pegawai Tetap", totalGaji.total.tetap],
+            ["Pegawai Tidak Tetap", totalGaji.total.tidaktetap],
+            ["Total Semua", totalGaji.total.total],
+          ],
+        },
+      ];
+    }
+  };
+
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = searchTerm
@@ -207,6 +271,13 @@ const PerhitunganGaji = () => {
       .join(" ");
   };
 
+  const singkatTipe = (tipe) => {
+    console.log(tipe);
+    if (tipe === "pegawai tetap") return "PT";
+    if (tipe === "pegawai tidak tetap") return "PTT";
+    return tipe;
+  };
+
   const downloadExcel = () => {
     const confirmDownload = window.confirm(
       "Apakah Anda yakin ingin mengunduh data sebagai file Excel?"
@@ -216,6 +287,7 @@ const PerhitunganGaji = () => {
     // Header kolom, pastikan sesuai dengan PDF
     const header = [
       "No",
+      "NIP",
       "Nama",
       "Tipe",
       "Jumlah Hadir",
@@ -232,13 +304,16 @@ const PerhitunganGaji = () => {
       "Menit Lembur",
       "Bayaran Lembur",
       "Gaji Bersih",
+      "Bank",
+      "Norek",
     ];
 
     // Data baris utama, disesuaikan dengan format PDF
     const rows = filteredData.map((item, idx) => [
       idx + 1,
-      item.nama,
-      item.tipe,
+      item.nip,
+      toTitleCase(item.nama),
+      singkatTipe(item.tipe),
       item.jumlah_hadir ?? "-",
       item.jumlah_izin ?? "-",
       item.jumlah_sakit ?? "-",
@@ -253,6 +328,8 @@ const PerhitunganGaji = () => {
       item.total_menit_lembur ?? "-",
       formatRupiah(item.total_bayaran_lembur),
       formatRupiah(item.gaji_bersih),
+      item.bank,
+      item.no_rekening,
     ]);
 
     // Ringkasan total gaji (mirip dengan PDF)
@@ -318,7 +395,11 @@ const PerhitunganGaji = () => {
     );
     if (!confirmDownload) return;
 
-    const doc = new jsPDF({ orientation: "landscape" });
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
 
     const title = "Rekapan Gaji";
     const dateStr = getDateLabel();
@@ -336,8 +417,9 @@ const PerhitunganGaji = () => {
     );
     const rows = filteredData.map((item, idx) => [
       idx + 1,
-      item.nama,
-      item.tipe,
+      item.nip,
+      toTitleCase(item.nama),
+      singkatTipe(item.tipe),
       item.jumlah_hadir ?? "-",
       item.jumlah_izin ?? "-",
       item.jumlah_sakit ?? "-",
@@ -351,35 +433,44 @@ const PerhitunganGaji = () => {
       formatTerlambat(item.total_menit_lembur) ?? "-",
       formatRupiah(item.total_bayaran_lembur),
       formatRupiah(item.gaji_bersih),
+      item.bank,
+      item.no_rekening,
     ]);
 
     doc.autoTable({
       head: [header],
       body: rows,
       startY: 30,
-      styles: { fontSize: 8, cellPadding: 1 },
+      styles: {
+        fontSize: 7,
+        cellPadding: 1,
+        overflow: "linebreak",
+      },
       headStyles: {
         fillColor: [139, 0, 0],
         textColor: [255, 255, 255],
         valign: "middle",
       },
       columnStyles: {
-        0: { halign: "center" },
-        1: { halign: "left" },
-        2: { halign: "left" },
-        3: { halign: "center" },
-        4: { halign: "center" },
-        5: { halign: "center" },
-        6: { halign: "center" },
-        7: { halign: "left" },
-        8: { halign: "left", cellWidth: 25 },
-        9: { halign: "left", cellWidth: 25 },
-        10: { halign: "left", cellWidth: 25 },
-        11: { halign: "left", cellWidth: 25 },
-        12: { halign: "left" },
-        13: { halign: "left" },
-        14: { halign: "left", cellWidth: 25 },
-        15: { halign: "left", cellWidth: 25 },
+        0: { halign: "center", cellWidth: 5 }, // No
+        1: { halign: "centet", cellWidth: 10 }, // NIP
+        2: { halign: "left", cellWidth: 20 }, // Nama
+        3: { halign: "center", cellWidth: 8 }, // Tipe
+        4: { halign: "center", cellWidth: 8 }, // Hadir
+        5: { halign: "center", cellWidth: 8 }, // Izin
+        6: { halign: "center", cellWidth: 8 }, // Sakit
+        7: { halign: "center", cellWidth: 9 }, // Alpha
+        8: { halign: "left", cellWidth: 20 }, // Terlambat
+        9: { halign: "left", cellWidth: 20 }, // Gaji Pokok
+        10: { halign: "left", cellWidth: 15 }, // Potongan
+        11: { halign: "left", cellWidth: 20 }, // Tunj. Kehadiran
+        12: { halign: "left", cellWidth: 20 }, // Gaji Bersih (tanpa lembur)
+        13: { halign: "center", cellWidth: 12 }, // Total Lembur
+        14: { halign: "left", cellWidth: 13 }, // Total Menit Lembur
+        15: { halign: "left", cellWidth: 20 }, // Bayaran Lembur
+        16: { halign: "left", cellWidth: 25 }, // Gaji Bersih
+        17: { halign: "left", cellWidth: 10 }, // Bank
+        18: { halign: "left", cellWidth: 25 }, // No Rekening
       },
     });
 
@@ -401,32 +492,7 @@ const PerhitunganGaji = () => {
     doc.text("Ringkasan Total Gaji", 14, y);
     y += 7;
 
-    const sections = [
-      {
-        title: "Gaji Bersih",
-        data: [
-          ["Pegawai Tetap", totalGaji.bersih.tetap],
-          ["Pegawai Tidak Tetap", totalGaji.bersih.tidaktetap],
-          ["Total Semua", totalGaji.bersih.total],
-        ],
-      },
-      {
-        title: "Gaji Lembur",
-        data: [
-          ["Pegawai Tetap", totalGaji.lembur.tetap],
-          ["Pegawai Tidak Tetap", totalGaji.lembur.tidaktetap],
-          ["Total Semua", totalGaji.lembur.total],
-        ],
-      },
-      {
-        title: "Total Gaji (Bersih + Lembur)",
-        data: [
-          ["Pegawai Tetap", totalGaji.total.tetap],
-          ["Pegawai Tidak Tetap", totalGaji.total.tidaktetap],
-          ["Total Semua", totalGaji.total.total],
-        ],
-      },
-    ];
+    const sections = getFilteredSections();
 
     doc.setFontSize(10);
     sections.forEach((section) => {
@@ -572,7 +638,7 @@ const PerhitunganGaji = () => {
                                 cursor: "pointer",
                                 whiteSpace: "nowrap",
                                 textAlign: "left",
-                                borderRadius: index === 17 ? "0 10px 0 0" : "0",
+                                borderRadius: index === 18 ? "0 10px 0 0" : "0",
                               }}
                             >
                               {column.label}
@@ -602,8 +668,15 @@ const PerhitunganGaji = () => {
                             <TableRow key={index} sx={{ height: "22px" }}>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
+                                align="center"
                               >
                                 {index + 1}
+                              </TableCell>
+                              <TableCell
+                                sx={{ fontSize: "12px", padding: "4px" }}
+                                align="center"
+                              >
+                                {item.nip}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
@@ -613,9 +686,10 @@ const PerhitunganGaji = () => {
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
+                                align="center"
                                 className="capitalize"
                               >
-                                {item.tipe}
+                                {singkatTipe(item.tipe)}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
@@ -636,7 +710,11 @@ const PerhitunganGaji = () => {
                                 {item.jumlah_sakit ?? "-"}
                               </TableCell>
                               <TableCell
-                                sx={{ fontSize: "12px", padding: "4px" }}
+                                sx={{
+                                  fontSize: "12px",
+                                  padding: "4px",
+                                  color: "red",
+                                }}
                                 align="center"
                               >
                                 {item.jumlah_alpha ?? "-"}
@@ -654,7 +732,11 @@ const PerhitunganGaji = () => {
                                 {formatTerlambat(item.jam_normal)}
                               </TableCell> */}
                               <TableCell
-                                sx={{ fontSize: "12px", padding: "4px" }}
+                                sx={{
+                                  fontSize: "12px",
+                                  padding: "4px",
+                                  color: "red",
+                                }}
                                 align="center"
                               >
                                 {formatTerlambat(
@@ -674,10 +756,14 @@ const PerhitunganGaji = () => {
                                 {formatRupiah(item.gaji_pokok)}
                               </TableCell>
                               <TableCell
-                                sx={{ fontSize: "12px", padding: "4px" }}
+                                sx={{
+                                  fontSize: "12px",
+                                  padding: "4px",
+                                  color: "red",
+                                }}
                                 align="left"
                               >
-                                {formatRupiah(item.potongan)}
+                                -{formatRupiah(item.potongan)}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
@@ -715,6 +801,18 @@ const PerhitunganGaji = () => {
                                 align="left"
                               >
                                 {formatRupiah(item.gaji_bersih ?? "-")}
+                              </TableCell>
+                              <TableCell
+                                sx={{ fontSize: "12px", padding: "4px" }}
+                                className="capitalize"
+                              >
+                                {item.bank}
+                              </TableCell>
+                              <TableCell
+                                sx={{ fontSize: "12px", padding: "4px" }}
+                                className="capitalize"
+                              >
+                                {item.no_rekening}
                               </TableCell>
                             </TableRow>
                           ))

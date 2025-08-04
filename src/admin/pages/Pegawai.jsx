@@ -26,6 +26,7 @@ const toTitleCase = (str) => {
 
 const kolom = [
   { id: "no", label: "No", minWidth: 10 },
+  { id: "nip", label: "NIP", minWidth: 40, align: "left" },
   { id: "nama", label: "Nama Pegawai", minWidth: 100 },
   { id: "jenis", label: "Jenis Pegawai", minWidth: 100 },
   { id: "tipe", label: "Tipe Pegawai", minWidth: 100 },
@@ -36,18 +37,20 @@ const kolom = [
   },
   {
     id: "kode_pemulihan",
-    label: "Kode Pemulihan",
-    minWidth: 100,
+    label: "PIN",
+    minWidth: 60,
   },
   {
     id: "gaji_pokok",
     label: "Gaji Pokok",
     minWidth: 100,
   },
+  { id: "bank", label: "Bank", minWidth: 70, align: "left" },
+  { id: "no_rekening", label: "No. Rekening", minWidth: 100, align: "left" },
   {
     id: "aksi",
     label: "Aksi",
-    minWidth: 50,
+    minWidth: 30,
     align: "center",
     fontWeight: "bold",
   },
@@ -69,21 +72,27 @@ const Pegawai = () => {
 
   const [selectedPegawai, setSelectedPegawai] = useState({
     id_karyawan: "",
+    nip: "",
     nama: "",
     jenis: "",
     tipe: "",
     username: "",
     kode_pemulihan: "",
     gaji_pokok: "",
+    bank: "",
+    no_rekening: "",
   });
 
   const [newPegawai, setNewPegawai] = useState({
+    nip: "",
     nama: "",
-    jenis: "",
-    tipe: "",
+    id_jenis: "",
+    id_tipe: "",
     username: "",
     kode_pemulihan: "",
     gaji_pokok: "",
+    bank: "",
+    no_rekening: "",
   });
 
   const formatRupiah = (angka) => {
@@ -179,22 +188,25 @@ const Pegawai = () => {
       alert("ID karyawan tidak valid!");
       return;
     }
+
     if (!selectedPegawai.jenis) {
       alert("Jenis pegawai tidak boleh kosong!");
       return;
     }
 
-    setIsLoading(true); // mulai loading
-
     const payload = {
+      id_jenis: selectedPegawai.jenis,
+      id_tipe: selectedPegawai.tipe,
       nama: selectedPegawai.nama,
-      jenis: selectedPegawai.jenis,
-      tipe: selectedPegawai.tipe,
+      gaji_pokok: Number(selectedPegawai.gaji_pokok) || 0,
       username: selectedPegawai.username,
-      gaji_pokok: selectedPegawai.gaji_pokok,
+      bank: selectedPegawai.bank || null,
+      no_rekening: selectedPegawai.no_rekening || null,
     };
 
     const token = localStorage.getItem("token");
+    setIsLoading(true);
+
     api
       .put(`/pegawai/${selectedPegawai.id_karyawan}`, payload, {
         headers: {
@@ -218,9 +230,10 @@ const Pegawai = () => {
           "Error updating data:",
           error.response?.data || error.message
         );
+        alert("Gagal memperbarui data.");
       })
       .finally(() => {
-        setIsLoading(false); // selesai loading
+        setIsLoading(false);
       });
   };
 
@@ -240,7 +253,7 @@ const Pegawai = () => {
 
     const token = localStorage.getItem("token");
     api
-      .put(`/pegawai/delete/${selectedPegawai.id_karyawan}`, null, {
+      .delete(`/pegawai/${selectedPegawai.id_karyawan}`, null, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -266,18 +279,27 @@ const Pegawai = () => {
   };
 
   const saveAdd = () => {
+    if (!newPegawai.nip) {
+      alert("NIP wajib diisi!");
+      return;
+    }
+
     setIsAdding(true); // mulai loading
 
     const payloadAdd = {
+      nip: newPegawai.nip,
+      id_jenis: parseInt(newPegawai.id_jenis),
+      id_tipe: parseInt(newPegawai.id_tipe),
       nama: newPegawai.nama,
-      jenis: newPegawai.jenis,
-      tipe: newPegawai.tipe,
+      gaji_pokok: parseInt(newPegawai.gaji_pokok),
       username: newPegawai.username,
       kode_pemulihan: newPegawai.kode_pemulihan,
-      gaji_pokok: newPegawai.gaji_pokok,
+      bank: newPegawai.bank || null,
+      no_rekening: newPegawai.no_rekening || null,
     };
 
     const token = localStorage.getItem("token");
+
     api
       .post("/pegawai/", payloadAdd, {
         headers: {
@@ -288,12 +310,15 @@ const Pegawai = () => {
         setKaryawan((prev) => [...prev, res.data]);
         setOpenModalAdd(false);
         setNewPegawai({
+          nip: "",
           nama: "",
-          jenis: "",
-          tipe: "",
+          id_jenis: "",
+          id_tipe: "",
           username: "",
           kode_pemulihan: "",
           gaji_pokok: "",
+          bank: "",
+          no_rekening: "",
         }); // Reset form
 
         alert(res.data.status || "Data karyawan berhasil ditambahkan!");
@@ -364,8 +389,10 @@ const Pegawai = () => {
   } else {
     detail = currentRows.map((item, index) => (
       <TableRow key={index}>
-        <TableCell>{indexOfFirstRow + index + 1}</TableCell>
-
+        <TableCell align="center">{indexOfFirstRow + index + 1}</TableCell>
+        <TableCell style={{ padding: "8px" }} align="left">
+          {item.nip}
+        </TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
           {toTitleCase(item.nama)}
         </TableCell>
@@ -383,6 +410,12 @@ const Pegawai = () => {
         </TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
           {formatRupiah(item.gaji_pokok)}
+        </TableCell>
+        <TableCell style={{ padding: "8px" }} align="left">
+          {item.bank}
+        </TableCell>
+        <TableCell style={{ padding: "8px" }} align="left">
+          {item.no_rekening}
         </TableCell>
         <TableCell style={{ padding: "8px" }} align="center">
           <span
@@ -488,7 +521,7 @@ const Pegawai = () => {
                                   borderTopLeftRadius: isFirst ? "10px" : "0",
                                   borderTopRightRadius: isLast ? "10px" : "0",
                                   border: "1px solid #4d4d4d",
-                                  padding: "8px", // Tambahkan padding lebih kecil
+                                  padding: "8px",
                                 }}
                               >
                                 {column.label}
@@ -552,9 +585,11 @@ const Pegawai = () => {
                 <Modal.Body>
                   <form className="flex flex-col gap-3">
                     <div>
-                      <div className="block mb-2">
-                        <Label htmlFor="small" value="Nama Pegawai" />
-                      </div>
+                      <Label
+                        htmlFor="nama"
+                        value="Nama Pegawai"
+                        className="block mb-2"
+                      />
                       <TextInput
                         id="nama"
                         type="text"
@@ -569,9 +604,11 @@ const Pegawai = () => {
                       />
                     </div>
                     <div>
-                      <div className="block mb-2">
-                        <Label htmlFor="jenis" value="Jenis Pegawai" />
-                      </div>
+                      <Label
+                        htmlFor="jenis"
+                        value="Jenis Pegawai"
+                        className="block mb-2"
+                      />
                       <Select
                         id="jenis"
                         sizing="sm"
@@ -593,9 +630,11 @@ const Pegawai = () => {
                       </Select>
                     </div>
                     <div>
-                      <div className="block mb-2">
-                        <Label htmlFor="tipe" value="Tipe Pegawai" />
-                      </div>
+                      <Label
+                        htmlFor="tipe"
+                        value="Tipe Pegawai"
+                        className="block mb-2"
+                      />
                       <Select
                         id="tipe"
                         sizing="sm"
@@ -617,9 +656,11 @@ const Pegawai = () => {
                       </Select>
                     </div>
                     <div>
-                      <div className="block mb-2">
-                        <Label htmlFor="small" value="Username" />
-                      </div>
+                      <Label
+                        htmlFor="username"
+                        value="Username"
+                        className="block mb-2"
+                      />
                       <TextInput
                         id="username"
                         type="text"
@@ -633,27 +674,12 @@ const Pegawai = () => {
                         }
                       />
                     </div>
-                    {/* <div>
-                      <div className="block mb-2">
-                        <Label htmlFor="small" value="kode_pemulihan" />
-                      </div>
-                      <TextInput
-                        id="kode_pemulihan"
-                        type="text"
-                        sizing="sm"
-                        value={selectedPegawai.kode_pemulihan}
-                        onChange={(e) =>
-                          setSelectedPegawai({
-                            ...selectedPegawai,
-                            kode_pemulihan: e.target.value,
-                          })
-                        }
-                      />
-                    </div> */}
                     <div>
-                      <div className="block mb-2">
-                        <Label htmlFor="small" value="Gaji Pokok" />
-                      </div>
+                      <Label
+                        htmlFor="gajiPokok"
+                        value="Gaji Pokok"
+                        className="block mb-2"
+                      />
                       <TextInput
                         id="gajiPokok"
                         type="number"
@@ -665,11 +691,51 @@ const Pegawai = () => {
                             gaji_pokok: e.target.value,
                           })
                         }
-                        //placeholder="contoh: 1000000"
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="bank"
+                        value="Bank"
+                        className="block mb-2"
+                      />
+                      <TextInput
+                        id="bank"
+                        type="text"
+                        sizing="sm"
+                        value={selectedPegawai.bank || ""}
+                        onChange={(e) =>
+                          setSelectedPegawai({
+                            ...selectedPegawai,
+                            bank: e.target.value,
+                          })
+                        }
+                        placeholder="Contoh: BCA, BRI"
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="no_rekening"
+                        value="No Rekening"
+                        className="block mb-2"
+                      />
+                      <TextInput
+                        id="no_rekening"
+                        type="text"
+                        sizing="sm"
+                        value={selectedPegawai.no_rekening || ""}
+                        onChange={(e) =>
+                          setSelectedPegawai({
+                            ...selectedPegawai,
+                            no_rekening: e.target.value,
+                          })
+                        }
+                        placeholder="Contoh: 1234567890"
                       />
                     </div>
                   </form>
                 </Modal.Body>
+
                 <Modal.Footer>
                   <div className="button-footer flex gap-2">
                     <button
@@ -686,11 +752,12 @@ const Pegawai = () => {
 
                     <button
                       type="button"
-                      class="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
+                      className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
                       onClick={() => setOpenModalEdit(false)}
                     >
                       Batal
                     </button>
+
                     <div className="absolute right-5">
                       <button
                         type="button"
@@ -707,6 +774,7 @@ const Pegawai = () => {
                 </Modal.Footer>
               </Modal>
             </>
+
             {/* end edit data section */}
             {/* start modal add data section */}
             <>
@@ -714,12 +782,33 @@ const Pegawai = () => {
                 <Modal.Header>Isi Data Pegawai</Modal.Header>
                 <Modal.Body>
                   <form className="flex flex-col gap-3">
+                    {/* NIP */}
                     <div>
                       <div className="block mb-2">
-                        <Label htmlFor="small" value="Nama Pegawai" />
+                        <Label
+                          htmlFor="nip"
+                          value="NIP (Nomor Induk Pegawai)"
+                        />
                       </div>
                       <TextInput
-                        id="small"
+                        id="nip"
+                        type="text"
+                        sizing="sm"
+                        required
+                        value={newPegawai.nip}
+                        onChange={(e) =>
+                          setNewPegawai({ ...newPegawai, nip: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    {/* Nama */}
+                    <div>
+                      <div className="block mb-2">
+                        <Label htmlFor="nama" value="Nama Pegawai" />
+                      </div>
+                      <TextInput
+                        id="nama"
                         type="text"
                         sizing="sm"
                         value={newPegawai.nama}
@@ -728,6 +817,8 @@ const Pegawai = () => {
                         }
                       />
                     </div>
+
+                    {/* Jenis Pegawai */}
                     <div>
                       <div className="block mb-2">
                         <Label htmlFor="jenis" value="Jenis Pegawai" />
@@ -735,11 +826,11 @@ const Pegawai = () => {
                       <Select
                         id="jenis"
                         sizing="sm"
-                        value={newPegawai.jenis}
+                        value={newPegawai.id_jenis}
                         onChange={(e) =>
                           setNewPegawai({
                             ...newPegawai,
-                            jenis: parseInt(e.target.value),
+                            id_jenis: parseInt(e.target.value),
                           })
                         }
                       >
@@ -752,6 +843,8 @@ const Pegawai = () => {
                           ))}
                       </Select>
                     </div>
+
+                    {/* Tipe Pegawai */}
                     <div>
                       <div className="block mb-2">
                         <Label htmlFor="tipe" value="Tipe Pegawai" />
@@ -759,11 +852,11 @@ const Pegawai = () => {
                       <Select
                         id="tipe"
                         sizing="sm"
-                        value={newPegawai.tipe}
+                        value={newPegawai.id_tipe}
                         onChange={(e) =>
                           setNewPegawai({
                             ...newPegawai,
-                            tipe: parseInt(e.target.value),
+                            id_tipe: parseInt(e.target.value),
                           })
                         }
                       >
@@ -776,12 +869,14 @@ const Pegawai = () => {
                           ))}
                       </Select>
                     </div>
+
+                    {/* Username */}
                     <div>
                       <div className="block mb-2">
-                        <Label htmlFor="small" value="Username" />
+                        <Label htmlFor="username" value="Username" />
                       </div>
                       <TextInput
-                        id="small"
+                        id="username"
                         type="text"
                         sizing="sm"
                         value={newPegawai.username}
@@ -793,6 +888,8 @@ const Pegawai = () => {
                         }
                       />
                     </div>
+
+                    {/* Kode Pemulihan */}
                     <div>
                       <div className="block mb-2">
                         <Label
@@ -812,7 +909,7 @@ const Pegawai = () => {
                               kode_pemulihan: e.target.value,
                             })
                           }
-                          className="pr-10" // beri ruang untuk icon di kanan
+                          className="pr-10"
                         />
                         <button
                           type="button"
@@ -830,13 +927,14 @@ const Pegawai = () => {
                       </div>
                     </div>
 
+                    {/* Gaji Pokok */}
                     <div>
                       <div className="block mb-2">
-                        <Label htmlFor="small" value="Gaji Pokok" />
+                        <Label htmlFor="gaji_pokok" value="Gaji Pokok" />
                       </div>
                       <TextInput
-                        id="small"
-                        type="text"
+                        id="gaji_pokok"
+                        type="number"
                         sizing="sm"
                         placeholder="contoh: 1000000"
                         value={newPegawai.gaji_pokok}
@@ -848,8 +946,52 @@ const Pegawai = () => {
                         }
                       />
                     </div>
+
+                    {/* Bank */}
+                    <div>
+                      <div className="block mb-2">
+                        <Label htmlFor="bank" value="Bank (opsional)" />
+                      </div>
+                      <TextInput
+                        id="bank"
+                        type="text"
+                        sizing="sm"
+                        placeholder="contoh: BRI, BNI, Mandiri"
+                        value={newPegawai.bank}
+                        onChange={(e) =>
+                          setNewPegawai({
+                            ...newPegawai,
+                            bank: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    {/* No Rekening */}
+                    <div>
+                      <div className="block mb-2">
+                        <Label
+                          htmlFor="no_rekening"
+                          value="No Rekening (opsional)"
+                        />
+                      </div>
+                      <TextInput
+                        id="no_rekening"
+                        type="text"
+                        sizing="sm"
+                        placeholder="0123456789"
+                        value={newPegawai.no_rekening}
+                        onChange={(e) =>
+                          setNewPegawai({
+                            ...newPegawai,
+                            no_rekening: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </form>
                 </Modal.Body>
+
                 <Modal.Footer>
                   <button
                     type="button"
@@ -865,7 +1007,7 @@ const Pegawai = () => {
 
                   <button
                     type="button"
-                    class="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
+                    className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
                     onClick={() => setOpenModalAdd(false)}
                   >
                     Batal

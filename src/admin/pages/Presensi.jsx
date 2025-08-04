@@ -2,7 +2,7 @@ import { React, useState, useEffect } from "react";
 import { Card } from "flowbite-react";
 import { PiOfficeChairBold } from "react-icons/pi";
 import { FaHelmetSafety } from "react-icons/fa6";
-import { MdCleaningServices } from "react-icons/md";
+import { MdOutlineHealthAndSafety } from "react-icons/md";
 import { ImCross } from "react-icons/im";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -27,6 +27,7 @@ const Presensi = () => {
   const handleCloseHadir = () => setOpenHadir(false);
   const [absen, setAbsen] = useState([]);
   const [karyawan, setKaryawan] = useState([]);
+  const [jumlahNonDireksi, setJumlahNonDireksi] = useState(0);
   const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [modalType, setModalType] = useState("hadir");
@@ -88,6 +89,24 @@ const Presensi = () => {
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    api
+      .get("/pegawai/jumlah-non-direksi")
+      .then((res) => {
+        if (
+          res.data.status === "success" &&
+          typeof res.data.jumlah === "number"
+        ) {
+          setJumlahNonDireksi(res.data.jumlah);
+        } else {
+          console.warn("Format data tidak sesuai:", res.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Gagal mengambil jumlah non-direksi:", error);
       });
   }, []);
 
@@ -386,7 +405,7 @@ const Presensi = () => {
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    {absen.length}/{karyawan.length}
+                    {absen.length}/{jumlahNonDireksi}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -411,7 +430,7 @@ const Presensi = () => {
                   </div>
                   <div className="mt-7 text-left ml-0">
                     <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                      {absensiIzinSakit.length}/{karyawan.length}
+                      {absensiIzinSakit.length}/{jumlahNonDireksi}
                     </p>
 
                     <p className="font-normal text-red-700 dark:text-gray-400">
@@ -438,7 +457,7 @@ const Presensi = () => {
                   </div>
                   <div className="mt-7 text-left ml-0">
                     <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                      {tidakHadirList.length}/{karyawan.length}
+                      {tidakHadirList.length}/{jumlahNonDireksi}
                     </p>
                     <p className="font-normal text-red-700 dark:text-gray-400">
                       Orang
@@ -496,15 +515,11 @@ const Presensi = () => {
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
                     {
                       absen.filter(
-                        (item) => item.id_jenis === 5 || item.id_jenis === 6
+                        (item) => item.id_jenis === 5
+                        // (item) => item.id_jenis === 5 || item.id_jenis === 6
                       ).length
                     }
-                    /
-                    {
-                      karyawan.filter(
-                        (item) => item.id_jenis === 5 || item.id_jenis === 6
-                      ).length
-                    }
+                    /{karyawan.filter((item) => item.id_jenis === 5).length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
@@ -523,20 +538,20 @@ const Presensi = () => {
               >
                 <div className="absolute top-4 left-5">
                   <h5 className="text-lg font-normal tracking-tight text-gray-900 dark:text-white">
-                    Cleaning
+                    K3 Lapangan
                   </h5>
                 </div>
                 <div className="mt-7 text-left ml-0">
                   <p className="font-bold text-2xl text-black-700 dark:text-gray-400">
-                    {absen.filter((item) => item.id_jenis === 7).length}/
-                    {karyawan.filter((item) => item.id_jenis === 7).length}
+                    {absen.filter((item) => item.id_jenis === 6).length}/
+                    {karyawan.filter((item) => item.id_jenis === 6).length}
                   </p>
                   <p className="font-normal text-red-700 dark:text-gray-400">
                     Orang
                   </p>
                 </div>
                 <span className="flex items-center justify-center absolute top-4 right-4 text-green-700 text-3xl text-center w-8 h-8 rounded-md bg-green-400">
-                  <MdCleaningServices className="h-6 w-6" />
+                  <MdOutlineHealthAndSafety className="h-6 w-6" />
                 </span>
               </Card>
             </div>
