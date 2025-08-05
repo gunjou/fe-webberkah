@@ -322,7 +322,6 @@ const PerhitunganGaji = () => {
     );
     if (!confirmDownload) return;
 
-    // Header kolom, pastikan sesuai dengan PDF
     const header = [
       "No",
       "NIP",
@@ -346,8 +345,13 @@ const PerhitunganGaji = () => {
       "Norek",
     ];
 
-    // Data baris utama, disesuaikan dengan format PDF
-    const rows = filteredData.map((item, idx) => [
+    // ✅ Gunakan selectedNamaList jika tersedia
+    const dataUntukExcel =
+      selectedNamaList && selectedNamaList.length > 0
+        ? filteredData.filter((item) => selectedNamaList.includes(item.nama))
+        : filteredData;
+
+    const rows = dataUntukExcel.map((item, idx) => [
       idx + 1,
       item.nip,
       toTitleCase(item.nama),
@@ -370,60 +374,70 @@ const PerhitunganGaji = () => {
       item.no_rekening,
     ]);
 
-    // Ringkasan total gaji (mirip dengan PDF)
-    const summaryRows = [
-      [],
-      ["RINGKASAN TOTAL GAJI"],
-      [],
-      ["Gaji Bersih"],
-      ["Pegawai Tetap", formatRupiah(totalGaji.bersih.tetap)],
-      ["Pegawai Tidak Tetap", formatRupiah(totalGaji.bersih.tidaktetap)],
-      ["Total Semua", formatRupiah(totalGaji.bersih.total)],
-      [],
-      ["Gaji Lembur"],
-      ["Pegawai Tetap", formatRupiah(totalGaji.lembur.tetap)],
-      ["Pegawai Tidak Tetap", formatRupiah(totalGaji.lembur.tidaktetap)],
-      ["Total Semua", formatRupiah(totalGaji.lembur.total)],
-      [],
-      ["Total Gaji (Bersih + Lembur)"],
-      ["Pegawai Tetap", formatRupiah(totalGaji.total.tetap)],
-      ["Pegawai Tidak Tetap", formatRupiah(totalGaji.total.tidaktetap)],
-      ["Total Semua", formatRupiah(totalGaji.total.total)],
-    ];
+    // ✅ Ringkasan dinamis tergantung apakah ada pegawai yang dipilih
+    let summaryRows = [];
 
-    // Gabungkan header, rows, dan ringkasan ke dalam worksheet
+    if (selectedNamaList && selectedNamaList.length > 0) {
+      // Ringkasan untuk pegawai yang dipilih
+      summaryRows = [
+        [],
+        ["RINGKASAN TOTAL GAJI TERPILIH"],
+        [],
+        ["Total Gaji Bersih Terpilih", formatRupiah(totalGajiTerpilih)],
+        ["Total Lemburan Terpilih", formatRupiah(totalLemburanTerpilih)],
+        [
+          "Total Gaji + Lemburan Terpilih",
+          formatRupiah(totalGajiTerpilih + totalLemburanTerpilih),
+        ],
+      ];
+    } else {
+      // Ringkasan lengkap (semua pegawai)
+      const sections = getFilteredSections();
+
+      summaryRows = [[], ["RINGKASAN TOTAL GAJI"], []];
+
+      sections.forEach((section) => {
+        summaryRows.push([section.title]);
+        section.data.forEach(([label, value]) => {
+          summaryRows.push([label, formatRupiah(value)]);
+        });
+        summaryRows.push([]);
+      });
+    }
+
+    // Gabungkan semua ke worksheet
     const worksheet = XLSX.utils.aoa_to_sheet([
       header,
       ...rows,
       ...summaryRows,
     ]);
 
-    // Atur lebar kolom agar rapi
     worksheet["!cols"] = [
-      { wch: 5 }, // Kolom No
-      { wch: 20 }, // Kolom Nama
-      { wch: 10 }, // Kolom Tipe
-      { wch: 12 }, // Kolom Kehadiran
-      { wch: 12 }, // Kolom Izin
-      { wch: 12 }, // Kolom Sakit
-      { wch: 12 }, // Kolom Alpha
-      { wch: 15 }, // Kolom Jam Kerja
-      { wch: 15 }, // Kolom Jam Terlambat
-      { wch: 15 }, // Kolom Gaji Pokok
-      { wch: 15 }, // Kolom Potongan
-      { wch: 20 }, // Kolom Tunjangan Kehadiran
-      { wch: 20 }, // Kolom Gaji Bersih Tanpa Lembur
-      { wch: 10 }, // Kolom Lembur
-      { wch: 10 }, // Kolom Menit Lembur
-      { wch: 20 }, // Kolom Bayaran Lembur
-      { wch: 20 }, // Kolom Gaji Bersih
+      { wch: 5 }, // No
+      { wch: 10 }, // NIP
+      { wch: 20 }, // Nama
+      { wch: 10 }, // Tipe
+      { wch: 12 }, // Hadir
+      { wch: 12 }, // Izin
+      { wch: 12 }, // Sakit
+      { wch: 12 }, // Alpha
+      { wch: 15 }, // Jam Kerja
+      { wch: 15 }, // Jam Terlambat
+      { wch: 15 }, // Gaji Pokok
+      { wch: 15 }, // Potongan
+      { wch: 20 }, // Tunj. Kehadiran
+      { wch: 20 }, // Gaji Bersih Tanpa Lembur
+      { wch: 10 }, // Lembur
+      { wch: 10 }, // Menit Lembur
+      { wch: 20 }, // Bayaran Lembur
+      { wch: 20 }, // Gaji Bersih
+      { wch: 15 }, // Bank
+      { wch: 20 }, // Norek
     ];
 
-    // Buat workbook dan tambahkan worksheet
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rekapan Gaji");
 
-    // Menyimpan file Excel
     XLSX.writeFile(workbook, `${getFileName()}.xlsx`);
   };
 
