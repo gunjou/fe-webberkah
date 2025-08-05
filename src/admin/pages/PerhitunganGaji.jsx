@@ -58,6 +58,7 @@ const PerhitunganGaji = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedNamaList, setSelectedNamaList] = useState([]);
 
   const [showModal, setShowModal] = useState(false);
   const handleOpenModal = () => setShowModal(true);
@@ -155,6 +156,24 @@ const PerhitunganGaji = () => {
   });
 
   const getFilteredSections = () => {
+    // Jika ada pegawai yang dipilih → tampilkan ringkasan khusus
+    if (selectedNamaList.length > 0) {
+      return [
+        {
+          title: "Ringkasan Gaji Terpilih",
+          data: [
+            ["Total Gaji Bersih Terpilih", totalGajiTerpilih],
+            ["Total Lemburan Terpilih", totalLemburanTerpilih],
+            [
+              "Total Gaji + Lemburan Terpilih",
+              totalGajiTerpilih + totalLemburanTerpilih,
+            ],
+          ],
+        },
+      ];
+    }
+
+    // Jika tidak ada yang dipilih → tampilkan default (berdasarkan tipeFilter)
     if (tipeFilter === "pegawai tetap") {
       return [
         {
@@ -251,8 +270,27 @@ const PerhitunganGaji = () => {
       "id-ID",
       { month: "long" }
     );
+
+    if (selectedNamaList && selectedNamaList.length > 0) {
+      return `Rekapan Gaji ${selectedNamaList.length} Pegawai Bulan ${monthName} ${selectedYear}`;
+    }
+
     return `Rekapan Gaji Bulan ${monthName} ${selectedYear}`;
   };
+
+  const handleCheckboxChange = (nama) => {
+    setSelectedNamaList((prev) =>
+      prev.includes(nama) ? prev.filter((n) => n !== nama) : [...prev, nama]
+    );
+  };
+
+  const totalGajiTerpilih = currentRows
+    .filter((item) => selectedNamaList.includes(item.nama))
+    .reduce((acc, item) => acc + (item.gaji_bersih || 0), 0);
+
+  const totalLemburanTerpilih = currentRows
+    .filter((item) => selectedNamaList.includes(item.nama))
+    .reduce((acc, item) => acc + (item.total_bayaran_lembur || 0), 0);
 
   const formatRupiah = (angka) => {
     return new Intl.NumberFormat("id-ID", {
@@ -415,7 +453,14 @@ const PerhitunganGaji = () => {
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
     );
-    const rows = filteredData.map((item, idx) => [
+
+    // ✅ GUNAKAN selectedNamaList jika tidak kosong
+    const dataUntukPDF =
+      selectedNamaList.length > 0
+        ? filteredData.filter((item) => selectedNamaList.includes(item.nama))
+        : filteredData;
+
+    const rows = dataUntukPDF.map((item, idx) => [
       idx + 1,
       item.nip,
       toTitleCase(item.nama),
@@ -453,7 +498,7 @@ const PerhitunganGaji = () => {
       },
       columnStyles: {
         0: { halign: "center", cellWidth: 5 }, // No
-        1: { halign: "centet", cellWidth: 10 }, // NIP
+        1: { halign: "center", cellWidth: 10 }, // NIP
         2: { halign: "left", cellWidth: 20 }, // Nama
         3: { halign: "center", cellWidth: 8 }, // Tipe
         4: { halign: "center", cellWidth: 8 }, // Hadir
@@ -476,17 +521,14 @@ const PerhitunganGaji = () => {
 
     let y = doc.lastAutoTable.finalY + 10;
 
-    // Estimasi tinggi bagian ringkasan
-    const estimatedRingkasanHeight = 3 * (3 * 5 + 6 + 3); // 3 sections × (3 rows × 5px + 6px title + 3px gap)
+    const estimatedRingkasanHeight = 3 * (3 * 5 + 6 + 3);
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Jika bagian ringkasan akan melewati halaman → buat halaman baru
     if (y + estimatedRingkasanHeight > pageHeight - 10) {
       doc.addPage();
-      y = 15; // reset posisi y
+      y = 15;
     }
 
-    // Ringkasan Total Gaji
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Ringkasan Total Gaji", 14, y);
@@ -508,7 +550,7 @@ const PerhitunganGaji = () => {
         y += 5;
       });
 
-      y += 3; // spasi antar section
+      y += 3;
     });
 
     doc.save(`${getFileName()}.pdf`);
@@ -624,6 +666,18 @@ const PerhitunganGaji = () => {
                     <Table stickyHeader>
                       <TableHead className="bg-[#e8ebea]">
                         <TableRow sx={{ height: "26px" }}>
+                          <TableCell
+                            style={{
+                              backgroundColor: "#4d4d4d",
+                              color: "white",
+                              fontWeight: "bold",
+                              fontSize: "12px",
+                              padding: "4px 10px",
+                            }}
+                          >
+                            Pilih
+                          </TableCell>
+
                           {kolom.map((column, index) => (
                             <TableCell
                               key={column.id}
@@ -666,6 +720,16 @@ const PerhitunganGaji = () => {
                         ) : (
                           currentRows.map((item, index) => (
                             <TableRow key={index} sx={{ height: "22px" }}>
+                              <TableCell align="center" sx={{ padding: "4px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedNamaList.includes(item.nama)}
+                                  onChange={() =>
+                                    handleCheckboxChange(item.nama)
+                                  }
+                                />
+                              </TableCell>
+
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "4px" }}
                                 align="center"
@@ -822,14 +886,31 @@ const PerhitunganGaji = () => {
                   </TableContainer>
                 </Paper>
               </div>
-              <div className="mt-2 mb-2 flex justify-start space-x-2">
-                <button
-                  onClick={handleOpenModal}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-[20px] text-sm hover:bg-blue-700"
-                >
-                  Lihat Ringkasan Gaji
-                </button>
-              </div>
+              {selectedNamaList.length > 0 ? (
+                <>
+                  <div className="mt-4 text-sm font-semibold">
+                    Total Gaji Bersih Terpilih:{" "}
+                    {formatRupiah(totalGajiTerpilih)}
+                  </div>
+                  <div className="text-sm font-semibold">
+                    Total Lemburan Terpilih:{" "}
+                    {formatRupiah(totalLemburanTerpilih)}
+                  </div>
+                  <div className="mb-4 text-sm font-bold">
+                    Total Gaji + Lemburan Terpilih:{" "}
+                    {formatRupiah(totalGajiTerpilih + totalLemburanTerpilih)}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-4 mb-4 flex justify-start space-x-2">
+                  <button
+                    onClick={handleOpenModal}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-[20px] text-sm hover:bg-blue-700"
+                  >
+                    Lihat Ringkasan Gaji
+                  </button>
+                </div>
+              )}
 
               {showModal && (
                 <div
