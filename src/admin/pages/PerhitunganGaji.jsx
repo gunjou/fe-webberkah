@@ -286,7 +286,7 @@ const PerhitunganGaji = () => {
 
   const totalGajiTerpilih = currentRows
     .filter((item) => selectedNamaList.includes(item.nama))
-    .reduce((acc, item) => acc + (item.gaji_bersih || 0), 0);
+    .reduce((acc, item) => acc + (item.gaji_bersih_tanpa_lembur || 0), 0);
 
   const totalLemburanTerpilih = currentRows
     .filter((item) => selectedNamaList.includes(item.nama))
