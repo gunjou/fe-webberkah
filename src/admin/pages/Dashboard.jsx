@@ -8,6 +8,7 @@ import Rekapan from "./Rekapan";
 import Lembur from "./Lembur";
 import PerhitunganGaji from "./PerhitunganGaji";
 import Leaderboard from "./Leaderboard";
+import HutangPegawai from "./HutangPegawai";
 
 const Dashboard = ({ type }) => {
   let content;
@@ -28,6 +29,9 @@ const Dashboard = ({ type }) => {
       break;
     case "perhitungan-gaji":
       content = <PerhitunganGaji />;
+      break;
+    case "hutang-pegawai":
+      content = <HutangPegawai />;
       break;
     case "leaderboard":
       content = <Leaderboard />;

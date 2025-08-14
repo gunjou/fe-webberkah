@@ -48,3 +48,8 @@ body {
 .scroll-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
+
+html,
+body {
+  overflow-x: hidden;
+}

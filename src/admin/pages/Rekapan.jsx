@@ -404,7 +404,7 @@ const Rekapan = () => {
           <div className="title flex text-2xl pt-4 pl-4 font-bold">
             Rekapan Presensi
           </div>
-          <div className="tabel rounded-[20px] mt-2 mr-4 ml-4 px-2 shadow-md bg-white w-full h-full">
+          <div className="tabel rounded-[20px] mt-2 mr-4 ml-4 px-2 shadow-md bg-white h-full">
             <div className="ml-2 mb-6 pt-4 flex items-start justify-start gap-4 flex-wrap">
               <div className="flex flex-col">
                 <span className="text-sm font-semibold">
@@ -483,7 +483,7 @@ const Rekapan = () => {
             <div className="overflow-x-auto mt-2 pl-2">
               <div className="bg-white rounded-lg shadow-md mr-2 overflow-y-auto overflow-x-auto ">
                 <Paper sx={{ width: "100%", overflow: "hidden" }}>
-                  <TableContainer sx={{ maxHeight: 300, maxWidth: 900 }}>
+                  <TableContainer sx={{ maxHeight: 300, width: "100%" }}>
                     <Table stickyHeader>
                       <TableHead className="bg-[#e8ebea]">
                         <TableRow sx={{ height: "36px" }}>

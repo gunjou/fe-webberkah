@@ -289,7 +289,7 @@ const Lembur = () => {
         }
       );
       fetchLembur(tanggal);
-      setLemburModal(false);
+      // setLemburModal(false);
     } catch {
       alert("Gagal menyetujui lembur.");
     } finally {
@@ -450,7 +450,7 @@ const Lembur = () => {
           </div>
         </div>
 
-        <div className="bg-white shadow rounded-lg overflow-x-auto">
+        <div className="bg-white shadow-lg rounded-lg overflow-x-auto">
           <div className="max-h-80 overflow-y-auto">
             <table className="min-w-full text-sm border">
               <thead className="bg-gray-100 sticky -top-1 z-10">
@@ -586,7 +586,7 @@ const Lembur = () => {
           </div>
 
           <button
-            className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 rounded-[15px] text-sm"
+            className="bg-blue-700 hover:bg-blue-600 text-white px-4 py-2 mt-2 mb-1 rounded-[15px] text-sm"
             onClick={() => {
               fetchPegawaiList();
               setShowFormModal(true);

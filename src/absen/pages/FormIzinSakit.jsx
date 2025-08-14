@@ -27,6 +27,12 @@ const FormIzinSakit = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showIzinModal, setShowIzinModal] = useState(false);
   const navigate = useNavigate();
+  const [sisaCuti, setSisaCuti] = useState({
+    tahun: null,
+    kuota_tahunan: null,
+    cuti_terpakai: null,
+    sisa_kuota: null,
+  });
   const [izinTanggal, setIzinTanggal] = useState(dayjs());
   const [izinList, setIzinList] = useState([]);
   const [izinLoading, setIzinLoading] = useState(false);
@@ -93,6 +99,31 @@ const FormIzinSakit = () => {
       setIzinLoading(false);
     }
   };
+
+  const fetchSisaCuti = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const idKaryawan = localStorage.getItem("id_karyawan");
+
+      const res = await api.get(`/cuti/kuota-cuti/${idKaryawan}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setSisaCuti(res.data.data); // Simpan semua data
+    } catch (err) {
+      console.error("Gagal mengambil data sisa cuti:", err);
+      setSisaCuti({
+        tahun: null,
+        kuota_tahunan: null,
+        cuti_terpakai: null,
+        sisa_kuota: null,
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchSisaCuti();
+  }, []);
 
   useEffect(() => {
     if (showIzinModal) {
@@ -222,7 +253,9 @@ const FormIzinSakit = () => {
         const hasIzinOrSakit = data.some(
           (item) =>
             item.tanggal === today &&
-            ["izin", "sakit"].includes(item.status_absen?.toLowerCase())
+            ["izin", "izin (-cuti)", "sakit"].includes(
+              item.status_absen?.toLowerCase()
+            )
         );
 
         setIsAbsenIzinOrSakit(hasIzinOrSakit);
@@ -269,192 +302,279 @@ const FormIzinSakit = () => {
           <FiArrowLeft />
         </button>
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white text-black p-6 rounded-lg mt-[60px] shadow-lg w-full max-w-lg mx-4 my-4"
-      >
-        <h1 className="text-2xl font-bold mb-4 text-left">Form Izin/Sakit</h1>
-        <p className="text-sm mb-4 text-gray-600 text-justify">
-          Silakan isi form berikut dengan lengkap dan jelas untuk keperluan
-          pengajuan izin atau sakit. Data yang Anda berikan akan digunakan untuk
-          keperluan administrasi dan dokumentasi internal.
-        </p>
-
-        <div className="mb-4 flex justify-end">
-          <button
-            type="button"
-            className="bg-custom-merah hover:bg-custom-gelap text-white font-semibold py-1 px-4 rounded text-sm"
-            onClick={() => setShowIzinModal(true)}
+      {isAbsenIzinOrSakit ? (
+        <>
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white text-black p-6 rounded-lg mt-[60px] shadow-lg w-full max-w-lg mx-4 my-4"
           >
-            Lihat History Pengajuan
-          </button>
-        </div>
-        <div className="mb-4"></div>
+            <h1 className="text-2xl font-bold mb-4 text-left">
+              Form Izin/Sakit
+            </h1>
+            <p className="text-sm mb-4 text-gray-600 text-justify">
+              Silakan isi form berikut dengan lengkap dan jelas untuk keperluan
+              pengajuan izin atau sakit. Data yang Anda berikan akan digunakan
+              untuk keperluan administrasi dan dokumentasi internal.
+            </p>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1 text-left">
-            Nama
-          </label>
-          <input
-            type="text"
-            value={toTitleCase(localStorage.getItem("nama"))}
-            className="w-full px-3 py-2 border rounded-lg"
-            readOnly
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1 text-left">
-            Durasi Izin
-          </label>
-          <select
-            value={durasiIzin}
-            onChange={handleDurasiChange}
-            className="w-full px-3 py-2 border rounded-lg"
-          >
-            <option value="fullday">Full Day</option>
-            {/* //{!dayjs().isAfter(dayjs().hour(16)) && ( */}
-            <option value="halfday">Setengah Hari</option>
-            {/* // )} */}
-          </select>
-        </div>
+            <div className="mb-4 flex justify-end">
+              <button
+                type="button"
+                className="bg-custom-merah hover:bg-custom-gelap text-white font-semibold py-1 px-4 rounded text-sm"
+                onClick={() => setShowIzinModal(true)}
+              >
+                Lihat History Pengajuan
+              </button>
+            </div>
+            <div className="mb-4"></div>
 
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          {durasiIzin === "fullday" ? (
-            <>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1 text-left">
-                  Tanggal Mulai
-                </label>
-                <DatePicker
-                  value={date}
-                  onChange={(newValue) => setDate(newValue)}
-                  format="DD/MM/YYYY"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                      placeholder: "Pilih tanggal mulai",
-                      className: "placeholder:text-xs",
-                    },
-                  }}
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1 text-left">
-                  Tanggal Selesai
-                </label>
-                <DatePicker
-                  value={endDate}
-                  onChange={(newValue) => setEndDate(newValue)}
-                  format="DD/MM/YYYY"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                      placeholder: "Pilih tanggal selesai",
-                      className: "placeholder:text-xs",
-                    },
-                  }}
-                  minDate={date}
-                />
-              </div>
-            </>
-          ) : (
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1 text-left">
-                Jam Selesai
+                Nama
               </label>
               <input
-                type="time"
-                value={jamSelesai}
-                onChange={(e) => setJamSelesai(e.target.value)}
+                type="text"
+                value={toTitleCase(localStorage.getItem("nama"))}
                 className="w-full px-3 py-2 border rounded-lg"
-                required
+                readOnly
               />
             </div>
-          )}
-        </LocalizationProvider>
-        {durasiIzin === "fullday" && (
-          <>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1 text-left">
-                Jenis
+                Sisa Cuti Tahun {sisaCuti?.tahun ?? "-"}
+              </label>
+              <input
+                type="text"
+                value={
+                  sisaCuti?.sisa_kuota !== null &&
+                  sisaCuti?.sisa_kuota !== undefined
+                    ? `${sisaCuti.sisa_kuota} hari`
+                    : "Memuat..."
+                }
+                className="w-full px-3 py-2 border rounded-lg"
+                readOnly
+              />
+            </div>
+
+            <span className="text-black font-semibold">
+              Izin telah disetujui
+            </span>
+          </form>
+        </>
+      ) : (
+        <>
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white text-black p-6 rounded-lg mt-[60px] shadow-lg w-full max-w-lg mx-4 my-4"
+          >
+            <h1 className="text-2xl font-bold mb-4 text-left">
+              Form Izin/Sakit
+            </h1>
+            <p className="text-sm mb-4 text-gray-600 text-justify">
+              Silakan isi form berikut dengan lengkap dan jelas untuk keperluan
+              pengajuan izin atau sakit. Data yang Anda berikan akan digunakan
+              untuk keperluan administrasi dan dokumentasi internal.
+            </p>
+
+            <div className="mb-4 flex justify-end">
+              <button
+                type="button"
+                className="bg-custom-merah hover:bg-custom-gelap text-white font-semibold py-1 px-4 rounded text-sm"
+                onClick={() => setShowIzinModal(true)}
+              >
+                Lihat History Pengajuan
+              </button>
+            </div>
+            <div className="mb-4"></div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1 text-left">
+                Nama
+              </label>
+              <input
+                type="text"
+                value={toTitleCase(localStorage.getItem("nama"))}
+                className="w-full px-3 py-2 border rounded-lg"
+                readOnly
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1 text-left">
+                Sisa Cuti Tahun {sisaCuti?.tahun ?? "-"}
+              </label>
+              <input
+                type="text"
+                value={
+                  sisaCuti?.sisa_kuota !== null &&
+                  sisaCuti?.sisa_kuota !== undefined
+                    ? `${sisaCuti.sisa_kuota} hari`
+                    : "Memuat..."
+                }
+                className="w-full px-3 py-2 border rounded-lg"
+                readOnly
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1 text-left">
+                Durasi Izin
               </label>
               <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
+                value={durasiIzin}
+                onChange={handleDurasiChange}
                 className="w-full px-3 py-2 border rounded-lg"
-                required
               >
-                <option value="">Pilih Jenis</option>
-                {jenisOptions.map((j) => (
-                  <option key={j.value} value={j.value}>
-                    {j.label}
-                  </option>
-                ))}
+                <option value="fullday">Full Day</option>
+                {/* //{!dayjs().isAfter(dayjs().hour(16)) && ( */}
+                <option value="halfday">Setengah Hari</option>
+                {/* // )} */}
               </select>
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1 text-left">
-                Alasan
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg placeholder:text-xs"
-                placeholder="Masukkan alasan Anda"
-                rows="4"
-                required
-              ></textarea>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1 text-left">
-                Lampiran
-                {type === "4" && <span className="text-red-500 ml-1">*</span>}
-                <span className="text-xs text-gray-500 ml-2">
-                  {type === "4"
-                    ? "(Wajib untuk sakit, file gambar/pdf)"
-                    : "(Opsional untuk izin, file gambar/pdf)"}
-                </span>
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="file"
-                  onChange={(e) => setAttachment(e.target.files[0])}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  accept="image/*,application/pdf"
-                  required={type === "4"}
-                />
-                {attachment && (
-                  <button
-                    type="button"
-                    onClick={() => setAttachment(null)}
-                    className="text-red-600 font-semibold text-xs hover:underline"
-                  >
-                    Hapus
-                  </button>
-                )}
-              </div>
-            </div>
-          </>
-        )}
 
-        {!isAbsenIzinOrSakit && (
-          <button
-            type="submit"
-            className="w-full bg-custom-merah text-white py-2 rounded-lg hover:bg-custom-gelap disabled:opacity-50 mt-2"
-            disabled={isLoading}
-          >
-            {isLoading ? "Mengirim..." : "Kirim"}
-          </button>
-        )}
-        {isAbsenIzinOrSakit && (
-          <p className="text-red-600 text-sm mt-2 text-center font-semibold">
-            Pengajuan tidak tersedia karena status absen hari ini sudah Izin
-            atau Sakit.
-          </p>
-        )}
-      </form>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              {durasiIzin === "fullday" ? (
+                <>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1 text-left">
+                      Tanggal Mulai
+                    </label>
+                    <DatePicker
+                      value={date}
+                      onChange={(newValue) => setDate(newValue)}
+                      format="DD/MM/YYYY"
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          required: true,
+                          placeholder: "Pilih tanggal mulai",
+                          className: "placeholder:text-xs",
+                        },
+                      }}
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1 text-left">
+                      Tanggal Selesai
+                    </label>
+                    <DatePicker
+                      value={endDate}
+                      onChange={(newValue) => setEndDate(newValue)}
+                      format="DD/MM/YYYY"
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          required: true,
+                          placeholder: "Pilih tanggal selesai",
+                          className: "placeholder:text-xs",
+                        },
+                      }}
+                      minDate={date}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1 text-left">
+                    Jam Selesai
+                  </label>
+                  <input
+                    type="time"
+                    value={jamSelesai}
+                    onChange={(e) => setJamSelesai(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    required
+                  />
+                </div>
+              )}
+            </LocalizationProvider>
+            {durasiIzin === "fullday" && (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1 text-left">
+                    Jenis
+                  </label>
+                  <select
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                    required
+                  >
+                    <option value="">Pilih Jenis</option>
+                    {jenisOptions.map((j) => (
+                      <option key={j.value} value={j.value}>
+                        {j.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1 text-left">
+                    Alasan
+                  </label>
+                  <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg placeholder:text-xs"
+                    placeholder="Masukkan alasan Anda"
+                    rows="4"
+                    required
+                  ></textarea>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1 text-left">
+                    Lampiran
+                    {type === "4" && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                    <span className="text-xs text-gray-500 ml-2">
+                      {type === "4"
+                        ? "(Wajib untuk sakit, file gambar/pdf)"
+                        : "(Opsional untuk izin, file gambar/pdf)"}
+                    </span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      onChange={(e) => setAttachment(e.target.files[0])}
+                      className="w-full px-3 py-2 border rounded-lg"
+                      accept="image/*,application/pdf"
+                      required={type === "4"}
+                    />
+                    {attachment && (
+                      <button
+                        type="button"
+                        onClick={() => setAttachment(null)}
+                        className="text-red-600 font-semibold text-xs hover:underline"
+                      >
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className={`w-full text-white py-2 rounded-lg mt-2 ${
+                isLoading
+                  ? "bg-custom-merah opacity-50 cursor-not-allowed"
+                  : "bg-custom-merah hover:bg-custom-gelap"
+              }`}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                  Mengirim...
+                </div>
+              ) : (
+                "Kirim"
+              )}
+            </button>
+          </form>
+        </>
+      )}
 
       {showIzinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
@@ -501,20 +621,22 @@ const FormIzinSakit = () => {
                   {izinList.map((izin) => (
                     <div
                       key={izin.id_izin}
-                      className="border rounded-xl p-4 bg-gray-50 shadow text-sm space-y-1 relative"
+                      className="border rounded-xl p-4 mb-2 bg-gray-50 shadow text-sm space-y-1 relative"
                     >
                       <div className="flex">
-                        <span className="w-36 font-semibold">Nama</span>
+                        <span className="w-16 font-semibold">Nama</span>
                         <span className="mr-2">:</span>
                         <span>{izin.nama_karyawan}</span>
                       </div>
                       <div className="flex">
-                        <span className="w-36 font-semibold">Jenis</span>
+                        <span className="w-16 font-semibold">Jenis</span>
                         <span className="mr-2">:</span>
-                        <span>{izin.nama_status}</span>
+                        <span className="font-semibold">
+                          {izin.nama_status}
+                        </span>
                       </div>
                       <div className="flex">
-                        <span className="w-36 font-semibold">Tanggal</span>
+                        <span className="w-16 font-semibold">Tanggal</span>
                         <span className="mr-2">:</span>
                         <span>
                           {dayjs(izin.tgl_mulai).format("DD-MM-YYYY")} s.d.{" "}
@@ -522,16 +644,18 @@ const FormIzinSakit = () => {
                         </span>
                       </div>
                       <div className="flex">
-                        <span className="w-36 font-semibold">Alasan</span>
+                        <span className="w-16 font-semibold">Alasan</span>
                         <span className="mr-2">:</span>
                         <span>{izin.keterangan}</span>
                       </div>
                       <div className="flex">
-                        <span className="w-36 font-semibold">Status</span>
+                        <span className="w-16 font-semibold">Status</span>
                         <span className="mr-2">:</span>
                         <span
                           className={
                             izin.status_izin === "approved"
+                              ? "text-green-600 font-bold"
+                              : izin.status_izin === "approved (-cuti)"
                               ? "text-green-600 font-bold"
                               : izin.status_izin === "pending"
                               ? "text-yellow-600 font-bold"
@@ -543,7 +667,7 @@ const FormIzinSakit = () => {
                       </div>
                       {izin.status_izin === "rejected" && (
                         <div className="flex">
-                          <span className="w-36 font-semibold">
+                          <span className="w-16 font-semibold">
                             Alasan Penolakan
                           </span>
                           <span className="mr-2">:</span>

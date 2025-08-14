@@ -106,6 +106,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/hutang-pegawai"
+          element={
+            <ProtectedRoute>
+              <Dashboard type="hutang-pegawai" />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="/404" element={<NotFound />} />
         <Route path="*" element={<Navigate to="/404" />} />

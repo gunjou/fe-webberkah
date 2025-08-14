@@ -97,16 +97,16 @@ const PerhitunganGaji = () => {
       if (item.tipe === "pegawai tetap") {
         acc.bersih.tetap += gajiBersihManual;
         acc.lembur.tetap += lembur;
-        acc.total.tetap += total;
+        acc.total.tetap = acc.bersih.tetap + acc.lembur.tetap;
       } else if (item.tipe === "pegawai tidak tetap") {
         acc.bersih.tidaktetap += gajiBersihManual;
         acc.lembur.tidaktetap += lembur;
-        acc.total.tidaktetap += total;
+        acc.total.tidaktetap = acc.bersih.tidaktetap + acc.lembur.tidaktetap;
       }
 
-      acc.bersih.total += gajiBersihManual;
-      acc.lembur.total += lembur;
-      acc.total.total += total;
+      acc.bersih.total = acc.bersih.tetap + acc.bersih.tidaktetap;
+      acc.lembur.total = acc.lembur.tetap + acc.lembur.tidaktetap;
+      acc.total.total = acc.bersih.total + acc.lembur.total;
 
       return acc;
     },
@@ -590,9 +590,9 @@ const PerhitunganGaji = () => {
           <div className="title flex text-2xl pt-4 pl-4 font-bold">
             Perhitungan Gaji
           </div>
-          <div className="tabel rounded-[20px] mt-2 mr-4 ml-4 px-2 shadow-md bg-white w-full h-full">
+          <div className="tabel rounded-[20px] mt-2 ml-4 mr-12 shadow-md bg-white h-full">
             <div className="ml-2 mb-2 pt-4 flex items-start justify-start gap-4 flex-wrap">
-              <div className="flex flex-col">
+              <div className="">
                 <span className="text-sm font-semibold">
                   Detail Gaji Pegawai Berkah Angsana
                 </span>
@@ -672,11 +672,11 @@ const PerhitunganGaji = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto mt-2 pl-2">
-              <div className="bg-white rounded-lg shadow-md mr-2 overflow-y-auto overflow-x-auto ">
-                <Paper sx={{ width: "100%", overflow: "hidden" }}>
-                  <TableContainer sx={{ maxHeight: 280, maxWidth: 900 }}>
-                    {" "}
+            <div className="overflow-x-auto mt-2 pl-2 w-[72rem]">
+              <div className="bg-red-600 rounded-lg shadow-md overflow-y-auto mr-2">
+                <Paper sx={{ maxWidth: "100%", overflow: "hidden" }}>
+                  <TableContainer sx={{ maxHeight: 280, width: "100%" }}>
+                    {/* {" "} */}
                     <Table stickyHeader>
                       <TableHead className="bg-[#e8ebea]">
                         <TableRow sx={{ height: "26px" }}>
@@ -687,6 +687,7 @@ const PerhitunganGaji = () => {
                               fontWeight: "bold",
                               fontSize: "12px",
                               padding: "4px 10px",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             Pilih

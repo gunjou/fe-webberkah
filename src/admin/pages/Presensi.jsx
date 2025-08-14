@@ -282,6 +282,29 @@ const Presensi = () => {
     }
   };
 
+  const handleApproveCuti = async (id_izin) => {
+    if (!window.confirm("Setujui pengajuan izin ini dan potong cuti?")) return;
+    setIzinActionLoading(id_izin);
+    try {
+      const token = localStorage.getItem("token");
+      await api.put(
+        `/perizinan/${id_izin}/setujui-potong-cuti`,
+        {},
+        {
+          headers: {
+            "Content-Type": undefined,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      fetchIzinList(izinFilterTanggal);
+    } catch (err) {
+      alert("Gagal approve izin (potong cuti)!");
+    } finally {
+      setIzinActionLoading(null);
+    }
+  };
+
   const handleRejectIzin = async (id_izin) => {
     if (!alasanReject[id_izin] || !alasanReject[id_izin].trim()) {
       alert("Alasan penolakan wajib diisi!");
@@ -650,9 +673,11 @@ const Presensi = () => {
           onClick={() => setIzinModal(false)}
         >
           <div
-            className="bg-white text-black rounded-lg shadow-lg w-full max-w-4xl mx-4 relative flex flex-col max-h-[90vh]"
+            className="bg-white text-black rounded-lg shadow-lg w-full max-w-5xl mx-4 relative flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
+            {" "}
+            {/* Lebar table modal */}
             <div className="flex-shrink-0 flex items-center justify-between border-b px-6 py-4 bg-white sticky top-0 z-10">
               <h1 className="text-xl font-bold text-left">
                 Data Pengajuan Izin/Sakit
@@ -703,7 +728,6 @@ const Presensi = () => {
                 </button>
               )}
             </div>
-
             <div className="px-6 py-2 overflow-y-auto flex-1">
               {izinLoading ? (
                 <div className="flex justify-center py-8">
@@ -721,12 +745,12 @@ const Presensi = () => {
                     <thead className="sticky top-0 z-10 bg-white shadow">
                       <tr className="bg-gray-100">
                         <th className="border px-2 py-1">Nama</th>
-                        <th className="border px-2 py-1">Jenis</th>
+                        <th className="border px-2 py-1 w-[90px]">Jenis</th>
                         <th className="border px-2 py-1">Tanggal Mulai</th>
                         <th className="border px-2 py-1">Tanggal Selesai</th>
                         <th className="border px-2 py-1">Keterangan</th>
                         <th className="border px-2 py-1">Lampiran</th>
-                        <th className="border px-2 py-1">Status</th>
+                        <th className="border px-2 py-1 w-[130px]">Status</th>
                         <th className="border px-2 py-1">Aksi</th>
                       </tr>
                     </thead>
@@ -785,6 +809,8 @@ const Presensi = () => {
                               className={
                                 item.status_izin === "approved"
                                   ? "text-green-600"
+                                  : item.status_izin === "approved (-cuti)"
+                                  ? "text-lime-600"
                                   : item.status_izin === "pending"
                                   ? "text-yellow-600"
                                   : item.status_izin === "rejected"
@@ -857,6 +883,19 @@ const Presensi = () => {
                                     {izinActionLoading === item.id_izin
                                       ? "Memproses..."
                                       : "Approve"}
+                                  </button>
+                                  <button
+                                    className="bg-lime-600 hover:bg-lime-700 text-white px-2 py-1 rounded text-xs whitespace-nowrap"
+                                    onClick={() =>
+                                      handleApproveCuti(item.id_izin)
+                                    }
+                                    disabled={
+                                      izinActionLoading === item.id_izin
+                                    }
+                                  >
+                                    {izinActionLoading === item.id_izin
+                                      ? "Memproses..."
+                                      : "-Cuti"}
                                   </button>
                                   <button
                                     className="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"

@@ -11,6 +11,7 @@ import { HiClipboardDocumentList } from "react-icons/hi2";
 import { IoTimer } from "react-icons/io5";
 import { HiOutlineMinus, HiOutlinePlus } from "react-icons/hi";
 import { MdLeaderboard } from "react-icons/md";
+import { FaMoneyCheckDollar } from "react-icons/fa6";
 
 import { twMerge } from "tailwind-merge";
 import { NavLink } from "react-router-dom";
@@ -75,6 +76,11 @@ const SideMenu = () => {
             <NavLink to={"/perhitungan-gaji"}>
               <Sidebar.Item icon={FaCalculator}>
                 <span className="left-14 flex">Perhitungan Gaji</span>
+              </Sidebar.Item>
+            </NavLink>
+            <NavLink to={"/hutang-pegawai"}>
+              <Sidebar.Item icon={FaMoneyCheckDollar}>
+                <span className="left-14 flex">Hutang Pegawai</span>
               </Sidebar.Item>
             </NavLink>
             <NavLink to={"/pegawai"}>

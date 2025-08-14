@@ -184,6 +184,12 @@ const Absensi = () => {
             item.status_absen?.toLowerCase() === "izin"
         );
 
+        const adaCuti = izinData.some(
+          (item) =>
+            item.tanggal === formattedToday &&
+            item.status_absen?.toLowerCase() === "izin (-cuti)"
+        );
+
         const adaSakit = izinData.some(
           (item) =>
             item.tanggal === formattedToday &&
@@ -191,6 +197,7 @@ const Absensi = () => {
         );
 
         setIzinDisetujui(adaIzin);
+        setIzinDisetujui(adaCuti);
         setIsSakitHariIni(adaSakit);
       } catch (err) {
         console.error("Gagal mengambil status izin/sakit:", err);
