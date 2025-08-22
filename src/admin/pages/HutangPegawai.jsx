@@ -453,7 +453,7 @@ const HutangPegawai = () => {
                     nominal: parseNumber(e.target.value),
                   })
                 }
-                className="w-full px-3 py-2 border rounded-lg text-sm text-right"
+                className="w-full px-3 py-2 border rounded-lg text-sm text-left"
                 required
               />
 
@@ -507,7 +507,7 @@ const HutangPegawai = () => {
                     nominal: parseNumber(e.target.value),
                   })
                 }
-                className="w-full px-3 py-2 border rounded-lg text-sm text-right"
+                className="w-full px-3 py-2 border rounded-lg text-sm text-left"
                 required
               />
 
@@ -601,7 +601,7 @@ const HutangPegawai = () => {
                     nominal: parseNumber(e.target.value),
                   })
                 }
-                className="w-full px-3 py-2 border rounded-lg text-sm text-right"
+                className="w-full px-3 py-2 border rounded-lg text-sm text-left"
                 required
               />
 
