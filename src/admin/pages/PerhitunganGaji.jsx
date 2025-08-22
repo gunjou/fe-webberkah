@@ -672,7 +672,7 @@ const PerhitunganGaji = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto mt-2 pl-2 w-[72rem]">
+            <div className="overflow-x-auto mt-2 pl-2 w-[60rem]">
               <div className="bg-red-600 rounded-lg shadow-md overflow-y-auto mr-2">
                 <Paper sx={{ maxWidth: "100%", overflow: "hidden" }}>
                   <TableContainer sx={{ maxHeight: 280, width: "100%" }}>
