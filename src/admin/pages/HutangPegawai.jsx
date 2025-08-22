@@ -4,6 +4,7 @@ import api from "../../shared/Api";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { FaPlus, FaFileExcel, FaFilePdf } from "react-icons/fa";
 
 const HutangPegawai = () => {
   const [pegawaiList, setPegawaiList] = useState([]);
@@ -12,9 +13,9 @@ const HutangPegawai = () => {
   const [loading, setLoading] = useState(false);
 
   // State filter
-  const [selectedMonth, setSelectedMonth] = useState(dayjs().month() + 1); // default bulan sekarang
-  const [selectedYear, setSelectedYear] = useState(dayjs().year()); // default tahun sekarang
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(dayjs().month() + 1);
+  const [selectedYear, setSelectedYear] = useState(dayjs().year());
+  const [selectedStatus, setSelectedStatus] = useState("belum lunas");
 
   // State modal tambah hutang
   const [showModal, setShowModal] = useState(false);
@@ -25,6 +26,30 @@ const HutangPegawai = () => {
     keterangan: "",
   });
   const [saving, setSaving] = useState(false);
+
+  // State edit hutang
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState(null);
+
+  const [showBayarModal, setShowBayarModal] = useState(false);
+  const [bayarData, setBayarData] = useState({
+    id_karyawan: "",
+    id_hutang: "",
+    nominal: "",
+    metode: "",
+    keterangan: "",
+  });
+
+  // Helper format ke rupiah
+  const formatRupiah = (value) => {
+    if (!value) return "";
+    return new Intl.NumberFormat("id-ID").format(value);
+  };
+
+  // Helper untuk ambil angka asli
+  const parseNumber = (value) => {
+    return Number(value.replace(/\D/g, "")) || 0;
+  };
 
   // Ambil daftar pegawai
   const fetchPegawaiList = async () => {
@@ -100,8 +125,8 @@ const HutangPegawai = () => {
         "/hutang/",
         {
           ...formData,
-          id_karyawan: Number(formData.id_karyawan),
-          nominal: Number(formData.nominal),
+          id_karyawan: parseInt(formData.id_karyawan),
+          nominal: parseInt(formData.nominal),
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -120,6 +145,111 @@ const HutangPegawai = () => {
     } catch (error) {
       console.error("Gagal tambah hutang:", error);
       alert("Gagal menambahkan hutang ❌");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Edit hutang
+  const handleEditHutang = async (e) => {
+    e.preventDefault();
+    if (!editData) return;
+
+    try {
+      setSaving(true);
+      const token = localStorage.getItem("token");
+
+      // bikin formData biar sesuai dokumentasi
+      const formData = new FormData();
+      formData.append("nominal", editData.nominal);
+      formData.append("keterangan", editData.keterangan);
+      formData.append("status_hutang", editData.status_hutang);
+
+      await api.put(`/hutang/${editData.id_hutang}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      alert("Hutang berhasil diperbarui ✅");
+
+      // update data di tabel tanpa reload
+      setHutangList((prev) =>
+        prev.map((h) =>
+          h.id_hutang === editData.id_hutang
+            ? {
+                ...h,
+                nominal: editData.nominal,
+                keterangan: editData.keterangan,
+                status_hutang: editData.status_hutang,
+              }
+            : h
+        )
+      );
+
+      setShowEditModal(false);
+    } catch (error) {
+      console.error(
+        "Gagal edit hutang:",
+        error.response?.data || error.message
+      );
+      alert("Gagal memperbarui hutang ❌");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Hapus hutang
+  const handleDeleteHutang = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus hutang ini?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await api.delete(`/hutang/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      alert("Hutang berhasil dihapus ✅");
+      fetchHutangList();
+    } catch (error) {
+      console.error("Gagal hapus hutang:", error);
+      alert("Gagal menghapus hutang ❌");
+    }
+  };
+
+  // --- FUNCTION BAYAR HUTANG ---
+  const handleBayarHutang = async (e) => {
+    e.preventDefault();
+    if (!bayarData.id_karyawan || !bayarData.nominal || !bayarData.metode) {
+      alert("Pegawai, nominal, dan metode wajib diisi!");
+      return;
+    }
+    try {
+      setSaving(true);
+      const token = localStorage.getItem("token");
+      await api.post(
+        "/hutang/pembayaran",
+        {
+          ...bayarData,
+          id_karyawan: parseInt(bayarData.id_karyawan),
+          nominal: parseInt(bayarData.nominal),
+          id_hutang: bayarData.id_hutang ? parseInt(bayarData.id_hutang) : null,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      alert("Pembayaran hutang berhasil ✅");
+      setShowBayarModal(false);
+      fetchHutangList();
+    } catch (error) {
+      console.error("Gagal bayar hutang:", error);
+      alert("Gagal melakukan pembayaran ❌");
     } finally {
       setSaving(false);
     }
@@ -153,54 +283,116 @@ const HutangPegawai = () => {
     (sum, item) => sum + (item.nominal || 0),
     0
   );
+  const capitalize = (text) =>
+    text ? text.charAt(0).toUpperCase() + text.slice(1).toLowerCase() : "";
 
-  // Export ke Excel
+  // Hitung total hutang
+  const getTotalHutang = () =>
+    filteredHutang.reduce((sum, item) => sum + Number(item.nominal || 0), 0);
+
+  // Fungsi deskripsi filter
+  const getFilterDescription = () => {
+    const bulanNama = selectedMonth
+      ? dayjs(`${selectedYear}-${selectedMonth}-01`).format("MMMM YYYY")
+      : "Semua Waktu";
+    const pegawaiNama = selectedPegawai
+      ? pegawaiList.find((p) => p.id_karyawan === selectedPegawai)?.nama
+      : "Semua Pegawai";
+    const status = selectedStatus ? selectedStatus : "Semua Status";
+
+    return `Periode: ${capitalize(bulanNama)} | Pegawai: ${capitalize(
+      pegawaiNama
+    )} | Status: ${capitalize(status)}`;
+  };
+
+  // Export Excel
   const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(
-      filteredHutang.map((item, i) => ({
-        No: i + 1,
-        Nama: item.nama,
-        Tanggal: item.tanggal,
-        Nominal: item.nominal,
-        Keterangan: item.keterangan,
-        Status: item.status_hutang,
-      }))
-    );
+    const worksheetData = filteredHutang.map((item, index) => ({
+      No: index + 1,
+      Nama: capitalize(item.nama),
+      Tanggal: item.tanggal,
+      Nominal: item.nominal,
+      Keterangan: item.keterangan,
+      Status: capitalize(item.status_hutang),
+    }));
 
-    XLSX.utils.sheet_add_aoa(ws, [["", "", "", "TOTAL", totalHutang]], {
-      origin: -1,
+    const ws = XLSX.utils.json_to_sheet([]);
+    const filterDesc = getFilterDescription();
+
+    // Tambahkan judul + filter deskripsi
+    XLSX.utils.sheet_add_aoa(ws, [["Data Hutang Pegawai"]], { origin: "A1" });
+    XLSX.utils.sheet_add_aoa(ws, [[filterDesc]], { origin: "A2" });
+
+    // Tambahkan data tabel
+    XLSX.utils.sheet_add_json(ws, worksheetData, {
+      origin: "A4", // tabel mulai baris ke-4
+      skipHeader: false,
     });
+
+    // Tambahkan total hutang di bawah tabel
+    const totalHutang = getTotalHutang();
+    XLSX.utils.sheet_add_aoa(
+      ws,
+      [["", "", "Total Hutang", `Rp ${totalHutang.toLocaleString("id-ID")}`]],
+      { origin: -1 }
+    );
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Hutang Pegawai");
-    XLSX.writeFile(
-      wb,
-      `hutang_pegawai_${selectedMonth || "all"}_${selectedYear || "all"}.xlsx`
-    );
+    XLSX.writeFile(wb, "hutang_pegawai.xlsx");
   };
 
-  // Export ke PDF
+  // Export PDF
   const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Daftar Hutang Pegawai", 14, 15);
-    doc.autoTable({
-      startY: 20,
-      head: [["No", "Nama", "Tanggal", "Nominal", "Keterangan", "Status"]],
-      body: filteredHutang.map((item, i) => [
-        i + 1,
-        item.nama,
+    // Landscape mode
+    const doc = new jsPDF("landscape");
+    const filterDesc = getFilterDescription();
+
+    // Tambahkan judul
+    doc.setFontSize(14);
+    doc.text("Data Hutang Pegawai", 14, 15);
+
+    // Tambahkan filter description
+    doc.setFontSize(10);
+    doc.text(filterDesc, 14, 25);
+
+    const tableColumn = [
+      "No",
+      "Nama",
+      "Tanggal",
+      "Nominal",
+      "Keterangan",
+      "Status",
+    ];
+    const tableRows = [];
+
+    filteredHutang.forEach((item, index) => {
+      tableRows.push([
+        index + 1,
+        capitalize(item.nama),
         item.tanggal,
-        `Rp.${item.nominal?.toLocaleString("id-ID")}`,
+        item.nominal.toLocaleString("id-ID"),
         item.keterangan,
-        item.status_hutang,
-      ]),
-      foot: [
-        ["", "", "", "TOTAL", `Rp.${totalHutang.toLocaleString("id-ID")}`, ""],
-      ],
+        capitalize(item.status_hutang),
+      ]);
     });
-    doc.save(
-      `hutang_pegawai_${selectedMonth || "all"}_${selectedYear || "all"}.pdf`
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35, // mulai setelah judul + filter
+    });
+
+    // Tambahkan total hutang di bawah tabel
+    const totalHutang = getTotalHutang();
+    doc.setFontSize(12);
+    doc.text(
+      `Total Hutang: Rp ${totalHutang.toLocaleString("id-ID")}`,
+      14,
+      doc.lastAutoTable.finalY + 15
     );
+
+    doc.save("hutang_pegawai.pdf");
   };
 
   return (
@@ -209,9 +401,9 @@ const HutangPegawai = () => {
         <h2 className="text-2xl font-bold">Daftar Hutang</h2>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
         >
-          + Tambah Hutang
+          <FaPlus /> Tambah Hutang
         </button>
       </div>
 
@@ -248,13 +440,20 @@ const HutangPegawai = () => {
               />
 
               <input
-                type="number"
+                type="text"
                 placeholder="Nominal"
-                value={formData.nominal}
-                onChange={(e) =>
-                  setFormData({ ...formData, nominal: Number(e.target.value) })
+                value={
+                  formData.nominal
+                    ? `Rp. ${formatRupiah(formData.nominal)}`
+                    : ""
                 }
-                className="w-full px-3 py-2 border rounded-lg text-sm"
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    nominal: parseNumber(e.target.value),
+                  })
+                }
+                className="w-full px-3 py-2 border rounded-lg text-sm text-right"
                 required
               />
 
@@ -282,6 +481,154 @@ const HutangPegawai = () => {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg"
                 >
                   {saving ? "Menyimpan..." : "Simpan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showBayarModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+            <h3 className="text-xl font-bold mb-4">Bayar Hutang</h3>
+            <form onSubmit={handleBayarHutang} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Nominal"
+                value={
+                  bayarData.nominal
+                    ? `Rp. ${formatRupiah(bayarData.nominal)}`
+                    : ""
+                }
+                onChange={(e) =>
+                  setBayarData({
+                    ...bayarData,
+                    nominal: parseNumber(e.target.value),
+                  })
+                }
+                className="w-full px-3 py-2 border rounded-lg text-sm text-right"
+                required
+              />
+
+              <select
+                value={bayarData.metode}
+                onChange={(e) =>
+                  setBayarData({ ...bayarData, metode: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+                required
+              >
+                <option value="">Pilih Metode</option>
+                <option value="tunai">Tunai</option>
+                <option value="potong gaji">Potong Gaji</option>
+              </select>
+
+              <input
+                type="text"
+                placeholder="Keterangan"
+                value={bayarData.keterangan}
+                onChange={(e) =>
+                  setBayarData({ ...bayarData, keterangan: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBayarModal(false)}
+                  className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                >
+                  {saving ? "Menyimpan..." : "Bayar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Hutang */}
+      {showEditModal && editData && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+            <h3 className="text-xl font-bold mb-4">Edit Hutang</h3>
+            <form onSubmit={handleEditHutang} className="space-y-3">
+              <select
+                value={editData.id_karyawan}
+                onChange={(e) =>
+                  setEditData({ ...editData, id_karyawan: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+                required
+              >
+                <option value="">Pilih Pegawai</option>
+                {pegawaiList.map((pegawai) => (
+                  <option key={pegawai.id_karyawan} value={pegawai.id_karyawan}>
+                    {pegawai.nama}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="date"
+                value={editData.tanggal}
+                onChange={(e) =>
+                  setEditData({ ...editData, tanggal: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+                required
+              />
+
+              <input
+                type="text"
+                placeholder="Nominal"
+                value={
+                  editData.nominal
+                    ? `Rp. ${formatRupiah(editData.nominal)}`
+                    : ""
+                }
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    nominal: parseNumber(e.target.value),
+                  })
+                }
+                className="w-full px-3 py-2 border rounded-lg text-sm text-right"
+                required
+              />
+
+              <input
+                type="text"
+                placeholder="Keterangan"
+                value={editData.keterangan}
+                onChange={(e) =>
+                  setEditData({ ...editData, keterangan: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                >
+                  {saving ? "Menyimpan..." : "Update"}
                 </button>
               </div>
             </form>
@@ -356,15 +703,18 @@ const HutangPegawai = () => {
 
           <button
             onClick={exportToExcel}
-            className="bg-green-500 text-white px-3 py-1 rounded-lg text-sm"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow"
           >
-            Download Excel
+            <FaFileExcel />
+            Export Excel
           </button>
+
           <button
             onClick={exportToPDF}
-            className="bg-red-500 text-white px-3 py-1 rounded-lg text-sm"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow"
           >
-            Download PDF
+            <FaFilePdf />
+            Export PDF
           </button>
         </div>
 
@@ -380,18 +730,19 @@ const HutangPegawai = () => {
                   <th className="border px-2 py-1 text-xs">Nominal</th>
                   <th className="border px-2 py-1 text-xs">Keterangan</th>
                   <th className="border px-2 py-1 text-xs">Status</th>
+                  <th className="border px-2 py-1 text-xs">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4">
+                    <td colSpan="7" className="text-center py-4">
                       Memuat data...
                     </td>
                   </tr>
                 ) : filteredHutang.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4 text-gray-500">
+                    <td colSpan="7" className="text-center py-4 text-gray-500">
                       Tidak ada data hutang.
                     </td>
                   </tr>
@@ -413,8 +764,47 @@ const HutangPegawai = () => {
                       <td className="border px-2 py-1 text-xs">
                         {item.keterangan}
                       </td>
-                      <td className="border px-2 py-1 capitalize text-xs">
+                      <td
+                        className={`border px-2 py-1 capitalize text-xs font-semibold ${
+                          item.status_hutang === "lunas"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
                         {item.status_hutang}
+                      </td>
+
+                      <td className="border px-2 py-1 text-center text-xs">
+                        <button
+                          onClick={() => {
+                            setEditData(item);
+                            setShowEditModal(true);
+                          }}
+                          className="bg-yellow-400 text-white px-2 py-1 rounded mr-1"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteHutang(item.id_hutang)}
+                          className="bg-red-500 text-white px-2 py-1 rounded mr-1"
+                        >
+                          Hapus
+                        </button>
+                        <button
+                          onClick={() => {
+                            setBayarData({
+                              id_karyawan: item.id_karyawan,
+                              id_hutang: item.id_hutang,
+                              nominal: "",
+                              metode: "",
+                              keterangan: "",
+                            });
+                            setShowBayarModal(true);
+                          }}
+                          className="bg-green-500 text-white px-2 py-1 rounded"
+                        >
+                          Bayar
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -426,10 +816,10 @@ const HutangPegawai = () => {
                     <td colSpan="3" className="border px-2 py-1 text-right">
                       TOTAL
                     </td>
-                    <td className="border px-2 py-1 text-right">
+                    <td className="border px-2 py-1 text-right text-blue-500">
                       Rp.{totalHutang.toLocaleString("id-ID")}
                     </td>
-                    <td colSpan="2" className="border px-2 py-1"></td>
+                    <td colSpan="3" className="border px-2 py-1"></td>
                   </tr>
                 </tfoot>
               )}
