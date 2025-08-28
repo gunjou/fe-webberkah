@@ -40,6 +40,11 @@ const HutangPegawai = () => {
     keterangan: "",
   });
 
+  // State untuk modal riwayat pembayaran
+  const [showRiwayatModal, setShowRiwayatModal] = useState(false);
+  const [riwayatData, setRiwayatData] = useState([]);
+  const [riwayatLoading, setRiwayatLoading] = useState(false);
+
   // Helper format ke rupiah
   const formatRupiah = (value) => {
     if (!value) return "";
@@ -255,27 +260,58 @@ const HutangPegawai = () => {
     }
   };
 
+  // Fungsi ambil riwayat pembayaran berdasarkan id_hutang
+  const fetchRiwayatPembayaran = async (idHutang) => {
+    setRiwayatLoading(true);
+    const token = localStorage.getItem("token");
+    try {
+      const res = await api.get(`/hutang/pembayaran?id_hutang=${idHutang}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.data.status === "success") {
+        setRiwayatData(res.data.data);
+      } else {
+        setRiwayatData([]);
+      }
+    } catch (err) {
+      console.error("Gagal ambil riwayat pembayaran:", err);
+      setRiwayatData([]);
+    } finally {
+      setRiwayatLoading(false);
+    }
+  };
+
+  // Fungsi untuk membuka modal riwayat
+  const handleOpenRiwayatModal = (idHutang) => {
+    fetchRiwayatPembayaran(idHutang);
+    setShowRiwayatModal(true);
+  };
+
   // Filter data
   const filteredHutang = hutangList.filter((item) => {
     const itemDate = dayjs(item.tanggal);
 
+    // Filter pegawai
     const matchPegawai = selectedPegawai
       ? item.id_karyawan === Number(selectedPegawai)
       : true;
 
-    const matchMonth = selectedMonth
-      ? itemDate.month() + 1 === Number(selectedMonth)
-      : true;
-
-    const matchYear = selectedYear
-      ? itemDate.year() === Number(selectedYear)
-      : true;
-
+    // Filter status
     const matchStatus = selectedStatus
       ? item.status_hutang === selectedStatus
       : true;
 
-    return matchPegawai && matchMonth && matchYear && matchStatus;
+    // Filter bulan & tahun
+    // Jika hutang belum lunas, tetap tampil meskipun bulan/tahun tidak sesuai
+    const matchMonthYear =
+      item.status_hutang === "belum lunas"
+        ? true
+        : (selectedMonth
+            ? itemDate.month() + 1 === Number(selectedMonth)
+            : true) &&
+          (selectedYear ? itemDate.year() === Number(selectedYear) : true);
+
+    return matchPegawai && matchStatus && matchMonthYear;
   });
 
   // Hitung total hutang
@@ -283,6 +319,19 @@ const HutangPegawai = () => {
     (sum, item) => sum + (item.nominal || 0),
     0
   );
+
+  // Hitung total dibayarkan dan sisa hutang dari filteredHutang
+  const totalDibayarkan = filteredHutang.reduce(
+    (sum, item) => sum + (item.hutang_terbayarkan || 0),
+    0
+  );
+
+  const totalSisaHutang = filteredHutang.reduce(
+    (sum, item) => sum + ((item.nominal || 0) - (item.hutang_terbayarkan || 0)),
+    0
+  );
+
+  // Fungsi kapitalisasi
   const capitalize = (text) =>
     text ? text.charAt(0).toUpperCase() + text.slice(1).toLowerCase() : "";
 
@@ -401,16 +450,21 @@ const HutangPegawai = () => {
         <h2 className="text-2xl font-bold">Daftar Hutang</h2>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-[20px] text-sm shadow"
         >
           <FaPlus /> Tambah Hutang
         </button>
       </div>
-
       {/* Modal Tambah Hutang */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+          onClick={() => setShowModal(false)} // klik di luar modal
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg"
+            onClick={(e) => e.stopPropagation()} // mencegah klik di dalam modal menutup
+          >
             <h3 className="text-xl font-bold mb-4">Tambah Hutang</h3>
             <form onSubmit={handleTambahHutang} className="space-y-3">
               <select
@@ -471,14 +525,14 @@ const HutangPegawai = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+                  className="px-4 py-2 bg-gray-400 text-white rounded-[20px]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-[20px]"
                 >
                   {saving ? "Menyimpan..." : "Simpan"}
                 </button>
@@ -487,10 +541,15 @@ const HutangPegawai = () => {
           </div>
         </div>
       )}
-
       {showBayarModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+          onClick={() => setShowBayarModal(false)} // klik di luar modal
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg"
+            onClick={(e) => e.stopPropagation()} // mencegah klik di dalam modal menutup
+          >
             <h3 className="text-xl font-bold mb-4">Bayar Hutang</h3>
             <form onSubmit={handleBayarHutang} className="space-y-3">
               <input
@@ -538,14 +597,14 @@ const HutangPegawai = () => {
                 <button
                   type="button"
                   onClick={() => setShowBayarModal(false)}
-                  className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+                  className="px-4 py-2 bg-gray-400 text-white rounded-[20px]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                  className="px-4 py-2 bg-green-600 text-white rounded-[20px]"
                 >
                   {saving ? "Menyimpan..." : "Bayar"}
                 </button>
@@ -554,11 +613,16 @@ const HutangPegawai = () => {
           </div>
         </div>
       )}
-
       {/* Modal Edit Hutang */}
       {showEditModal && editData && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+          onClick={() => setShowEditModal(false)} // klik di luar modal
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg"
+            onClick={(e) => e.stopPropagation()} // mencegah klik di dalam modal menutup
+          >
             <h3 className="text-xl font-bold mb-4">Edit Hutang</h3>
             <form onSubmit={handleEditHutang} className="space-y-3">
               <select
@@ -619,14 +683,14 @@ const HutangPegawai = () => {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+                  className="px-4 py-2 bg-gray-400 text-white rounded-[20px]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-[20px]"
                 >
                   {saving ? "Menyimpan..." : "Update"}
                 </button>
@@ -636,6 +700,70 @@ const HutangPegawai = () => {
         </div>
       )}
 
+      {/* Modal Riwayat Pembayaran */}
+      {showRiwayatModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+          onClick={() => setShowRiwayatModal(false)} // klik di luar modal
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg"
+            onClick={(e) => e.stopPropagation()} // mencegah klik di dalam modal menutup
+          >
+            <h3 className="text-xl font-bold mb-4">Riwayat Pembayaran</h3>
+
+            {riwayatLoading ? (
+              <p className="text-center">Memuat data...</p>
+            ) : riwayatData.length === 0 ? (
+              <p className="text-center text-gray-500">Belum ada pembayaran</p>
+            ) : (
+              <div className="overflow-y-auto max-h-64">
+                <table className="w-full text-sm border">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border px-2 py-1 text-xs">No</th>
+                      <th className="border px-2 py-1 text-xs">Nominal</th>
+                      <th className="border px-2 py-1 text-xs">Metode</th>
+                      <th className="border px-2 py-1 text-xs">Keterangan</th>
+                      <th className="border px-2 py-1 text-xs">Tanggal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {riwayatData.map((item, index) => (
+                      <tr key={item.id_pembayaran}>
+                        <td className="border px-2 py-1 text-center text-xs">
+                          {index + 1}
+                        </td>
+                        <td className="border px-2 py-1 text-right text-xs">
+                          Rp.{item.nominal.toLocaleString("id-ID")}
+                        </td>
+                        <td className="border px-2 py-1 text-xs capitalize">
+                          {item.metode}
+                        </td>
+                        <td className="border px-2 py-1 text-xs">
+                          {item.keterangan}
+                        </td>
+                        <td className="border px-2 py-1 text-xs">
+                          {item.tanggal}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setShowRiwayatModal(false)}
+                className="px-4 py-2 bg-gray-400 text-white rounded-[20px]"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Card Filter + Tabel */}
       <div className="bg-white shadow rounded-lg p-4">
         {/* Filter */}
@@ -703,7 +831,7 @@ const HutangPegawai = () => {
 
           <button
             onClick={exportToExcel}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-[20px] text-sm shadow"
           >
             <FaFileExcel />
             Export Excel
@@ -711,7 +839,7 @@ const HutangPegawai = () => {
 
           <button
             onClick={exportToPDF}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-[20px] text-sm shadow"
           >
             <FaFilePdf />
             Export PDF
@@ -728,6 +856,8 @@ const HutangPegawai = () => {
                   <th className="border px-2 py-1 text-xs">Nama</th>
                   <th className="border px-2 py-1 text-xs">Tanggal</th>
                   <th className="border px-2 py-1 text-xs">Nominal</th>
+                  <th className="border px-2 py-1 text-xs">Dibayarkan</th>
+                  <th className="border px-2 py-1 text-xs">Sisa Hutang</th>
                   <th className="border px-2 py-1 text-xs">Keterangan</th>
                   <th className="border px-2 py-1 text-xs">Status</th>
                   <th className="border px-2 py-1 text-xs">Aksi</th>
@@ -761,6 +891,12 @@ const HutangPegawai = () => {
                       <td className="border px-2 py-1 text-right text-xs">
                         Rp.{item.nominal?.toLocaleString("id-ID")}
                       </td>
+                      <td className="border px-2 py-1 text-right text-xs text-green-600">
+                        Rp.{item.hutang_terbayarkan?.toLocaleString("id-ID")}
+                      </td>
+                      <td className="border px-2 py-1 text-right text-xs text-red-600">
+                        Rp.{item.sisa_hutang?.toLocaleString("id-ID")}
+                      </td>
                       <td className="border px-2 py-1 text-xs">
                         {item.keterangan}
                       </td>
@@ -775,6 +911,12 @@ const HutangPegawai = () => {
                       </td>
 
                       <td className="border px-2 py-1 text-center text-xs">
+                        <button
+                          onClick={() => handleOpenRiwayatModal(item.id_hutang)}
+                          className="bg-indigo-500 text-white px-2 py-1 rounded mr-1"
+                        >
+                          Riwayat
+                        </button>
                         <button
                           onClick={() => {
                             setEditData(item);
@@ -816,10 +958,16 @@ const HutangPegawai = () => {
                     <td colSpan="3" className="border px-2 py-1 text-right">
                       TOTAL
                     </td>
-                    <td className="border px-2 py-1 text-right text-blue-500">
+                    <td className="border px-2 py-1 text-right text-black">
                       Rp.{totalHutang.toLocaleString("id-ID")}
                     </td>
-                    <td colSpan="3" className="border px-2 py-1"></td>
+                    <td className="border px-2 py-1 text-right text-green-500">
+                      Rp.{totalDibayarkan.toLocaleString("id-ID")}
+                    </td>
+                    <td className="border px-2 py-1 text-right text-red-500">
+                      Rp.{totalSisaHutang.toLocaleString("id-ID")}
+                    </td>
+                    <td className="border px-2 py-1"></td>
                   </tr>
                 </tfoot>
               )}
