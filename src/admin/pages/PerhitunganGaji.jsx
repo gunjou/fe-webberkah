@@ -957,10 +957,15 @@ const PerhitunganGaji = () => {
     }
   }, [showBayarModal]);
 
+  // hanya sekali saat mount
   useEffect(() => {
     fetchPegawaiList();
-    fetchStatusPembayaran();
   }, []);
+
+  // setiap kali bulan/tahun berubah
+  useEffect(() => {
+    fetchStatusPembayaran();
+  }, [selectedMonth, selectedYear]);
 
   return (
     <div className="Perhitungan Gaji">
