@@ -44,9 +44,11 @@ const Lembur = () => {
         2,
         "0"
       )}-01`;
-      const end = new Date(selectedYear, selectedMonth, 0)
-        .toISOString()
-        .split("T")[0];
+      const endDate = new Date(selectedYear, selectedMonth, 0);
+      const end = `${selectedYear}-${String(selectedMonth).padStart(
+        2,
+        "0"
+      )}-${String(endDate.getDate()).padStart(2, "0")}`;
 
       const res = await api.get("/lembur/", {
         headers: { Authorization: `Bearer ${token}` },
