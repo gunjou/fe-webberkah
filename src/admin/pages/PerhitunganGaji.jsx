@@ -33,11 +33,11 @@ const kolom = [
   { id: "potongan", label: "Potongan", minWidth: 40 },
   { id: "kasbon", label: "Kasbon", minWidth: 40 },
   { id: "tunjangan_kehadiran", label: "Tunjangan", minWidth: 40 },
-  { id: "gaji_bersih", label: "Gaji Bersih", minWidth: 50 },
+  { id: "gaji_bersih", label: "Total Gaji", minWidth: 50 },
   { id: "total_lembur", label: "Lembur", minWidth: 10 },
   { id: "total_menit_lembur", label: "Waktu Lembur", minWidth: 20 },
   { id: "total_bayaran_lembur", label: "Gaji Lembur", minWidth: 40 },
-  { id: "total_gaji", label: "Total Gaji", minWidth: 40 },
+  { id: "total_gaji", label: "Gaji Bersih", minWidth: 40 },
   { id: "bank", label: "Bank", minWidth: 40 },
   { id: "no_rekening", label: "Norek", minWidth: 40 },
   { id: "an_rekening", label: "A.N. rek", minWidth: 60 },
@@ -142,20 +142,35 @@ const PerhitunganGaji = () => {
 
   const totalGaji = absen.reduce(
     (acc, item) => {
-      // const gajiBersihManual = item.gaji_bersih_tanpa_lembur || 0;
+      const gajiPokok =
+        item.tipe === "pegawai tetap"
+          ? item.gaji_pokok || 0
+          : (item.gaji_pokok || 0) * (item.hari_optimal || 0); // pegawai tidak tetap pakai hari_optimal
+
+      const potonganManual = item.potongan || 0;
+      const potonganKetidakhadiran = item.potongan_ketidakhadiran || 0;
+
+      const potongan =
+        item.tipe === "pegawai tetap"
+          ? potonganManual + potonganKetidakhadiran + (item.kasbon || 0)
+          : potonganManual + (item.kasbon || 0); // hanya pegawai tetap pakai potongan_ketidakhadiran
+
       const gajiBersihManual =
-        item.gaji_kotor - item.kasbon - item.potongan || 0;
+        (item.gaji_kotor || 0) - potonganManual - (item.kasbon || 0);
       const lembur = item.total_bayaran_lembur || 0;
       const tunjangan = item.tunjangan_kehadiran || 0;
-      const total = item.gaji_bersih || 0;
 
       if (item.tipe === "pegawai tetap") {
+        acc.pokok.tetap += gajiPokok;
+        acc.potongan.tetap += potongan;
         acc.bersih.tetap += gajiBersihManual;
-        acc.lembur.tetap += lembur;
         acc.tunjangan.tetap += tunjangan;
+        acc.lembur.tetap += lembur;
         acc.total.tetap =
           acc.bersih.tetap + acc.lembur.tetap + acc.tunjangan.tetap;
       } else if (item.tipe === "pegawai tidak tetap") {
+        acc.pokok.tidaktetap += gajiPokok;
+        acc.potongan.tidaktetap += potongan;
         acc.bersih.tidaktetap += gajiBersihManual;
         acc.lembur.tidaktetap += lembur;
         acc.tunjangan.tidaktetap += tunjangan;
@@ -166,6 +181,8 @@ const PerhitunganGaji = () => {
       }
 
       // Total agregat
+      acc.pokok.total = acc.pokok.tetap + acc.pokok.tidaktetap;
+      acc.potongan.total = acc.potongan.tetap + acc.potongan.tidaktetap;
       acc.bersih.total = acc.bersih.tetap + acc.bersih.tidaktetap;
       acc.lembur.total = acc.lembur.tetap + acc.lembur.tidaktetap;
       acc.tunjangan.total = acc.tunjangan.tetap + acc.tunjangan.tidaktetap;
@@ -175,9 +192,11 @@ const PerhitunganGaji = () => {
       return acc;
     },
     {
+      pokok: { tetap: 0, tidaktetap: 0, total: 0 },
+      potongan: { tetap: 0, tidaktetap: 0, total: 0 },
       bersih: { tetap: 0, tidaktetap: 0, total: 0 },
       lembur: { tetap: 0, tidaktetap: 0, total: 0 },
-      tunjangan: { tetap: 0, tidaktetap: 0, total: 0 }, // baru ditambahkan
+      tunjangan: { tetap: 0, tidaktetap: 0, total: 0 },
       total: { tetap: 0, tidaktetap: 0, total: 0 },
     }
   );
@@ -388,101 +407,126 @@ const PerhitunganGaji = () => {
   };
 
   const getFilteredSections = () => {
-    // Jika ada pegawai yang dipilih → tampilkan ringkasan khusus
     if (selectedNamaList.length > 0) {
+      const filteredRows = absen.filter((item) =>
+        selectedNamaList.includes(item.nama)
+      );
+
+      const totalPokokTerpilih = filteredRows.reduce((acc, item) => {
+        const gajiPokok =
+          item.tipe === "pegawai tetap"
+            ? item.gaji_pokok || 0
+            : (item.gaji_pokok || 0) * (item.hari_optimal || 0);
+        return acc + gajiPokok;
+      }, 0);
+
+      const totalPotonganTerpilih = filteredRows.reduce((acc, item) => {
+        const potonganManual = item.potongan || 0;
+        const potonganKetidakhadiran = item.potongan_ketidakhadiran || 0;
+        const kasbon = item.kasbon || 0;
+
+        const potongan =
+          item.tipe === "pegawai tetap"
+            ? potonganManual + potonganKetidakhadiran + kasbon
+            : potonganManual + kasbon;
+
+        return acc + potongan;
+      }, 0);
+
+      const totalGajiTerpilih = totalPokokTerpilih - totalPotonganTerpilih;
+
+      const totalTunjanganTerpilih = filteredRows.reduce(
+        (acc, item) => acc + (item.tunjangan_kehadiran || 0),
+        0
+      );
+
+      const totalLemburanTerpilih = filteredRows.reduce(
+        (acc, item) => acc + (item.total_bayaran_lembur || 0),
+        0
+      );
+
+      const totalGajiBersihTerpilih =
+        totalGajiTerpilih + totalTunjanganTerpilih + totalLemburanTerpilih;
+
       return [
         {
           title: "Ringkasan Gaji Terpilih",
           data: [
-            ["Total Gaji Bersih Terpilih", totalGajiTerpilih],
-            ["Total Tunjangan Terpilih", totalTunjanganTerpilih],
-            ["Total Lemburan Terpilih", totalLemburanTerpilih],
+            ["Gaji Pokok", totalPokokTerpilih],
+            ["Potongan", totalPotonganTerpilih],
+            ["Total Gaji (Gaji Pokok – Potongan)", totalGajiTerpilih],
+            ["Tunjangan Kehadiran", totalTunjanganTerpilih],
+            ["Gaji Lembur", totalLemburanTerpilih],
             [
-              "Total (Bersih + Tunjangan + Lembur)",
-              totalGajiTerpilih +
-                totalLemburanTerpilih +
-                totalTunjanganTerpilih,
+              "Total Gaji Bersih (Gaji + Tunjangan + Lembur)",
+              totalGajiBersihTerpilih,
             ],
           ],
         },
       ];
     }
 
-    // Jika tidak ada yang dipilih → tampilkan default (berdasarkan tipeFilter)
-    if (tipeFilter === "pegawai tetap") {
-      return [
-        {
-          title: "Gaji Bersih",
-          data: [["Pegawai Tetap", totalGaji.bersih.tetap]],
-        },
-        {
-          title: "Tunjangan",
-          data: [["Pegawai Tetap", totalGaji.tunjangan.tetap]],
-        },
-        {
-          title: "Gaji Lembur",
-          data: [["Pegawai Tetap", totalGaji.lembur.tetap]],
-        },
-        {
-          title: "Total (Bersih + Tunjangan + Lembur)",
-          data: [["Pegawai Tetap", totalGaji.total.tetap]],
-        },
-      ];
-    } else if (tipeFilter === "pegawai tidak tetap") {
-      return [
-        {
-          title: "Gaji Bersih",
-          data: [["Pegawai Tidak Tetap", totalGaji.bersih.tidaktetap]],
-        },
-        {
-          title: "Tunjangan",
-          data: [["Pegawai Tidak Tetap", totalGaji.tunjangan.tidaktetap]],
-        },
-        {
-          title: "Gaji Lembur",
-          data: [["Pegawai Tidak Tetap", totalGaji.lembur.tidaktetap]],
-        },
-        {
-          title: "Total (Bersih + Tunjangan + Lembur)",
-          data: [["Pegawai Tidak Tetap", totalGaji.total.tidaktetap]],
-        },
-      ];
-    } else {
-      return [
-        {
-          title: "Gaji Bersih",
-          data: [
-            ["Pegawai Tetap", totalGaji.bersih.tetap],
-            ["Pegawai Tidak Tetap", totalGaji.bersih.tidaktetap],
-            ["Total Semua", totalGaji.bersih.total],
+    // Jika tidak ada pegawai terpilih, gunakan totalGaji
+    return [
+      {
+        title: "Gaji Pokok",
+        data: [
+          ["Pegawai Tetap", totalGaji.pokok.tetap],
+          ["Pegawai Tidak Tetap", totalGaji.pokok.tidaktetap],
+          ["Total Semua", totalGaji.pokok.total],
+        ],
+      },
+      {
+        title: "Potongan",
+        data: [
+          ["Pegawai Tetap", totalGaji.potongan.tetap],
+          ["Pegawai Tidak Tetap", totalGaji.potongan.tidaktetap],
+          ["Total Semua", totalGaji.potongan.total],
+        ],
+      },
+      {
+        title: "Total Gaji",
+        data: [
+          [
+            "Pegawai Tetap",
+            totalGaji.total.tetap -
+              totalGaji.tunjangan.tetap -
+              totalGaji.lembur.tetap,
           ],
-        },
-        {
-          title: "Tunjangan",
-          data: [
-            ["Pegawai Tetap", totalGaji.tunjangan.tetap],
-            ["Pegawai Tidak Tetap", totalGaji.tunjangan.tidaktetap],
-            ["Total Semua", totalGaji.tunjangan.total],
+          [
+            "Pegawai Tidak Tetap",
+            totalGaji.total.tidaktetap -
+              totalGaji.tunjangan.tidaktetap -
+              totalGaji.lembur.tidaktetap,
           ],
-        },
-        {
-          title: "Gaji Lembur",
-          data: [
-            ["Pegawai Tetap", totalGaji.lembur.tetap],
-            ["Pegawai Tidak Tetap", totalGaji.lembur.tidaktetap],
-            ["Total Semua", totalGaji.lembur.total],
-          ],
-        },
-        {
-          title: "Total (Bersih + Tunjangan + Lembur)",
-          data: [
-            ["Pegawai Tetap", totalGaji.total.tetap],
-            ["Pegawai Tidak Tetap", totalGaji.total.tidaktetap],
-            ["Total Semua", totalGaji.total.total],
-          ],
-        },
-      ];
-    }
+          ["Total Semua", totalGaji.bersih.total],
+        ],
+      },
+      {
+        title: "Tunjangan Kehadiran",
+        data: [
+          ["Pegawai Tetap", totalGaji.tunjangan.tetap],
+          ["Pegawai Tidak Tetap", totalGaji.tunjangan.tidaktetap],
+          ["Total Semua", totalGaji.tunjangan.total],
+        ],
+      },
+      {
+        title: "Gaji Lembur",
+        data: [
+          ["Pegawai Tetap", totalGaji.lembur.tetap],
+          ["Pegawai Tidak Tetap", totalGaji.lembur.tidaktetap],
+          ["Total Semua", totalGaji.lembur.total],
+        ],
+      },
+      {
+        title: "Total Gaji Bersih (Gaji + Tunjangan + Lembur)",
+        data: [
+          ["Pegawai Tetap", totalGaji.total.tetap],
+          ["Pegawai Tidak Tetap", totalGaji.total.tidaktetap],
+          ["Total Semua", totalGaji.total.total],
+        ],
+      },
+    ];
   };
 
   const calculateSelectedTotals = (absen, selectedNamaList) => {
@@ -582,6 +626,29 @@ const PerhitunganGaji = () => {
     }
   };
 
+  const totalGajiPokokTerpilih = currentRows
+    .filter((item) => selectedNamaList.includes(item.nama))
+    .reduce((acc, item) => {
+      if (item.tipe === "pegawai tetap") {
+        return acc + (item.gaji_pokok || 0);
+      } else {
+        // return acc + (item.gaji_pokok || 0) * (item.hari_optimal || 0);
+        return acc + (item.gaji_pokok || 0) * (item.jumlah_hadir || 0);
+      }
+    }, 0);
+
+  const totalPotonganTerpilih = currentRows
+    .filter((item) => selectedNamaList.includes(item.nama))
+    .reduce((acc, item) => {
+      if (item.tipe === "pegawai tetap") {
+        return (
+          acc + ((item.potongan || 0) + (item.potongan_ketidakhadiran || 0))
+        );
+      } else {
+        return acc + (item.potongan || 0);
+      }
+    }, 0);
+
   const totalGajiTerpilih = currentRows
     .filter((item) => selectedNamaList.includes(item.nama))
     .reduce(
@@ -671,7 +738,7 @@ const PerhitunganGaji = () => {
       formatRupiah(item.gaji_pokok),
       formatRupiah(item.potongan),
       formatRupiah(item.tunjangan_kehadiran),
-      formatRupiah(item.gaji_bersih_tanpa_lembur - item.tunjangan_kehadiran),
+      formatRupiah(item.gaji_bersih_tanpa_lembur),
       item.total_lembur ?? "-",
       item.total_menit_lembur ?? "-",
       formatRupiah(item.total_bayaran_lembur),
@@ -796,7 +863,7 @@ const PerhitunganGaji = () => {
       "-" + formatRupiah(item.potongan),
       "-" + formatRupiah(item.kasbon),
       formatRupiah(item.tunjangan_kehadiran),
-      formatRupiah(item.gaji_bersih_tanpa_lembur - item.tunjangan_kehadiran),
+      formatRupiah(item.gaji_bersih_tanpa_lembur),
       item.total_lembur ?? "-",
       formatTerlambat(item.total_menit_lembur) ?? "-",
       formatRupiah(item.total_bayaran_lembur),
@@ -1294,16 +1361,12 @@ const PerhitunganGaji = () => {
                                       )}
                                     >
                                       {formatRupiah(
-                                        item.gaji_bersih_tanpa_lembur -
-                                          item.tunjangan_kehadiran
+                                        item.gaji_bersih_tanpa_lembur
                                       )}
                                     </span>
                                   </Tooltip>
                                 ) : (
-                                  formatRupiah(
-                                    item.gaji_bersih_tanpa_lembur -
-                                      item.tunjangan_kehadiran
-                                  )
+                                  formatRupiah(item.gaji_bersih_tanpa_lembur)
                                 )}
                               </TableCell>
 
@@ -1406,8 +1469,15 @@ const PerhitunganGaji = () => {
               {selectedNamaList.length > 0 && (
                 <div className="mt-4">
                   <div className="text-sm font-semibold">
-                    Total Gaji Bersih Terpilih:{" "}
-                    {formatRupiah(totalGajiTerpilih)}
+                    Total Gaji Pokok Terpilih:{" "}
+                    {formatRupiah(totalGajiPokokTerpilih)}
+                  </div>
+                  <div className="text-sm font-semibold">
+                    Total Potongan Terpilih:{" "}
+                    {formatRupiah(totalPotonganTerpilih)}
+                  </div>
+                  <div className="text-sm font-semibold">
+                    Total Gaji Terpilih: {formatRupiah(totalGajiTerpilih)}
                   </div>
                   <div className="text-sm font-semibold">
                     Total Tunjangan Terpilih:{" "}
@@ -1418,7 +1488,7 @@ const PerhitunganGaji = () => {
                     {formatRupiah(totalLemburanTerpilih)}
                   </div>
                   <div className="text-sm font-bold pb-1">
-                    Total Gaji + Lemburan Terpilih:{" "}
+                    Total Gaji + Tunjangan + Lemburan Terpilih:{" "}
                     {formatRupiah(
                       totalGajiTerpilih +
                         totalLemburanTerpilih +
@@ -1682,7 +1752,6 @@ const PerhitunganGaji = () => {
                 </div>
               )}
 
-              {/* Modal Tampilkan Ringkasan Total Gaji */}
               {showModal && (
                 <div
                   className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black bg-opacity-50"
@@ -1696,9 +1765,47 @@ const PerhitunganGaji = () => {
                       Ringkasan Total Gaji
                     </h2>
                     <div className="space-y-4 text-sm">
+                      {/* Gaji Pokok */}
+                      <div>
+                        <h3 className="font-semibold mb-1">Gaji Pokok</h3>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tetap</span>
+                          <span>{formatRupiah(totalGaji.pokok.tetap)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tidak Tetap</span>
+                          <span>
+                            {formatRupiah(totalGaji.pokok.tidaktetap)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-medium border-t pt-1">
+                          <span>Total Semua</span>
+                          <span>{formatRupiah(totalGaji.pokok.total)}</span>
+                        </div>
+                      </div>
+
+                      {/* Potongan */}
+                      <div>
+                        <h3 className="font-semibold mb-1">Potongan</h3>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tetap</span>
+                          <span>{formatRupiah(totalGaji.potongan.tetap)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pegawai Tidak Tetap</span>
+                          <span>
+                            {formatRupiah(totalGaji.potongan.tidaktetap)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-medium border-t pt-1">
+                          <span>Total Semua</span>
+                          <span>{formatRupiah(totalGaji.potongan.total)}</span>
+                        </div>
+                      </div>
+
                       {/* Gaji Bersih */}
                       <div>
-                        <h3 className="font-semibold mb-1">Gaji Bersih</h3>
+                        <h3 className="font-semibold mb-1">Total Gaji</h3>
                         <div className="flex justify-between">
                           <span>Pegawai Tetap</span>
                           <span>{formatRupiah(totalGaji.bersih.tetap)}</span>
@@ -1715,7 +1822,7 @@ const PerhitunganGaji = () => {
                         </div>
                       </div>
 
-                      {/* Gaji Lembur */}
+                      {/* Tunjangan Kehadiran */}
                       <div>
                         <h3 className="font-semibold mb-1">
                           Tunjangan Kehadiran
@@ -1755,10 +1862,10 @@ const PerhitunganGaji = () => {
                         </div>
                       </div>
 
-                      {/* Total Gaji */}
+                      {/* Total Keseluruhan */}
                       <div>
                         <h3 className="font-semibold mb-1">
-                          Total Gaji (Bersih + Tunjangan + Lembur)
+                          Total Gaji Bersih (Gaji + Tunjangan + Lembur)
                         </h3>
                         <div className="flex justify-between">
                           <span>Pegawai Tetap</span>
