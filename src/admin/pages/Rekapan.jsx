@@ -19,6 +19,7 @@ import { MdClose } from "react-icons/md";
 
 const kolom = [
   { id: "no", label: "No", minWidth: 30 },
+  { id: "nip", label: "NIP", minWidth: 40 },
   { id: "nama", label: "Nama Pegawai", minWidth: 80 },
   { id: "jenis", label: "Jenis Pegawai", minWidth: 60 },
   { id: "jumlah_hadir", label: "Hadir", minWidth: 40 },
@@ -302,8 +303,8 @@ const Rekapan = () => {
       .get("/rekapan/absensi/detail", {
         params: {
           id_karyawan,
-          start: formattedStart,
-          end: formattedEnd,
+          start_date: formattedStart,
+          end_date: formattedEnd,
         },
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -506,7 +507,7 @@ const Rekapan = () => {
                                     : "default",
                                 whiteSpace: "nowrap",
                                 textAlign: "center",
-                                borderRadius: index === 13 ? "0 10px 0 0" : "0",
+                                borderRadius: index === 14 ? "0 10px 0 0" : "0",
                                 border: "1px solid #4d4d4d",
                                 boxSizing: "border-box",
                               }}
@@ -542,6 +543,12 @@ const Rekapan = () => {
                                 sx={{ fontSize: "12px", padding: "6px" }}
                               >
                                 {index + 1}
+                              </TableCell>
+                              <TableCell
+                                sx={{ fontSize: "12px", padding: "6px" }}
+                                className="capitalize"
+                              >
+                                {String(item.nip).padStart(3, "0")}
                               </TableCell>
                               <TableCell
                                 sx={{ fontSize: "12px", padding: "6px" }}

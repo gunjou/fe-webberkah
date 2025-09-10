@@ -391,7 +391,7 @@ const Pegawai = () => {
       <TableRow key={index}>
         <TableCell align="center">{indexOfFirstRow + index + 1}</TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
-          {item.nip}
+          {String(item.nip).padStart(3, "0")}
         </TableCell>
         <TableCell style={{ padding: "8px" }} align="left">
           {toTitleCase(item.nama)}
