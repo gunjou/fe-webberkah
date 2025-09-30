@@ -154,8 +154,6 @@ const History = () => {
         }
       );
 
-      // console.log("Rekapan Data Response:", response.data);
-
       if (response.data && response.data.data?.length > 0) {
         setRekapanBulanan(response.data.data[0]);
       } else {
@@ -179,7 +177,6 @@ const History = () => {
         `/rekapan/absensi/detail?id_karyawan=${id_karyawan}&start_date=${start}&end_date=${end}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log("Rekapan Data Response:", res.data);
       setDataRekapan(res.data.data || []);
     } catch (error) {
       console.error("Gagal mengambil data rekapan absensi:", error);
@@ -210,8 +207,6 @@ const History = () => {
         }
       );
 
-      // console.log("Rekapan Data Response:", response.data);
-
       if (response.data && response.data.data?.length > 0) {
         setRekapanLembur(response.data.data[0]);
       } else {
@@ -239,8 +234,6 @@ const History = () => {
           },
         }
       );
-
-      // console.log("Rekapan Data Response:", response.data);
 
       if (response.data && response.data.data?.length > 0) {
         setRekapanGabungan(response.data.data[0]);

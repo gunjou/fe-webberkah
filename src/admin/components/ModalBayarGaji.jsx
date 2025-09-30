@@ -89,7 +89,6 @@ export default function ModalBayarGaji({
       });
 
       setStatusPembayaran(statusMap);
-      console.log("Status pembayaran:", statusMap);
     } catch (err) {
       console.error("Gagal fetch pembayaran:", err);
     }
@@ -143,20 +142,24 @@ export default function ModalBayarGaji({
       {/* Pilihan Jenis Bayar */}
       <div className="mb-4 grid grid-cols-2 gap-3">
         {[
-          { key: "gaji pokok", label: "Gaji Pokok", color: "bg-blue-500" },
+          //   { key: "gaji pokok", label: "Gaji Pokok", color: "bg-blue-500" },
           {
             key: "pokok-tunjangan",
-            label: "Gaji + Tunjangan",
+            label: "Total Gaji (Pokok + Tunjangan)",
             color: "bg-indigo-500",
           },
-          { key: "tunjangan", label: "Tunjangan", color: "bg-purple-500" },
+          //   { key: "tunjangan", label: "Tunjangan", color: "bg-purple-500" },
           { key: "lemburan", label: "Lemburan", color: "bg-teal-500" },
-          { key: "seluruh upah", label: "Seluruh Upah", color: "bg-green-500" },
+          {
+            key: "seluruh upah",
+            label: "Gaji Bersih (Seluruh Upah)",
+            color: "bg-green-500",
+          },
         ].map((item) => (
           <button
             key={item.key}
             onClick={() => setSelectedJenisBayar(item.key)}
-            className={`px-4 py-2 rounded-lg text-white font-semibold text-sm flex items-center justify-between gap-2 relative transition 
+            className={`px-4 py-2 rounded-lg text-white font-semibold text-xs flex items-center justify-between gap-2 relative transition 
               ${item.color} 
               ${
                 selectedJenisBayar === item.key

@@ -131,7 +131,6 @@ const Pegawai = () => {
       })
       .then((res) => {
         setJenisList(res.data);
-        // console.log(res.data);
       })
       .catch((err) => {
         console.error("Gagal mengambil data jenis pegawai:", err);
@@ -147,7 +146,6 @@ const Pegawai = () => {
         },
       })
       .then((res) => {
-        // console.log(res.data.tipe_karyawan);
         setTipeList(res.data);
       })
       .catch((err) => {

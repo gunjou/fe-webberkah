@@ -126,7 +126,6 @@ const PerhitunganGaji = () => {
         // .filter((item) => item.nama)
         // .sort((a, b) => a.nama.localeCompare(b.nama));
         setAbsen(sorted);
-        console.log("Data gaji:", sorted);
         setLoading(false);
       })
       .catch((error) => {
@@ -234,6 +233,67 @@ const PerhitunganGaji = () => {
     return cocokNama && cocokTipe;
   });
 
+  // Ambil daftar pegawai
+  const fetchPegawaiList = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get("/pegawai/berhutang", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const sortedCapitalized = res.data
+        .map((pegawai) => ({
+          ...pegawai,
+          nama: pegawai.nama
+            .split(" ")
+            .map(
+              (word) =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            )
+            .join(" "),
+        }))
+        .sort((a, b) => a.nama.localeCompare(b.nama));
+
+      setPegawaiList(sortedCapitalized);
+    } catch (error) {
+      console.error("Gagal ambil data pegawai:", error);
+      setPegawaiList([]);
+    }
+  };
+
+  // Fetch status pembayaran gaji (komponen apa saja yang sudah dibayar)
+  const fetchStatusPembayaran = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get(
+        `/pembayaran-gaji/?bulan=${selectedMonth}&tahun=${selectedYear}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // bikin map: { [id_karyawan]: [komponen1, komponen2] }
+      const statusMap = {};
+      res.data.forEach((p) => {
+        if (!statusMap[p.id_karyawan]) {
+          statusMap[p.id_karyawan] = new Set();
+        }
+        p.detail.forEach((d) => {
+          statusMap[p.id_karyawan].add(d.komponen);
+        });
+      });
+
+      // convert Set → Array biar konsisten
+      Object.keys(statusMap).forEach((id) => {
+        statusMap[id] = Array.from(statusMap[id]);
+      });
+
+      setStatusPembayaran(statusMap);
+    } catch (err) {
+      console.error("Gagal fetch pembayaran:", err);
+    }
+  };
+
   const handleSelectPegawai = async (idPegawai) => {
     setSelectedPegawai(idPegawai);
     if (!idPegawai) {
@@ -250,7 +310,7 @@ const PerhitunganGaji = () => {
       });
 
       if (res.data.status === "success") {
-        setHutangData(res.data);
+        setHutangData(res.data.data);
       } else {
         setHutangData({ total_hutang: 0 });
       }
@@ -462,8 +522,6 @@ const PerhitunganGaji = () => {
     });
   };
 
-  console.log("Selected Pegawai List:", selectedPegawaiList);
-
   // Check/uncheck semua di currentRows
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -522,8 +580,6 @@ const PerhitunganGaji = () => {
     .filter((item) => selectedNamaList.includes(item.nama))
     .reduce((acc, item) => acc + (item.total_bayaran_lembur || 0), 0);
 
-  console.log(absen);
-
   // Tentukan data sumber
   const sourceData =
     tipeFilter === "semua"
@@ -575,7 +631,6 @@ const PerhitunganGaji = () => {
   };
 
   const singkatTipe = (tipe) => {
-    console.log(tipe);
     if (tipe === "pegawai tetap") return "PT";
     if (tipe === "pegawai tidak tetap") return "PTT";
     return tipe;
@@ -623,6 +678,14 @@ const PerhitunganGaji = () => {
       fetchData(start, end);
     }
   }, [showBayarKasbon]);
+
+  useEffect(() => {
+    fetchPegawaiList();
+  }, []);
+
+  useEffect(() => {
+    fetchStatusPembayaran();
+  }, [selectedMonth, selectedYear]);
 
   return (
     <div className="Perhitungan Gaji">
@@ -1117,12 +1180,12 @@ const PerhitunganGaji = () => {
                 </button>
 
                 {/* Tombol Lihat Ringkasan Gaji hanya tampil kalau tidak ada pegawai dipilih */}
-                <button
+                {/* <button
                   onClick={handleOpenModal}
                   className="bg-blue-600 text-white px-4 py-2 rounded-[20px] text-sm hover:bg-blue-700"
                 >
                   Lihat Ringkasan Gaji
-                </button>
+                </button> */}
               </div>
 
               {/* Modal Bayar Gaji */}
@@ -1187,19 +1250,7 @@ const PerhitunganGaji = () => {
                     className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg"
                     onClick={(e) => e.stopPropagation()} // klik isi modal → tidak close
                   >
-                    <ModalBayarKasbon
-                      showBayarKasbon={showBayarKasbon}
-                      pegawaiList={pegawaiList}
-                      selectedPegawai={selectedPegawai}
-                      handleSelectPegawai={handleSelectPegawai}
-                      hutangLoading={hutangLoading}
-                      hutangData={hutangData}
-                      handleBayarHutang={handleBayarHutang}
-                      bayarData={bayarData}
-                      setBayarData={setBayarData}
-                      setShowBayarKasbon={setShowBayarKasbon}
-                      saving={saving}
-                    />
+                    <ModalBayarKasbon setShowBayarKasbon={setShowBayarKasbon} />
                   </div>
                 </div>
               )}

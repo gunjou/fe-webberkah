@@ -182,8 +182,6 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
     if (window.confirm("Yakin ingin menghapus data ini?")) {
       const token = localStorage.getItem("token");
 
-      console.log("Menghapus ID:", id); // debug log
-
       api
         .delete(`/absensi/delete/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -540,7 +538,12 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
     }
   };
 
-  const daftarLokasi = ["Kantor Perampuan", "Gudang GM", "PLTG Jeranjang"];
+  const daftarLokasi = [
+    "Kantor Perampuan",
+    "Gudang GM",
+    "PLTG Jeranjang",
+    "UPK Ampenan",
+  ];
 
   const handleTambahManualDariRow = (id_karyawan) => {
     setFormManual({
@@ -735,8 +738,6 @@ const ModalHadir = ({ open, close, type, selectedDate }) => {
                     jam_keluar:
                       editData.jam_keluar === "" ? null : editData.jam_keluar,
                   };
-
-                  // console.log("Edit payload:", payload);
 
                   api
                     .put(`/absensi/edit/${editData.id_absensi}`, payload, {

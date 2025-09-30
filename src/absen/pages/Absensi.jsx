@@ -141,7 +141,6 @@ const Absensi = () => {
         });
 
         const presensi = response.data;
-        console.log(response);
         setDataPresensi(presensi);
 
         if (!presensi) {

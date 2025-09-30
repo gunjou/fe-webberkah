@@ -85,7 +85,6 @@ const Presensi = () => {
           .sort((a, b) => a.nama.localeCompare(b.nama));
 
         setKaryawan(sorted);
-        // console.log(res);
       })
       .catch((error) => {
         console.error("Error fetching data:", error);

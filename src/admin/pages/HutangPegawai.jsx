@@ -5,9 +5,11 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { FaPlus, FaFileExcel, FaFilePdf } from "react-icons/fa";
+import { FiList, FiEdit, FiTrash2, FiDollarSign } from "react-icons/fi";
 
 const HutangPegawai = () => {
   const [pegawaiList, setPegawaiList] = useState([]);
+  const [pegawaiHutangList, setPegawaiHutangList] = useState([]);
   const [selectedPegawai, setSelectedPegawai] = useState("");
   const [hutangList, setHutangList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -84,6 +86,34 @@ const HutangPegawai = () => {
     }
   };
 
+  // Ambil daftar pegawai yang punya hutang
+  const fetchPegawaiHutang = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get("/pegawai/berhutang", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const sortedCapitalized = res.data
+        .map((pegawai) => ({
+          ...pegawai,
+          nama: pegawai.nama
+            .split(" ")
+            .map(
+              (word) =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            )
+            .join(" "),
+        }))
+        .sort((a, b) => a.nama.localeCompare(b.nama));
+
+      setPegawaiHutangList(sortedCapitalized);
+    } catch (error) {
+      console.error("Gagal ambil data pegawai:", error);
+      setPegawaiHutangList([]);
+    }
+  };
+
   // Ambil daftar hutang
   const fetchHutangList = async () => {
     try {
@@ -108,6 +138,7 @@ const HutangPegawai = () => {
 
   useEffect(() => {
     fetchPegawaiList();
+    fetchPegawaiHutang();
     fetchHutangList();
   }, []);
 
@@ -630,8 +661,8 @@ const HutangPegawai = () => {
                 onChange={(e) =>
                   setEditData({ ...editData, id_karyawan: e.target.value })
                 }
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-                required
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-100"
+                disabled
               >
                 <option value="">Pilih Pegawai</option>
                 {pegawaiList.map((pegawai) => (
@@ -774,7 +805,7 @@ const HutangPegawai = () => {
             className="px-2 py-2 border rounded-lg text-sm"
           >
             <option value="">Semua Pegawai</option>
-            {pegawaiList.map((pegawai) => (
+            {pegawaiHutangList.map((pegawai) => (
               <option key={pegawai.id_karyawan} value={pegawai.id_karyawan}>
                 {pegawai.nama}
               </option>
@@ -885,7 +916,7 @@ const HutangPegawai = () => {
                       <td className="border px-2 py-1 capitalize text-xs">
                         {item.nama}
                       </td>
-                      <td className="border px-2 py-1 text-xs">
+                      <td className="border px-2 py-1 text-xs whitespace-nowrap">
                         {item.tanggal}
                       </td>
                       <td className="border px-2 py-1 text-right text-xs">
@@ -911,42 +942,65 @@ const HutangPegawai = () => {
                       </td>
 
                       <td className="border px-2 py-1 text-center text-xs">
-                        <button
-                          onClick={() => handleOpenRiwayatModal(item.id_hutang)}
-                          className="bg-indigo-500 text-white px-2 py-1 rounded mr-1"
-                        >
-                          Riwayat
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditData(item);
-                            setShowEditModal(true);
-                          }}
-                          className="bg-yellow-400 text-white px-2 py-1 rounded mr-1"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteHutang(item.id_hutang)}
-                          className="bg-red-500 text-white px-2 py-1 rounded mr-1"
-                        >
-                          Hapus
-                        </button>
-                        <button
-                          onClick={() => {
-                            setBayarData({
-                              id_karyawan: item.id_karyawan,
-                              id_hutang: item.id_hutang,
-                              nominal: "",
-                              metode: "",
-                              keterangan: "",
-                            });
-                            setShowBayarModal(true);
-                          }}
-                          className="bg-green-500 text-white px-2 py-1 rounded"
-                        >
-                          Bayar
-                        </button>
+                        <div className="flex flex-nowrap gap-2 justify-center">
+                          {/* Riwayat */}
+                          <button
+                            onClick={() =>
+                              handleOpenRiwayatModal(item.id_hutang)
+                            }
+                            className="p-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 relative group"
+                          >
+                            <FiList size={16} />
+                            <span className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-600 text-white text-[10px] px-2 py-1 rounded z-20">
+                              Riwayat
+                            </span>
+                          </button>
+
+                          {/* Bayar */}
+                          <button
+                            onClick={() => {
+                              setBayarData({
+                                id_karyawan: item.id_karyawan,
+                                id_hutang: item.id_hutang,
+                                nominal: "",
+                                metode: "",
+                                keterangan: "",
+                              });
+                              setShowBayarModal(true);
+                            }}
+                            className="p-1 bg-green-500 text-white rounded hover:bg-green-600 relative group"
+                          >
+                            <FiDollarSign size={16} />
+                            <span className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-600 text-white text-[10px] px-2 py-1 rounded z-20">
+                              Bayar
+                            </span>
+                          </button>
+
+                          {/* Edit */}
+                          <button
+                            onClick={() => {
+                              setEditData(item);
+                              setShowEditModal(true);
+                            }}
+                            className="p-1 bg-yellow-400 text-white rounded hover:bg-yellow-500 relative group"
+                          >
+                            <FiEdit size={16} />
+                            <span className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-600 text-white text-[10px] px-2 py-1 rounded z-20">
+                              Edit
+                            </span>
+                          </button>
+
+                          {/* Hapus */}
+                          <button
+                            onClick={() => handleDeleteHutang(item.id_hutang)}
+                            className="p-1 bg-red-500 text-white rounded hover:bg-red-600 relative group"
+                          >
+                            <FiTrash2 size={16} />
+                            <span className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-600 text-white text-[10px] px-2 py-1 rounded z-20">
+                              Hapus
+                            </span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

@@ -24,7 +24,6 @@ const Login = () => {
       });
 
       const { access_token, id_karyawan, jenis, nama } = response.data;
-      // console.log(response.data);
       localStorage.setItem("token", access_token);
       localStorage.setItem("id_karyawan", id_karyawan);
       localStorage.setItem("jenis", jenis);
