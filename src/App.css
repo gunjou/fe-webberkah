@@ -49,6 +49,24 @@ body {
   display: none; /* Chrome, Safari, Opera */
 }
 
+.loader {
+  border: 5px solid #e0e0e0;
+  border-top: 5px solid #dc2626; /* warna custom-merah */
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* html,
 body {
   overflow-x: hidden;

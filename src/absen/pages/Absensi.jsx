@@ -57,6 +57,7 @@ const Absensi = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [izinStatus, setIzinStatus] = useState(null);
   const [isSakitHariIni, setIsSakitHariIni] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const getFormattedDate = () => {
     const date = new Date();
@@ -125,19 +126,20 @@ const Absensi = () => {
 
   useEffect(() => {
     const fetchPresensi = async () => {
+      setLoading(true); // mulai loading
+
       const id_karyawan = localStorage.getItem("id_karyawan");
       const token = localStorage.getItem("token");
 
       if (!id_karyawan || !token) {
         console.warn("Token atau ID karyawan belum tersedia");
+        setLoading(false);
         return;
       }
 
       try {
         const response = await api.get(`/absensi/check/${id_karyawan}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const presensi = response.data;
@@ -152,6 +154,8 @@ const Absensi = () => {
         }
       } catch (err) {
         console.error("Gagal mengambil data presensi.");
+      } finally {
+        setLoading(false); // selesai loading
       }
     };
 
@@ -320,13 +324,20 @@ const Absensi = () => {
             </div>
             <div className="text-4xl font-bold pb-4">08:00 - 17:00</div>
             <div className="flex justify-center mt-4">
-              {izinDisetujui || isSakitHariIni ? (
+              {loading ? (
+                // === SPINNER TAMPIL DULU ===
+                <div className="flex items-center justify-center h-20">
+                  <div className="loader"></div>
+                </div>
+              ) : izinDisetujui || isSakitHariIni ? (
+                // === STATUS IZIN / SAKIT ===
                 <span className="text-black font-semibold">
                   {izinDisetujui
                     ? "Izin telah disetujui"
                     : "Status absen: Sakit"}
                 </span>
               ) : isAbsenMasuk !== null ? (
+                // === TOMBOL ABSEN ===
                 <button
                   type="button"
                   className="flex w-[150px] text-white items-center justify-center bg-custom-merah hover:bg-custom-gelap text-black font-medium rounded-[20px] px-2 py-2 shadow-md disabled:opacity-50"
@@ -336,6 +347,7 @@ const Absensi = () => {
                   {isAbsenMasuk ? "Absen Masuk" : "Absen Pulang"}
                 </button>
               ) : (
+                // === SUDAH ABSEN MASUK & KELUAR ===
                 <p className="font-semibold">
                   Terimakasih telah bekerja hari ini!
                 </p>
