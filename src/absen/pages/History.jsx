@@ -608,7 +608,7 @@ const History = () => {
                 textTransform: "none",
               }}
             />
-            <Tab
+            {/* <Tab
               label="Gaji Bulanan"
               {...a11yProps(4)}
               sx={{
@@ -637,7 +637,7 @@ const History = () => {
                 minWidth: "33.33%",
                 textTransform: "none",
               }}
-            />
+            /> */}
           </Tabs>
         </Box>
 
@@ -693,10 +693,10 @@ const History = () => {
                     <tr>
                       <td>Gaji Harian</td>
                       <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {perhitunganGaji && perhitunganGaji.gaji_harian
+                        <p className="pr-2">:</p>- (dalam penyesuaian)
+                        {/* {perhitunganGaji && perhitunganGaji.gaji_harian
                           ? formatRupiah(perhitunganGaji.gaji_harian)
-                          : "-"}
+                          : "-"} */}
                       </td>
                     </tr>
                     <tr>
@@ -753,19 +753,19 @@ const History = () => {
                     <tr>
                       <td>Tunjangan Kehadiran</td>
                       <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {perhitunganGaji && perhitunganGaji.tunjangan_kehadiran
+                        <p className="pr-2">:</p>- (dalam penyesuaian)
+                        {/* {perhitunganGaji && perhitunganGaji.tunjangan_kehadiran
                           ? formatRupiah(perhitunganGaji.tunjangan_kehadiran)
-                          : "-"}
+                          : "-"} */}
                       </td>
                     </tr>
                     <tr>
                       <td>Upah Bersih</td>
                       <td className="flex font-semibold">
-                        <p className="pr-2">:</p>
-                        {perhitunganGaji && perhitunganGaji.upah_bersih
+                        <p className="pr-2">:</p>- (dalam penyesuaian)
+                        {/* {perhitunganGaji && perhitunganGaji.upah_bersih
                           ? formatRupiah(perhitunganGaji.upah_bersih)
-                          : "-"}
+                          : "-"} */}
                       </td>
                     </tr>
                   </tbody>
@@ -951,13 +951,15 @@ const History = () => {
                           <strong className="mr-2 inline-block">
                             Bayar/Jam:
                           </strong>
-                          {formatRupiah(item.bayaran_perjam)}
+                          {/* {formatRupiah(item.bayaran_perjam)} */}- (dalam
+                          penyesuaian)
                         </p>
                         <p className="text-xs">
                           <strong className="mr-2 inline-block">
                             Total Bayaran:
                           </strong>
-                          {formatRupiah(item.total_bayaran)}
+                          - (dalam penyesuaian)
+                          {/* {formatRupiah(item.total_bayaran)} */}
                         </p>
                         <p className="text-xs">
                           <strong className="mr-2 inline-block">
