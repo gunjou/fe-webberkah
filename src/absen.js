@@ -16,6 +16,7 @@ import Profile from "./absen/pages/Profile";
 import Tentang from "./absen/pages/Tentang";
 import UbahPassword from "./absen/pages/UbahPassword";
 import FormLembur from "./absen/pages/FormLembur";
+import Announcement from "./absen/components/Announcement";
 
 function App() {
   const token = localStorage.getItem("token");
@@ -68,6 +69,7 @@ function App() {
           <Route path="/m-develop" element={<InDevelopMobile />} />
           <Route path="/settings" element={<Settings />} />{" "}
           <Route path="/form-izin-sakit" element={<FormIzinSakit />} />
+          <Route path="/pengumuman" element={<Announcement />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/tentang" element={<Tentang />} />
           <Route path="/ubah-password" element={<UbahPassword />} />
