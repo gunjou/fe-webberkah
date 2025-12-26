@@ -211,32 +211,14 @@ const Presensi = () => {
     if (izinModal) fetchIzinList();
   }, [izinModal, izinSelectedMonth, izinSelectedYear]);
 
-  const handleViewFile = async (path, id_izin) => {
-    if (fileBlobs[id_izin]) {
-      // Sudah ada, langsung buka
-      window.open(fileBlobs[id_izin], "_blank");
+  const handleViewFile = (url) => {
+    if (!url) {
+      alert("Lampiran tidak tersedia");
       return;
     }
 
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `https://api.berkahangsana.com/perizinan/preview/${path}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (!res.ok) throw new Error("Gagal fetch lampiran");
-
-      const blob = await res.blob();
-      const objectURL = URL.createObjectURL(blob);
-      setFileBlobs((prev) => ({ ...prev, [id_izin]: objectURL }));
-      window.open(objectURL, "_blank");
-    } catch (err) {
-      console.error("Gagal membuka file:", err);
-      alert("Gagal membuka lampiran.");
-    }
+    const finalUrl = encodeURI(url);
+    window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
 
   const fetchAbsensiIzinSakit = async (tanggal) => {
