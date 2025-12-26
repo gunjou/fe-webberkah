@@ -342,7 +342,7 @@ const Lembur = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `https://api.berkahangsana.com/lembur/preview/${path}`, // URL ini sesuaikan dengan endpoint preview lembur
+        `${process.env.REACT_APP_API_URL}/lembur/preview/${path}`, // URL ini sesuaikan dengan endpoint preview lembur
         {
           headers: { Authorization: `Bearer ${token}` },
         }

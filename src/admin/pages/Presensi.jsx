@@ -173,37 +173,11 @@ const Presensi = () => {
 
       const data = res.data.data;
       setIzinList(Array.isArray(data) ? data : data ? [data] : []);
-
-      (data || []).forEach((item) => {
-        if (item.path_lampiran)
-          fetchFileWithToken(item.path_lampiran, item.id_izin);
-      });
     } catch (err) {
       setIzinError("Gagal memuat data pengajuan izin.");
       setIzinList([]);
     } finally {
       setIzinLoading(false);
-    }
-  };
-
-  const fetchFileWithToken = async (path, id_izin) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `https://api.berkahangsana.com/perizinan/preview/${path}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (!res.ok) throw new Error("Gagal ambil file.");
-
-      const blob = await res.blob();
-      const objectURL = URL.createObjectURL(blob);
-
-      setFileBlobs((prev) => ({ ...prev, [id_izin]: objectURL }));
-    } catch (err) {
-      console.error("Gagal ambil file preview:", err);
     }
   };
 

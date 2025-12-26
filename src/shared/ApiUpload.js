@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const apiUpload = axios.create({
-  baseURL: "https://api.berkahangsana.com",
+  baseURL: process.env.REACT_APP_API_URL,
   timeout: 30000,
 });
 
