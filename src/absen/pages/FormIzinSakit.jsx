@@ -55,48 +55,22 @@ const FormIzinSakit = () => {
     { label: "Izin Setengah Hari", value: 6 },
   ];
 
-  const fetchIzinByTanggal = async (tanggal) => {
-    setIzinLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await api.get("/perizinan/by-karyawan", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const targetDate = tanggal.format("DD-MM-YYYY");
-      const filtered = res.data.data.filter(
-        (izin) =>
-          izin.tgl_mulai === targetDate || izin.tgl_selesai === targetDate
-      );
-
-      setIzinList(filtered);
-    } catch (err) {
-      console.error("Gagal mengambil data izin:", err);
-      setIzinList([]);
-    } finally {
-      setIzinLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchIzinByTanggal(dayjs());
-  }, []);
-
   const fetchDataIzin = async (tanggal) => {
     setIzinLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await api.get("/perizinan/by-karyawan", {
-        headers: { Authorization: `Bearer ${token}` },
+      const formattedDate = tanggal.format("YYYY-MM-DD");
+
+      const res = await api.get("/perizinan-new/by-karyawan", {
+        params: {
+          tanggal: formattedDate, // SESUAI SWAGGER
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      const formatted = tanggal.format("YYYY-MM-DD");
-
-      const filtered = res.data.data.filter(
-        (item) => item.tgl_mulai === formatted || item.tgl_selesai === formatted
-      );
-
-      setIzinList(filtered);
+      setIzinList(res.data.data || []);
     } catch (error) {
       console.error("Gagal memuat data izin:", error);
       setIzinList([]);
@@ -141,7 +115,7 @@ const FormIzinSakit = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await api.delete(`/perizinan/${id_izin}`, {
+      await api.delete(`/perizinan-new/delete/${id_izin}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -551,9 +525,13 @@ const FormIzinSakit = () => {
                       <div className="flex">
                         <span className="w-16 font-semibold">Jenis</span>
                         <span className="mr-2">:</span>
-                        <span className="font-semibold">
-                          {izin.nama_status}
-                        </span>
+                        {izin.id_jenis === 3
+                          ? "Izin"
+                          : izin.id_jenis === 4
+                          ? "Sakit"
+                          : izin.id_jenis === 6
+                          ? "Izin Setengah Hari"
+                          : "-"}
                       </div>
                       <div className="flex">
                         <span className="w-16 font-semibold">Tanggal</span>
@@ -563,6 +541,16 @@ const FormIzinSakit = () => {
                           {dayjs(izin.tgl_selesai).format("DD-MM-YYYY")}
                         </span>
                       </div>
+                      {izin.potong_cuti > 0 && (
+                        <div className="flex">
+                          <span className="w-16 font-semibold">
+                            Potong Cuti
+                          </span>
+                          <span className="mr-2">:</span>
+                          <span>{izin.potong_cuti} Hari</span>
+                        </div>
+                      )}
+
                       <div className="flex">
                         <span className="w-16 font-semibold">Alasan</span>
                         <span className="mr-2">:</span>

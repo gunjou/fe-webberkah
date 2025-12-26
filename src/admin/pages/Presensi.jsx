@@ -13,6 +13,7 @@ import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoMdClose } from "react-icons/io";
 
 import api from "../../shared/Api";
+import apiUpload from "../../shared/ApiUpload";
 
 import { FaCheck, FaPlus } from "react-icons/fa";
 import ModalHadir from "../components/ModalHadir";
@@ -164,7 +165,7 @@ const Presensi = () => {
         .toISOString()
         .split("T")[0];
 
-      const url = `/perizinan/?start_date=${start}&end_date=${end}`;
+      const url = `/perizinan-new/?start_date=${start}&end_date=${end}`;
 
       const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -264,7 +265,7 @@ const Presensi = () => {
     try {
       const token = localStorage.getItem("token");
       await api.put(
-        `/perizinan/${id_izin}/setujui`,
+        `/perizinan-new/approve/${id_izin}`,
         {},
         {
           headers: {
@@ -311,22 +312,25 @@ const Presensi = () => {
     }
 
     setIzinActionLoading(id_izin);
+
     try {
       const token = localStorage.getItem("token");
-      await api.put(
-        `/perizinan/${id_izin}/tolak`,
-        { alasan: alasanReject[id_izin] || "" },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+
+      const formData = new FormData();
+      formData.append("alasan", alasanReject[id_izin]);
+
+      await apiUpload.put(`/perizinan-new/reject/${id_izin}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // ❗ JANGAN set Content-Type manual
+        },
+      });
 
       setRejectId(null);
-      setAlasanReject("");
-      fetchIzinList(izinFilterTanggal);
+      setAlasanReject({});
+      fetchIzinList();
     } catch (err) {
+      console.error(err.response?.data || err);
       alert("Gagal reject izin!");
     } finally {
       setIzinActionLoading(null);
@@ -339,7 +343,7 @@ const Presensi = () => {
     setIzinActionLoading(id_izin);
     try {
       const token = localStorage.getItem("token");
-      await api.delete(`/perizinan/${id_izin}`, {
+      await api.delete(`/perizinan-new/delete/${id_izin}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
