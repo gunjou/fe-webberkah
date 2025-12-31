@@ -18,28 +18,28 @@ import ModalBayarKasbon from "../components/ModalBayarKasbon";
 import ModalBayarGaji from "../components/ModalBayarGaji";
 
 const kolom = [
-  // { id: "no", label: "No", minWidth: 20 },
-  { id: "nip", label: "NIP", minWidth: 20 },
-  { id: "nama", label: "Nama", minWidth: 40 },
-  { id: "tipe", label: "Tipe", minWidth: 20 },
-  { id: "jumlah_hadir", label: "Hadir", minWidth: 10 },
-  { id: "jumlah_izin", label: "Izin", minWidth: 10 },
-  { id: "jumlah_sakit", label: "Sakit", minWidth: 10 },
-  { id: "jumlah_alpha", label: "Alpha", minWidth: 10 },
-  { id: "jam_kurang", label: "Kurang", minWidth: 40 },
-  { id: "gaji_pokok", label: "Gaji Pokok", minWidth: 50 },
-  { id: "tunjangan_kehadiran", label: "Tunjangan", minWidth: 40 },
-  { id: "potongan", label: "Potongan", minWidth: 40 },
-  { id: "kasbon", label: "Kasbon", minWidth: 40 },
-  { id: "gaji_bersih", label: "Total Gaji", minWidth: 50 },
-  { id: "total_lembur", label: "Lembur", minWidth: 10 },
-  { id: "total_menit_lembur", label: "Waktu Lembur", minWidth: 20 },
-  { id: "total_bayaran_lembur", label: "Gaji Lembur", minWidth: 40 },
-  { id: "total_gaji", label: "Gaji Bersih", minWidth: 40 },
-  { id: "bank", label: "Bank", minWidth: 40 },
-  { id: "no_rekening", label: "Norek", minWidth: 40 },
-  { id: "an_rekening", label: "A.N. rek", minWidth: 60 },
+  { id: "nama", label: "Nama", minWidth: 120 },
+  { id: "jenis_pegawai", label: "Jenis", minWidth: 80 },
+  { id: "gaji_kotor", label: "Gaji Kotor", minWidth: 120 },
+  { id: "total_potongan_estimasi", label: "Potongan", minWidth: 120 },
+  { id: "gaji_bersih", label: "Gaji Bersih", minWidth: 120 },
+  { id: "rekap_disiplin", label: "Rekap Disiplin", minWidth: 180 },
 ];
+
+const headStyle = {
+  backgroundColor: "#4d4d4d",
+  color: "white",
+  fontWeight: "bold",
+  fontSize: "12px",
+  padding: "4px 10px",
+  whiteSpace: "nowrap",
+};
+
+const cellStyle = {
+  fontSize: "12px",
+  padding: "4px",
+  whiteSpace: "nowrap",
+};
 
 const formatTerlambat = (menit) => {
   if (!menit || isNaN(menit)) return "-";
@@ -51,6 +51,13 @@ const formatTerlambat = (menit) => {
 };
 
 const PerhitunganGaji = () => {
+  const [summary, setSummary] = useState({
+    jumlah_karyawan: 0,
+    total_gaji_kotor: 0,
+    total_potongan: 0,
+    total_gaji_bersih: 0,
+  });
+
   const [absen, setAbsen] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -110,28 +117,31 @@ const PerhitunganGaji = () => {
 
   const [tipeFilter, setTipeFilter] = useState("semua");
 
-  const fetchData = (start = "", end = "") => {
-    const token = localStorage.getItem("token");
-    if (!start || !end) return;
+  const fetchData = async () => {
+    try {
+      setLoading(true);
 
-    api
-      .get("/perhitungan-gaji/rekapan", {
-        params: { start, end }, // Kirim parameter start dan end (format dd-mm-yyyy)
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        const sorted = res.data.data
-          .filter((item) => item.nip)
-          .sort((a, b) => a.nip - b.nip);
-        // .filter((item) => item.nama)
-        // .sort((a, b) => a.nama.localeCompare(b.nama));
-        setAbsen(sorted);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-        setLoading(false);
+      const res = await api.get("/payroll/preview/masal", {
+        params: {
+          bulan: selectedMonth,
+          tahun: selectedYear,
+        },
       });
+
+      setAbsen(res.data.data || []);
+
+      setSummary({
+        jumlah_karyawan: res.data.jumlah_karyawan,
+        total_gaji_kotor: res.data.total_gaji_kotor,
+        total_potongan: res.data.total_potongan_estimasi,
+        total_gaji_bersih: res.data.total_gaji_bersih,
+      });
+
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
   };
 
   const totalGaji = absen.reduce(
@@ -196,15 +206,7 @@ const PerhitunganGaji = () => {
   );
 
   useEffect(() => {
-    const start = `01-${String(selectedMonth).padStart(
-      2,
-      "0"
-    )}-${selectedYear}`;
-    const endDateObj = new Date(selectedYear, selectedMonth, 0); // last day of month
-    const end = `${String(endDateObj.getDate()).padStart(2, "0")}-${String(
-      selectedMonth
-    ).padStart(2, "0")}-${selectedYear}`;
-    fetchData(start, end);
+    fetchData();
   }, [selectedMonth, selectedYear]);
 
   const handleSort = (key) => {
@@ -224,12 +226,14 @@ const PerhitunganGaji = () => {
     return 0;
   });
 
-  const filteredData = sortedData.filter((item) => {
+  const filteredData = absen.filter((item) => {
     const cocokNama = item.nama
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
+
     const cocokTipe =
-      tipeFilter === "semua" || item.tipe.toLowerCase() === tipeFilter;
+      tipeFilter === "semua" || item.jenis_pegawai === tipeFilter;
+
     return cocokNama && cocokTipe;
   });
 
@@ -736,10 +740,9 @@ const PerhitunganGaji = () => {
                     className="border rounded-lg px-2 py-1 text-sm"
                   >
                     <option value="semua">Semua Tipe</option>
-                    <option value="pegawai tetap">Pegawai Tetap</option>
-                    <option value="pegawai tidak tetap">
-                      Pegawai Tidak Tetap
-                    </option>
+                    <option value="tetap">Pegawai Tetap</option>
+                    <option value="harian">Pegawai Harian</option>
+                    <option value="magang">Pegawai Magang</option>
                   </select>
 
                   <div className="flex items-center ml-4 justify-end space-x-2 flex-wrap w-full">
@@ -811,19 +814,28 @@ const PerhitunganGaji = () => {
                       maxWidth: 1120,
                       width: "100%",
                       overflowX: "auto",
+                      tableLayout: "fixed",
                     }}
                   >
-                    <Table stickyHeader sx={{ minWidth: 1000, width: "100%" }}>
-                      <TableHead className="bg-[#e8ebea]">
-                        <TableRow sx={{ height: "26px" }}>
+                    <Table
+                      stickyHeader
+                      sx={{
+                        minWidth: 1000,
+                        width: "100%",
+                        borderCollapse: "separate",
+                        borderSpacing: 0,
+                      }}
+                    >
+                      {/* ================= TABLE HEAD ================= */}
+                      <TableHead>
+                        <TableRow sx={{ height: 36 }}>
+                          {/* Checkbox */}
                           <TableCell
-                            style={{
-                              backgroundColor: "#4d4d4d",
-                              color: "white",
-                              fontWeight: "bold",
-                              fontSize: "12px",
-                              padding: "4px 10px",
-                              whiteSpace: "nowrap",
+                            sx={{
+                              ...headStyle,
+                              width: 36,
+                              textAlign: "center",
+                              padding: "0 6px",
                             }}
                           >
                             <input
@@ -832,61 +844,114 @@ const PerhitunganGaji = () => {
                                 selectedNamaList.length ===
                                   currentRows.length && currentRows.length > 0
                               }
-                              indeterminate={
-                                selectedNamaList.length > 0 &&
-                                selectedNamaList.length < currentRows.length
-                              }
                               onChange={handleSelectAll}
                             />
                           </TableCell>
 
-                          {kolom.map((column, index) => (
-                            <TableCell
-                              key={column.id}
-                              onClick={() => handleSort(column.id)}
-                              style={{
-                                minWidth: column.minWidth,
-                                backgroundColor: "#4d4d4d",
-                                color: "white",
-                                fontWeight: "bold",
-                                fontSize: "12px",
-                                padding: "4px 10px",
-                                cursor: "pointer",
-                                whiteSpace: "nowrap",
-                                textAlign: "left",
-                                borderRadius: index === 19 ? "0 10px 0 0" : "0",
-                              }}
-                            >
-                              {column.label}
-                              {sortConfig.key === column.id && (
-                                <span style={{ marginLeft: 4 }}>
-                                  {sortConfig.direction === "asc" ? " ▲" : " ▼"}
-                                </span>
-                              )}
-                            </TableCell>
-                          ))}
+                          {/* Nama */}
+                          <TableCell
+                            sx={{
+                              ...headStyle,
+                              minWidth: 160,
+                              maxWidth: 180,
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            Nama
+                          </TableCell>
+
+                          {/* Jenis Pegawai */}
+                          <TableCell
+                            sx={{
+                              ...headStyle,
+                              minWidth: 90,
+                              maxWidth: 100,
+                            }}
+                            align="center"
+                          >
+                            Pegawai
+                          </TableCell>
+
+                          {/* Gaji Kotor */}
+                          <TableCell
+                            sx={{
+                              ...headStyle,
+                              minWidth: 120,
+                              maxWidth: 130,
+                            }}
+                            align="right"
+                          >
+                            Gaji Kotor
+                          </TableCell>
+
+                          {/* Potongan */}
+                          <TableCell
+                            sx={{
+                              ...headStyle,
+                              minWidth: 120,
+                              maxWidth: 130,
+                            }}
+                            align="right"
+                          >
+                            Potongan
+                          </TableCell>
+
+                          {/* Gaji Bersih */}
+                          <TableCell
+                            sx={{
+                              ...headStyle,
+                              minWidth: 120,
+                              maxWidth: 130,
+                            }}
+                            align="right"
+                          >
+                            Gaji Bersih
+                          </TableCell>
+
+                          {/* Rekap Disiplin */}
+                          <TableCell
+                            sx={{
+                              ...headStyle,
+                              minWidth: 180,
+                              maxWidth: 220,
+                            }}
+                          >
+                            Rekap Disiplin
+                          </TableCell>
                         </TableRow>
                       </TableHead>
 
+                      {/* ================= TABLE BODY ================= */}
                       <TableBody>
                         {currentRows.length === 0 ? (
-                          <TableRow sx={{ height: "22px" }}>
+                          <TableRow>
                             <TableCell
-                              colSpan={kolom.length}
-                              align="left"
-                              sx={{ fontSize: "12px", padding: "4px" }}
+                              colSpan={7}
+                              sx={{
+                                fontSize: 12,
+                                padding: "10px",
+                                textAlign: "center",
+                                color: "#777",
+                              }}
                             >
-                              Tidak ada yang cocok dengan pencarian Anda.
+                              Tidak ada data
                             </TableCell>
                           </TableRow>
                         ) : (
                           <>
                             {currentRows.map((item, index) => (
-                              <TableRow key={index} sx={{ height: "22px" }}>
-                                <TableCell
-                                  align="center"
-                                  sx={{ padding: "4px" }}
-                                >
+                              <TableRow
+                                key={item.id_karyawan}
+                                sx={{
+                                  height: 34,
+                                  backgroundColor:
+                                    index % 2 === 0 ? "#fafafa" : "white",
+                                  "&:hover": {
+                                    backgroundColor: "#f1f5f9",
+                                  },
+                                }}
+                              >
+                                <TableCell align="center" sx={cellStyle}>
                                   <input
                                     type="checkbox"
                                     checked={selectedNamaList.includes(
@@ -896,262 +961,97 @@ const PerhitunganGaji = () => {
                                   />
                                 </TableCell>
 
-                                {/* <TableCell
-                                sx={{ fontSize: "12px", padding: "4px" }}
-                                align="center"
-                              >
-                                {index + 1}
-                              </TableCell> */}
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="center"
-                                >
-                                  {String(item.nip).padStart(3, "0")}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  className="capitalize"
-                                >
-                                  {item.nama_panggilan}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="center"
-                                  className="capitalize"
-                                >
-                                  {singkatTipe(item.tipe)}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="center"
-                                >
-                                  {item.jumlah_hadir ?? "-"}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="center"
-                                >
-                                  {item.jumlah_izin ?? "-"}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="center"
-                                >
-                                  {item.jumlah_sakit ?? "-"}
-                                </TableCell>
                                 <TableCell
                                   sx={{
-                                    fontSize: "12px",
-                                    padding: "4px",
-                                    color: "red",
+                                    ...cellStyle,
+                                    fontWeight: 500,
+                                    textTransform: "capitalize",
                                   }}
-                                  align="center"
                                 >
-                                  {item.jumlah_alpha ?? "-"}
-                                </TableCell>
-                                <TableCell
-                                  sx={{
-                                    fontSize: "12px",
-                                    padding: "4px",
-                                    color: "red",
-                                  }}
-                                  align="center"
-                                >
-                                  {formatTerlambat(
-                                    item.jam_terlambat + item.jam_kurang
-                                  )}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="left"
-                                >
-                                  {formatRupiah(item.gaji_pokok)}
-                                </TableCell>
-
-                                {/* Tunjangan */}
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="left"
-                                >
-                                  {statusPembayaran[item.id_karyawan]?.includes(
-                                    "tunjangan"
-                                  ) ? (
-                                    <Tooltip title="Terbayarkan" arrow>
-                                      <span
-                                        style={highlightStyle(
-                                          item.id_karyawan,
-                                          "tunjangan"
-                                        )}
-                                      >
-                                        {formatRupiah(item.tunjangan_kehadiran)}
-                                      </span>
-                                    </Tooltip>
-                                  ) : (
-                                    formatRupiah(item.tunjangan_kehadiran)
-                                  )}
+                                  {item.nama}
                                 </TableCell>
 
                                 <TableCell
                                   sx={{
-                                    fontSize: "12px",
-                                    padding: "4px",
-                                    color: "red",
-                                    whiteSpace: "nowrap",
+                                    ...cellStyle,
+                                    textTransform: "capitalize",
                                   }}
-                                  align="left"
+                                  align="center"
                                 >
-                                  {"-" + formatRupiah(item.potongan)}
+                                  {item.jenis_pegawai}
                                 </TableCell>
+
+                                <TableCell sx={cellStyle} align="right">
+                                  {formatRupiah(item.gaji_kotor)}
+                                </TableCell>
+
+                                <TableCell
+                                  sx={{ ...cellStyle, color: "#d32f2f" }}
+                                  align="right"
+                                >
+                                  {formatRupiah(item.total_potongan_estimasi)}
+                                </TableCell>
+
+                                <TableCell
+                                  sx={{ ...cellStyle, fontWeight: 600 }}
+                                  align="right"
+                                >
+                                  {formatRupiah(item.gaji_bersih)}
+                                </TableCell>
+
                                 <TableCell
                                   sx={{
-                                    fontSize: "12px",
-                                    padding: "4px",
-                                    color: "red",
-                                    whiteSpace: "nowrap",
+                                    fontSize: 12,
+                                    padding: "6px 8px",
+                                    color: "#555",
+
+                                    whiteSpace: "normal", // 🔥 boleh ngenter
+                                    wordBreak: "break-word", // 🔥 pecah kata panjang
+                                    lineHeight: 1.4,
+
+                                    maxWidth: 220, // 🔒 biar tidak melebar
                                   }}
-                                  align="left"
                                 >
-                                  {"-" + formatRupiah(item.kasbon)}
-                                </TableCell>
-
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="left"
-                                >
-                                  {statusPembayaran[item.id_karyawan]?.includes(
-                                    "gaji_pokok"
-                                  ) ||
-                                  statusPembayaran[item.id_karyawan]?.includes(
-                                    "gaji_bersih"
-                                  ) ? (
-                                    <Tooltip title="Terbayarkan" arrow>
-                                      <span
-                                        style={highlightStyle(
-                                          item.id_karyawan,
-                                          "gaji_pokok"
-                                        )}
-                                      >
-                                        {formatRupiah(
-                                          item.gaji_bersih_tanpa_lembur
-                                        )}
-                                      </span>
-                                    </Tooltip>
-                                  ) : (
-                                    formatRupiah(item.gaji_bersih_tanpa_lembur)
-                                  )}
-                                </TableCell>
-
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="center"
-                                >
-                                  {item.total_lembur ?? "-"}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="center"
-                                >
-                                  {formatTerlambat(item.total_menit_lembur) ??
-                                    "-"}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="left"
-                                >
-                                  {statusPembayaran[item.id_karyawan]?.includes(
-                                    "lembur"
-                                  ) ? (
-                                    <Tooltip title="Terbayarkan" arrow>
-                                      <span
-                                        style={highlightStyle(
-                                          item.id_karyawan,
-                                          "lembur"
-                                        )}
-                                      >
-                                        {formatRupiah(
-                                          item.total_bayaran_lembur
-                                        )}
-                                      </span>
-                                    </Tooltip>
-                                  ) : (
-                                    formatRupiah(item.total_bayaran_lembur)
-                                  )}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  align="left"
-                                >
-                                  {formatRupiah(item.gaji_bersih ?? "-")}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  className="capitalize"
-                                >
-                                  {item.bank ?? "-"}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  className="capitalize"
-                                >
-                                  {item.no_rekening ?? "-"}
-                                </TableCell>
-                                <TableCell
-                                  sx={{ fontSize: "12px", padding: "4px" }}
-                                  className="capitalize"
-                                >
-                                  {item.an_rekening ?? "-"}
+                                  {item.rekap_disiplin || "-"}
                                 </TableCell>
                               </TableRow>
                             ))}
 
-                            {/* Row untuk total */}
+                            {/* ================= TOTAL ROW ================= */}
                             <TableRow
                               sx={{
-                                backgroundColor: "#f5f5f5",
-                                fontWeight: "bold",
-                                "& td": {
-                                  padding: "10px 4px",
-                                  fontWeight: "bold",
-                                },
+                                backgroundColor: "#eef2f7",
                                 position: "sticky",
-                                bottom: 0, // biar nempel di bawah
-                                zIndex: 2, // pastikan lebih tinggi dari row biasa
+                                bottom: 0,
+                                zIndex: 2,
+                                borderTop: "2px solid #cbd5e1",
+                                "& td": {
+                                  fontWeight: 700,
+                                  fontSize: 12,
+                                  paddingTop: "8px",
+                                  paddingBottom: "8px",
+                                },
                               }}
                             >
+                              <TableCell colSpan={3} align="center">
+                                TOTAL
+                              </TableCell>
+
+                              <TableCell align="right">
+                                {formatRupiah(summary.total_gaji_kotor)}
+                              </TableCell>
+
                               <TableCell
-                                colSpan={8}
-                                align="center"
-                                sx={{ fontSize: "12px" }}
+                                align="right"
+                                sx={{ color: "#d32f2f" }}
                               >
-                                Total
+                                {formatRupiah(summary.total_potongan)}
                               </TableCell>
-                              {/* Kolom lain yang tidak dijumlahkan bisa kosong */}
-                              <TableCell />
-                              <TableCell align="left" sx={{ fontSize: "12px" }}>
-                                {formatRupiah(totals.gaji_pokok)}
+
+                              <TableCell align="right">
+                                {formatRupiah(summary.total_gaji_bersih)}
                               </TableCell>
-                              <TableCell align="left" sx={{ fontSize: "12px" }}>
-                                {formatRupiah(totals.tunjangan_kehadiran)}
-                              </TableCell>
-                              <TableCell align="left" sx={{ fontSize: "12px" }}>
-                                {formatRupiah(totals.potongan)}
-                              </TableCell>
-                              <TableCell align="left" sx={{ fontSize: "12px" }}>
-                                {formatRupiah(totals.kasbon)}
-                              </TableCell>
-                              <TableCell align="left" sx={{ fontSize: "12px" }}>
-                                {formatRupiah(totals.total_gaji)}
-                              </TableCell>
-                              <TableCell />
-                              <TableCell />
-                              <TableCell align="left" sx={{ fontSize: "12px" }}>
-                                {formatRupiah(totals.total_bayaran_lembur)}
-                              </TableCell>
-                              <TableCell align="left" sx={{ fontSize: "12px" }}>
-                                {formatRupiah(totals.gaji_bersih)}
-                              </TableCell>
-                              <TableCell />
-                              <TableCell />
+
                               <TableCell />
                             </TableRow>
                           </>
