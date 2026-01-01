@@ -13,9 +13,12 @@ import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 import api from "../../shared/Api";
 import { PerhitunganGajiExportPDF } from "../components/PerhitunganGajiExportPDF";
 import { PerhitunganGajiExportXLSX } from "../components/PerhitunganGajiExportXLSX";
+import { exportPayrollExcel } from "../components/exportPayrollExcel";
+import { ExportPayrollPreviewPDF } from "../components/ExportPayrollPreviewPDF";
 import ModalRingkasanGaji from "../components/ModalRingkasanGaji";
 import ModalBayarKasbon from "../components/ModalBayarKasbon";
 import ModalBayarGaji from "../components/ModalBayarGaji";
+import ModalDetailGaji from "../components/ModalDetailGaji";
 
 const kolom = [
   { id: "nama", label: "Nama", minWidth: 120 },
@@ -24,6 +27,7 @@ const kolom = [
   { id: "total_potongan_estimasi", label: "Potongan", minWidth: 120 },
   { id: "gaji_bersih", label: "Gaji Bersih", minWidth: 120 },
   { id: "rekap_disiplin", label: "Rekap Disiplin", minWidth: 180 },
+  { id: "aksi", label: "Aksi", minWidth: 100 },
 ];
 
 const headStyle = {
@@ -75,6 +79,9 @@ const PerhitunganGaji = () => {
   const [showModalRingkasanGaji, setShowModalRingkasanGaji] = useState(false);
   const handleOpenModal = () => setShowModalRingkasanGaji(true);
   const handleCloseModal = () => setShowModalRingkasanGaji(false);
+
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedDetailPegawai, setSelectedDetailPegawai] = useState(null);
 
   // State untuk modal bayar kasbon
   const [showBayarKasbon, setShowBayarKasbon] = useState(false);
@@ -758,17 +765,11 @@ const PerhitunganGaji = () => {
                       type="button"
                       className="flex items-center text-[12px] bg-green-500 text-white hover:bg-green-700 rounded-[20px] px-4 py-2"
                       onClick={() =>
-                        PerhitunganGajiExportXLSX({
-                          filteredData,
+                        exportPayrollExcel({
+                          data: filteredData,
                           selectedNamaList,
-                          totalGajiTerpilih,
-                          totalLemburanTerpilih,
-                          getFileName,
-                          getFilteredSections,
-                          toTitleCase,
-                          singkatTipe,
-                          formatTerlambat,
-                          formatRupiah,
+                          bulan: selectedMonth,
+                          tahun: selectedYear,
                         })
                       }
                     >
@@ -781,16 +782,11 @@ const PerhitunganGaji = () => {
                       type="button"
                       className="flex items-center text-[12px] bg-red-700 text-white hover:bg-red-500 rounded-[20px] px-4 py-2"
                       onClick={() =>
-                        PerhitunganGajiExportPDF({
-                          kolom,
-                          filteredData,
+                        ExportPayrollPreviewPDF({
+                          data: filteredData,
                           selectedNamaList,
-                          getDateLabel,
-                          getFileName,
-                          getFilteredSections,
-                          toTitleCase,
-                          singkatTipe,
-                          formatTerlambat,
+                          bulan: selectedMonth,
+                          tahun: selectedYear,
                           formatRupiah,
                         })
                       }
@@ -918,6 +914,17 @@ const PerhitunganGaji = () => {
                           >
                             Rekap Disiplin
                           </TableCell>
+                          {/* Aksi */}
+                          <TableCell
+                            sx={{
+                              ...headStyle,
+                              minWidth: 80,
+                              maxWidth: 90,
+                              textAlign: "center",
+                            }}
+                          >
+                            Aksi
+                          </TableCell>
                         </TableRow>
                       </TableHead>
 
@@ -1014,6 +1021,24 @@ const PerhitunganGaji = () => {
                                 >
                                   {item.rekap_disiplin || "-"}
                                 </TableCell>
+                                <TableCell
+                                  align="center"
+                                  sx={{
+                                    ...cellStyle,
+                                  }}
+                                >
+                                  <button
+                                    onClick={() => {
+                                      setSelectedDetailPegawai(
+                                        item.id_karyawan
+                                      );
+                                      setShowDetailModal(true);
+                                    }}
+                                    className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded-lg"
+                                  >
+                                    Detail
+                                  </button>
+                                </TableCell>
                               </TableRow>
                             ))}
 
@@ -1051,7 +1076,7 @@ const PerhitunganGaji = () => {
                               <TableCell align="right">
                                 {formatRupiah(summary.total_gaji_bersih)}
                               </TableCell>
-
+                              <TableCell />
                               <TableCell />
                             </TableRow>
                           </>
@@ -1087,6 +1112,19 @@ const PerhitunganGaji = () => {
                   Lihat Ringkasan Gaji
                 </button> */}
               </div>
+
+              {showDetailModal && (
+                <ModalDetailGaji
+                  idKaryawan={selectedDetailPegawai}
+                  defaultBulan={selectedMonth}
+                  defaultTahun={selectedYear}
+                  formatRupiah={formatRupiah}
+                  onClose={() => {
+                    setShowDetailModal(false);
+                    setSelectedDetailPegawai(null);
+                  }}
+                />
+              )}
 
               {/* Modal Bayar Gaji */}
               {showBayarGajiModal && (
