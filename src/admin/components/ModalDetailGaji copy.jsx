@@ -18,8 +18,6 @@ const ModalDetailGaji = ({
   const [data, setData] = useState(null);
   const potonganHarian = data?.potongan?.harian?.detail || [];
   const potonganBulanan = data?.potongan?.bulanan;
-  const [totalLembur, setTotalLembur] = useState(0);
-  const totalGajiAkhir = (data?.gaji_bersih || 0) + totalLembur;
 
   const fetchData = async () => {
     try {
@@ -35,37 +33,9 @@ const ModalDetailGaji = ({
       setLoading(false);
     }
   };
-  const fetchLembur = async () => {
-    try {
-      const start = `${tahun}-${String(bulan).padStart(2, "0")}-01`;
-      const lastDay = new Date(tahun, bulan, 0).getDate();
-      const end = `${tahun}-${String(bulan).padStart(2, "0")}-${lastDay}`;
-
-      const res = await api.get("/lembur/", {
-        params: {
-          id_karyawan: idKaryawan,
-          start_date: start,
-          end_date: end,
-        },
-      });
-
-      const total = (res.data?.data || []).reduce(
-        (sum, row) => sum + (row.total_bayaran || 0),
-        0
-      );
-
-      setTotalLembur(total);
-    } catch (err) {
-      console.error("Gagal fetch lembur:", err);
-      setTotalLembur(0);
-    }
-  };
 
   useEffect(() => {
-    if (idKaryawan) {
-      fetchData();
-      fetchLembur();
-    }
+    if (idKaryawan) fetchData();
   }, [idKaryawan, bulan, tahun]);
 
   if (!idKaryawan) return null;
@@ -270,15 +240,6 @@ const ModalDetailGaji = ({
     doc.setFont(undefined, "bold");
     doc.text("GAJI BERSIH", 14, startY);
     doc.text(formatRupiah(data.gaji_bersih), 196, startY, { align: "right" });
-
-    startY += 8;
-    doc.text("GAJI LEMBUR", 14, startY);
-    doc.text(formatRupiah(totalLembur), 196, startY, { align: "right" });
-
-    startY += 10;
-    doc.setFontSize(14);
-    doc.text("TOTAL GAJI DITERIMA", 14, startY);
-    doc.text(formatRupiah(totalGajiAkhir), 196, startY, { align: "right" });
 
     /* ================= FOOTER ================= */
     doc.setFontSize(9);
@@ -524,27 +485,6 @@ const ModalDetailGaji = ({
                 </span>
                 <span className="text-2xl font-bold text-green-700">
                   {formatRupiah(data.gaji_bersih)}
-                </span>
-              </div>
-            </section>
-
-            <section>
-              <div className="rounded-xl border bg-blue-50 px-6 py-4 flex justify-between items-center">
-                <span className="text-lg font-semibold text-gray-700">
-                  Gaji Lembur
-                </span>
-                <span className="text-xl font-bold text-blue-700">
-                  {formatRupiah(totalLembur)}
-                </span>
-              </div>
-            </section>
-            <section>
-              <div className="rounded-xl border bg-green-100 px-6 py-5 flex justify-between items-center">
-                <span className="text-lg font-semibold text-gray-800">
-                  Total Gaji Diterima
-                </span>
-                <span className="text-2xl font-bold text-green-800">
-                  {formatRupiah(totalGajiAkhir)}
                 </span>
               </div>
             </section>
