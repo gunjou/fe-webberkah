@@ -157,13 +157,15 @@ const Presensi = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const start = `${izinSelectedYear}-${String(izinSelectedMonth).padStart(
-        2,
-        "0"
-      )}-01`;
-      const end = new Date(izinSelectedYear, izinSelectedMonth, 0)
-        .toISOString()
-        .split("T")[0];
+      // Membuat objek dayjs berdasarkan bulan dan tahun yang dipilih
+      // Catatan: Dayjs bulan dimulai dari 0 (Jan) sampai 11 (Des),
+      // jadi jika izinSelectedMonth adalah 1-12, kita kurangi 1.
+      const selectedDate = dayjs()
+        .year(izinSelectedYear)
+        .month(izinSelectedMonth - 1);
+
+      const start = selectedDate.startOf("month").format("YYYY-MM-DD");
+      const end = selectedDate.endOf("month").format("YYYY-MM-DD");
 
       const url = `/perizinan-new/?start_date=${start}&end_date=${end}`;
 
