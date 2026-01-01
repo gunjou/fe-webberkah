@@ -13,8 +13,11 @@ const ModalDetailGaji = ({
 }) => {
   const [bulan, setBulan] = useState(defaultBulan);
   const [tahun, setTahun] = useState(defaultTahun);
+
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
+  const potonganHarian = data?.potongan?.harian?.detail || [];
+  const potonganBulanan = data?.potongan?.bulanan;
 
   const fetchData = async () => {
     try {
@@ -47,38 +50,29 @@ const ModalDetailGaji = ({
       year: "numeric",
     });
 
-    // ================= HEADER =================
+    /* ================= HEADER ================= */
     doc.setFontSize(16);
+    doc.setFont(undefined, "bold");
     doc.text("SLIP GAJI KARYAWAN", 105, 20, { align: "center" });
 
     doc.setFontSize(10);
+    doc.setFont(undefined, "normal");
     doc.text(`Periode: ${bulanText}`, 105, 26, { align: "center" });
 
-    // ================= INFO KARYAWAN =================
-    doc.setFontSize(10);
+    /* ================= INFO ================= */
     doc.text("Nama Karyawan", 14, 38);
-    doc.text(":", 50, 38);
-    doc.text(
-      data.nama_karyawan
-        ?.toLowerCase()
-        .replace(/\b\w/g, (c) => c.toUpperCase()),
-      55,
-      38
-    );
+    doc.text(":", 48, 38);
+    doc.text(data.nama_karyawan || "-", 52, 38);
 
-    doc.text(
-      data.jenis_pegawai
-        ?.toLowerCase()
-        .replace(/\b\w/g, (c) => c.toUpperCase()),
-      55,
-      44
-    );
-    doc.text(":", 50, 44);
-    doc.text(data.jenis_pegawai, 55, 44);
+    doc.text("Jenis Pegawai", 14, 44);
+    doc.text(":", 48, 44);
+    doc.text(data.jenis_pegawai || "-", 52, 44);
 
-    // ================= KOMPONEN GAJI =================
+    /* ================= KOMPONEN GAJI ================= */
     doc.autoTable({
       startY: 52,
+      tableWidth: 180,
+      margin: { left: 14 },
       head: [["Komponen Gaji", "Nominal"]],
       body: [
         ["Gaji Pokok", formatRupiah(data.komponen_gaji.gaji_pokok)],
@@ -95,100 +89,159 @@ const ModalDetailGaji = ({
       ],
       styles: {
         fontSize: 10,
-        cellPadding: 3,
+        cellPadding: 4,
+        textColor: 0,
+        lineWidth: 0.1,
       },
       headStyles: {
-        fillColor: [229, 240, 255], // biru soft
-        textColor: 40,
+        fillColor: [229, 231, 235],
         fontStyle: "bold",
       },
-      alternateRowStyles: {
-        fillColor: [250, 250, 250],
-      },
       columnStyles: {
-        1: { halign: "right" },
+        0: { cellWidth: 120 },
+        1: { cellWidth: 60, halign: "right" },
       },
-      didParseCell: (dataCell) => {
-        if (dataCell.row.index === 4) {
-          dataCell.cell.styles.fillColor = [229, 231, 235]; // total
-          dataCell.cell.styles.fontStyle = "bold";
+      didParseCell: (d) => {
+        if (d.row.index === 4) {
+          d.cell.styles.fontStyle = "bold";
+          d.cell.styles.fillColor = [229, 231, 235];
         }
       },
     });
 
-    // ================= POTONGAN =================
-    const potonganRows = [];
+    /* ================= POTONGAN HARIAN ================= */
+    let startY = doc.lastAutoTable.finalY + 10;
 
-    data.potongan?.harian?.detail.forEach((d) => {
+    doc.setFontSize(12);
+    doc.setFont(undefined, "bold");
+    doc.text("Potongan Harian", 14, startY);
+    startY += 4;
+
+    const potonganHarianRows = [];
+
+    data.potongan?.harian?.detail?.forEach((d) => {
       d.potongan.forEach((p) => {
-        potonganRows.push([
+        potonganHarianRows.push([
           d.tanggal,
-          `${p.jenis} (${p.target})`,
+          p.jenis,
+          p.target,
           `${p.persen}%`,
           `- ${formatRupiah(p.nominal)}`,
         ]);
       });
     });
 
-    if (data.potongan?.bulanan) {
-      potonganRows.push([
-        "Bulanan",
-        `${data.potongan.bulanan.jenis} (${data.potongan.bulanan.target})`,
-        `${data.potongan.bulanan.persen}%`,
-        `- ${formatRupiah(data.potongan.bulanan.nominal)}`,
-      ]);
+    if (potonganHarianRows.length === 0) {
+      potonganHarianRows.push(["-", "-", "-", "-", "-"]);
     }
 
-    potonganRows.push([
+    potonganHarianRows.push([
       "",
-      "Total Potongan",
       "",
-      `- ${formatRupiah(data.potongan.total_potongan)}`,
+      "Total Potongan Harian",
+      "",
+      `- ${formatRupiah(data.potongan.harian.total)}`,
     ]);
 
     doc.autoTable({
-      startY: doc.lastAutoTable.finalY + 8,
-      head: [["Tanggal", "Keterangan", "Persen", "Nominal"]],
-      body: potonganRows,
+      startY,
+      tableWidth: 180,
+      margin: { left: 14 },
+      head: [["Tanggal", "Jenis", "Keterangan", "%", "Nominal"]],
+      body: potonganHarianRows,
       styles: {
-        fontSize: 10,
+        fontSize: 9,
         cellPadding: 3,
+        textColor: 0,
+        lineWidth: 0.1,
       },
       headStyles: {
-        fillColor: [255, 241, 242], // pink soft
-        textColor: 80,
+        fillColor: [229, 231, 235],
         fontStyle: "bold",
       },
-      alternateRowStyles: {
-        fillColor: [250, 250, 250],
-      },
       columnStyles: {
-        2: { halign: "right" },
-        3: { halign: "right", textColor: [180, 0, 0] },
+        0: { cellWidth: 28 }, // tanggal
+        1: { cellWidth: 32 }, // jenis
+        2: { cellWidth: 60 }, // keterangan (LEBAR)
+        3: { cellWidth: 20, halign: "right" },
+        4: { cellWidth: 40, halign: "right" },
       },
-      didParseCell: (dataCell) => {
-        if (dataCell.row.raw && dataCell.row.raw[1] === "Total Potongan") {
-          dataCell.cell.styles.fillColor = [229, 231, 235];
-          dataCell.cell.styles.fontStyle = "bold";
-          dataCell.cell.styles.textColor = [180, 0, 0];
+      didParseCell: (d) => {
+        if (d.row.raw?.[2] === "Total Potongan Harian") {
+          d.cell.styles.fontStyle = "bold";
+          d.cell.styles.fillColor = [229, 231, 235];
         }
       },
     });
 
-    // ================= GAJI BERSIH =================
-    const finalY = doc.lastAutoTable.finalY + 12;
-
-    doc.setFillColor(220, 252, 231); // green soft
-    doc.rect(14, finalY - 6, 182, 10, "F");
+    /* ================= POTONGAN BULANAN ================= */
+    startY = doc.lastAutoTable.finalY + 10;
 
     doc.setFontSize(12);
     doc.setFont(undefined, "bold");
-    doc.text("GAJI BERSIH", 18, finalY);
-    doc.text(formatRupiah(data.gaji_bersih), 196, finalY, {
-      align: "right",
+    doc.text("Potongan Bulanan", 14, startY);
+    startY += 4;
+
+    const potonganBulananRows = [];
+
+    if (data.potongan?.bulanan) {
+      potonganBulananRows.push([
+        data.potongan.bulanan.jenis,
+        data.potongan.bulanan.target,
+        `${data.potongan.bulanan.persen}%`,
+        `${data.potongan.bulanan.jumlah} hari`,
+        `- ${formatRupiah(data.potongan.bulanan.nominal)}`,
+      ]);
+    } else {
+      potonganBulananRows.push(["-", "-", "-", "-", "-"]);
+    }
+
+    doc.autoTable({
+      startY,
+      tableWidth: 180,
+      margin: { left: 14 },
+      head: [["Jenis", "Keterangan", "%", "Jumlah", "Nominal"]],
+      body: potonganBulananRows,
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        textColor: 0,
+        lineWidth: 0.1,
+      },
+      headStyles: {
+        fillColor: [229, 231, 235],
+        fontStyle: "bold",
+      },
+      columnStyles: {
+        0: { cellWidth: 32 },
+        1: { cellWidth: 60 }, // keterangan lebar
+        2: { cellWidth: 20, halign: "right" },
+        3: { cellWidth: 28, halign: "right" },
+        4: { cellWidth: 40, halign: "right" },
+      },
     });
 
-    // ================= FOOTER =================
+    /* ================= TOTAL POTONGAN ================= */
+    startY = doc.lastAutoTable.finalY + 8;
+
+    doc.setFontSize(11);
+    doc.setFont(undefined, "bold");
+    doc.text(
+      `Total Potongan: - ${formatRupiah(data.potongan.total_potongan)}`,
+      196,
+      startY,
+      { align: "right" }
+    );
+
+    /* ================= GAJI BERSIH ================= */
+    startY += 10;
+
+    doc.setFontSize(13);
+    doc.setFont(undefined, "bold");
+    doc.text("GAJI BERSIH", 14, startY);
+    doc.text(formatRupiah(data.gaji_bersih), 196, startY, { align: "right" });
+
+    /* ================= FOOTER ================= */
     doc.setFontSize(9);
     doc.setFont(undefined, "normal");
     doc.text("Slip gaji ini dihasilkan secara otomatis oleh sistem", 105, 285, {
@@ -306,22 +359,36 @@ const ModalDetailGaji = ({
               </div>
             </section>
 
-            {/* ================= POTONGAN ================= */}
+            {/* ================= POTONGAN HARIAN ================= */}
             <section>
-              <h2 className="font-semibold text-red-600 mb-3">Potongan</h2>
+              <h3 className="font-semibold text-gray-700 mb-2">
+                Potongan Harian
+              </h3>
+
               <div className="overflow-hidden rounded-xl border bg-white">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-100 text-gray-600 sticky top-0">
+                  <thead className="bg-gray-100 text-gray-600">
                     <tr>
                       <th className="px-4 py-3 text-left">Tanggal</th>
                       <th className="px-4 py-3 text-left">Jenis</th>
-                      <th className="px-4 py-3 text-left">Target</th>
+                      <th className="px-4 py-3 text-left">Keterangan</th>
                       <th className="px-4 py-3 text-right">%</th>
                       <th className="px-4 py-3 text-right">Nominal</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.potongan.harian.detail.map((d, i) =>
+                    {potonganHarian.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-4 py-3 text-center text-gray-500"
+                        >
+                          Tidak ada potongan harian
+                        </td>
+                      </tr>
+                    )}
+
+                    {potonganHarian.map((d, i) =>
                       d.potongan.map((p, idx) => (
                         <tr
                           key={`${i}-${idx}`}
@@ -338,34 +405,75 @@ const ModalDetailGaji = ({
                       ))
                     )}
 
-                    {data.potongan.bulanan && (
-                      <tr className="bg-red-50">
-                        <td className="px-4 py-2">Bulanan</td>
-                        <td className="px-4 py-2 capitalize">
-                          {data.potongan.bulanan.jenis}
-                        </td>
-                        <td className="px-4 py-2">
-                          {data.potongan.bulanan.target}
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          {data.potongan.bulanan.persen}%
-                        </td>
-                        <td className="px-4 py-2 text-right text-red-700">
-                          -{formatRupiah(data.potongan.bulanan.nominal)}
-                        </td>
-                      </tr>
-                    )}
-
                     <tr className="font-semibold bg-gray-100">
                       <td colSpan={4} className="px-4 py-3">
-                        Total Potongan
+                        Total Potongan Harian
                       </td>
                       <td className="px-4 py-3 text-right text-red-700">
-                        -{formatRupiah(data.potongan.total_potongan)}
+                        -{formatRupiah(data.potongan.harian.total)}
                       </td>
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            </section>
+            {/* ================= POTONGAN BULANAN ================= */}
+            <section>
+              <h3 className="font-semibold text-gray-700 mb-2">
+                Potongan Bulanan
+              </h3>
+
+              <div className="overflow-hidden rounded-xl border bg-white">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100 text-gray-600">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Jenis</th>
+                      <th className="px-4 py-3 text-left">Keterangan</th>
+                      <th className="px-4 py-3 text-right">%</th>
+                      <th className="px-4 py-3 text-right">Jumlah</th>
+                      <th className="px-4 py-3 text-right">Nominal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {!potonganBulanan ? (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-4 py-3 text-center text-gray-500"
+                        >
+                          Tidak ada potongan bulanan
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr className="bg-red-50">
+                        <td className="px-4 py-2 capitalize">
+                          {potonganBulanan.jenis}
+                        </td>
+                        <td className="px-4 py-2">{potonganBulanan.target}</td>
+                        <td className="px-4 py-2 text-right">
+                          {potonganBulanan.persen}%
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          {potonganBulanan.jumlah} hari
+                        </td>
+                        <td className="px-4 py-2 text-right text-red-700">
+                          -{formatRupiah(potonganBulanan.nominal)}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section>
+              <div className="rounded-xl border bg-gray-50 px-6 py-4 flex justify-between items-center">
+                <span className="font-semibold text-gray-700">
+                  Total Potongan
+                </span>
+                <span className="font-bold text-red-700">
+                  -{formatRupiah(data.potongan.total_potongan)}
+                </span>
               </div>
             </section>
 

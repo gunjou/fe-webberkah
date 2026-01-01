@@ -11,8 +11,6 @@ import Paper from "@mui/material/Paper";
 import "jspdf-autotable";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 import api from "../../shared/Api";
-import { PerhitunganGajiExportPDF } from "../components/PerhitunganGajiExportPDF";
-import { PerhitunganGajiExportXLSX } from "../components/PerhitunganGajiExportXLSX";
 import { exportPayrollExcel } from "../components/exportPayrollExcel";
 import { ExportPayrollPreviewPDF } from "../components/ExportPayrollPreviewPDF";
 import ModalRingkasanGaji from "../components/ModalRingkasanGaji";
@@ -33,15 +31,6 @@ const cellStyle = {
   fontSize: "12px",
   padding: "4px",
   whiteSpace: "nowrap",
-};
-
-const formatTerlambat = (menit) => {
-  if (!menit || isNaN(menit)) return "-";
-  const jam = Math.floor(menit / 60);
-  const sisaMenit = menit % 60;
-  if (jam > 0 && sisaMenit > 0) return `${jam} j ${sisaMenit} m`;
-  if (jam > 0) return `${jam} j`;
-  return `${sisaMenit} m`;
 };
 
 const PerhitunganGaji = () => {
@@ -688,6 +677,25 @@ const PerhitunganGaji = () => {
     fetchStatusPembayaran();
   }, [selectedMonth, selectedYear]);
 
+  const handleGeneratePayroll = async () => {
+    try {
+      setLoading(true);
+
+      await api.post(
+        `/payroll/generate/all?bulan=${selectedMonth}&tahun=${selectedYear}`
+      );
+
+      await fetchData();
+
+      alert("Payroll berhasil digenerate");
+    } catch (err) {
+      console.error(err.response?.data || err);
+      alert(err.response?.data?.message || "Gagal generate payroll");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="Perhitungan Gaji">
       <div className="flex">
@@ -926,12 +934,26 @@ const PerhitunganGaji = () => {
                               colSpan={7}
                               sx={{
                                 fontSize: 12,
-                                padding: "10px",
+                                padding: "20px",
                                 textAlign: "center",
                                 color: "#777",
                               }}
                             >
-                              Tidak ada data
+                              <div className="flex flex-col items-center gap-3">
+                                <span>
+                                  Tidak ada data gaji untuk periode ini
+                                </span>
+
+                                <button
+                                  onClick={handleGeneratePayroll}
+                                  disabled={loading}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg disabled:opacity-60"
+                                >
+                                  {loading
+                                    ? "Memproses..."
+                                    : "Generate Gaji Pegawai"}
+                                </button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ) : (
