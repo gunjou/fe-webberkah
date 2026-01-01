@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
-import React from "react";
-import { Sidebar, SidebarLogo } from "flowbite-react";
+import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
 import {
   FaUserFriends,
   FaClipboardList,
@@ -12,86 +12,88 @@ import { IoTimer } from "react-icons/io5";
 import { HiOutlineMinus, HiOutlinePlus } from "react-icons/hi";
 import { MdLeaderboard } from "react-icons/md";
 import { FaMoneyCheckDollar } from "react-icons/fa6";
-
 import { twMerge } from "tailwind-merge";
-import { NavLink } from "react-router-dom";
+
+const NavItem = ({ to, icon: Icon, label }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) =>
+      twMerge(
+        "flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition",
+        isActive
+          ? "bg-blue-600 text-white"
+          : "text-gray-700 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-gray-700"
+      )
+    }
+  >
+    <Icon className="text-lg shrink-0" />
+    <span>{label}</span>
+  </NavLink>
+);
 
 const SideMenu = () => {
+  const [openAbsensi, setOpenAbsensi] = useState(true);
+
   return (
-    <div className="SideMenu fixed top-0 left-0 z-50 border-r-lg border-black shadow-[50px] h-screen bg-blue-300 w-64">
-      <Sidebar aria-label="Sidebar with multi-level dropdown example">
-        <Sidebar.Items>
-          <SidebarLogo href="#" className="flex items-center pl-0">
-            <div className="flex">
-              <img
-                src={process.env.PUBLIC_URL + "images/logo.png"}
-                className="mr-2 h-9"
-                alt="Berkah Angsana Logo"
-              />
-              <span className="text-lg font-bold dark:text-white pt-1">
-                Berkah Angsana
-              </span>
-            </div>
-          </SidebarLogo>
+    <aside className="fixed top-0 left-0 z-50 h-screen w-64 bg-white dark:bg-gray-900 border-r shadow-lg">
+      {/* Logo */}
+      <div className="flex items-center gap-2 px-5 py-3 border-b dark:border-gray-700">
+        <img
+          src={process.env.PUBLIC_URL + "images/logo.png"}
+          alt="Berkah Angsana"
+          className="h-8 w-7 object-contain"
+        />
+        <span className="text-lg font-bold text-gray-900 dark:text-white">
+          Berkah Angsana
+        </span>
+      </div>
 
-          <Sidebar.ItemGroup className="text-gray-800">
-            <Sidebar.Collapse
-              icon={FaClipboardList}
-              label="Absensi"
-              open={true}
-              renderChevronIcon={(theme, open) => {
-                const IconComponent = open ? HiOutlineMinus : HiOutlinePlus;
-                return (
-                  <IconComponent
-                    aria-hidden
-                    className={twMerge(
-                      theme.label.icon.open[open ? "on" : "off"]
-                    )}
-                  />
-                );
-              }}
-            >
-              <NavLink to={"/presensi"}>
-                <Sidebar.Item icon={FaClipboardCheck}>
-                  <span className="left-14 flex">Presensi</span>
-                </Sidebar.Item>
-              </NavLink>
-              <NavLink to={"/rekapan"}>
-                <Sidebar.Item icon={HiClipboardDocumentList}>
-                  <span className="left-14 flex">Rekapan</span>
-                </Sidebar.Item>
-              </NavLink>
-              <NavLink to={"/lembur"}>
-                <Sidebar.Item icon={IoTimer}>
-                  <span className="left-14 flex">Lembur</span>
-                </Sidebar.Item>
-              </NavLink>
-              <NavLink to={"/leaderboard"}>
-                <Sidebar.Item icon={MdLeaderboard}>
-                  <span className="left-14 flex">Leaderboard</span>
-                </Sidebar.Item>
-              </NavLink>
-            </Sidebar.Collapse>
+      {/* Menu */}
+      <nav className="px-3 py-4 space-y-1">
+        {/* Absensi Collapse */}
+        <button
+          onClick={() => setOpenAbsensi(!openAbsensi)}
+          className="w-full flex items-center justify-between px-4 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-gray-700 transition"
+        >
+          <div className="flex items-center gap-3">
+            <FaClipboardList className="text-lg" />
+            <span className="text-sm font-medium">Absensi</span>
+          </div>
+          {openAbsensi ? <HiOutlineMinus /> : <HiOutlinePlus />}
+        </button>
 
-            <NavLink to={"/perhitungan-gaji"}>
-              <Sidebar.Item icon={FaCalculator}>
-                <span className="left-14 flex">Perhitungan Gaji</span>
-              </Sidebar.Item>
-            </NavLink>
-            <NavLink to={"/hutang-pegawai"}>
-              <Sidebar.Item icon={FaMoneyCheckDollar}>
-                <span className="left-14 flex">Hutang Pegawai</span>
-              </Sidebar.Item>
-            </NavLink>
-            <NavLink to={"/pegawai"}>
-              <Sidebar.Item icon={FaUserFriends}>
-                <span className="left-14 flex">Data Pegawai</span>
-              </Sidebar.Item>
-            </NavLink>
-          </Sidebar.ItemGroup>
-        </Sidebar.Items>
-      </Sidebar>
-    </div>
+        {openAbsensi && (
+          <div className="ml-6 mt-1 space-y-1">
+            <NavItem to="/presensi" icon={FaClipboardCheck} label="Presensi" />
+            <NavItem
+              to="/rekapan"
+              icon={HiClipboardDocumentList}
+              label="Rekapan"
+            />
+            <NavItem to="/lembur" icon={IoTimer} label="Lembur" />
+            <NavItem
+              to="/leaderboard"
+              icon={MdLeaderboard}
+              label="Leaderboard"
+            />
+          </div>
+        )}
+
+        <div className="pt-2 space-y-1">
+          <NavItem
+            to="/perhitungan-gaji"
+            icon={FaCalculator}
+            label="Perhitungan Gaji"
+          />
+          <NavItem
+            to="/hutang-pegawai"
+            icon={FaMoneyCheckDollar}
+            label="Hutang Pegawai"
+          />
+          <NavItem to="/pegawai" icon={FaUserFriends} label="Data Pegawai" />
+        </div>
+      </nav>
+    </aside>
   );
 };
 

@@ -10,6 +10,9 @@ import PerhitunganGaji from "./PerhitunganGaji";
 import Leaderboard from "./Leaderboard";
 import HutangPegawai from "./HutangPegawai";
 
+const NAVBAR_HEIGHT = 56; // samakan dengan NavMenu
+const SIDEBAR_WIDTH = 259; // w-64
+
 const Dashboard = ({ type }) => {
   let content;
 
@@ -20,7 +23,6 @@ const Dashboard = ({ type }) => {
     case "profile-pegawai":
       content = <Pegawai />;
       break;
-
     case "rekapan":
       content = <Rekapan />;
       break;
@@ -37,20 +39,29 @@ const Dashboard = ({ type }) => {
       content = <Leaderboard />;
       break;
     default:
-      content = <Presensi />; // Konten default jika tidak ada case yang cocok
+      content = <Presensi />;
       break;
   }
 
   return (
-    <div className="Dashboard ml-64 bg-white- min-h-screen">
-      {/* Navbar Section */}
+    <>
+      {/* NAVBAR (fixed) */}
       <NavMenu />
-      <div className="flex">
-        {/* Sidebar section */}
-        <SideMenu className="sticky" />
+
+      {/* SIDEBAR (fixed) */}
+      <SideMenu />
+
+      {/* CONTENT */}
+      <main
+        className="min-h-screen bg-white"
+        style={{
+          paddingTop: NAVBAR_HEIGHT,
+          paddingLeft: SIDEBAR_WIDTH,
+        }}
+      >
         {content}
-      </div>
-    </div>
+      </main>
+    </>
   );
 };
 

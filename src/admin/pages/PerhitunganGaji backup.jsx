@@ -70,7 +70,6 @@ const PerhitunganGaji = () => {
   const [hutangData, setHutangData] = useState(null);
   const [hutangLoading, setHutangLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [lemburMap, setLemburMap] = useState({});
 
   const [bayarData, setBayarData] = useState({
     nominal: "",
@@ -86,19 +85,6 @@ const PerhitunganGaji = () => {
     lembur: 0,
     tunjangan: 0,
   });
-
-  const getStartEndDate = () => {
-    const start = `${selectedYear}-${String(selectedMonth).padStart(
-      2,
-      "0"
-    )}-01`;
-    const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
-    const end = `${selectedYear}-${String(selectedMonth).padStart(
-      2,
-      "0"
-    )}-${String(lastDay).padStart(2, "0")}`;
-    return { start, end };
-  };
 
   const handleOpenBayarGajiModal = () => {
     const sections = getFilteredSections();
@@ -128,10 +114,7 @@ const PerhitunganGaji = () => {
         },
       });
 
-      const payrollData = res.data.data || [];
-      setAbsen(payrollData);
-
-      await fetchLemburPerKaryawan(payrollData); // 🔥 PENTING
+      setAbsen(res.data.data || []);
 
       setSummary({
         jumlah_karyawan: res.data.jumlah_karyawan,
@@ -144,53 +127,6 @@ const PerhitunganGaji = () => {
     } catch (err) {
       console.error(err);
       setLoading(false);
-    }
-  };
-
-  const fetchLemburPerKaryawan = async (dataPayroll) => {
-    const { start, end } = getStartEndDate();
-
-    try {
-      const results = await Promise.all(
-        dataPayroll.map(async (item) => {
-          try {
-            const res = await api.get("/lembur/", {
-              params: {
-                id_karyawan: item.id_karyawan,
-                start_date: start,
-                end_date: end,
-              },
-            });
-
-            // ✅ JUMLAHKAN total_bayaran dari array
-            const totalLembur = (res.data?.data || []).reduce(
-              (sum, row) => sum + (row.total_bayaran || 0),
-              0
-            );
-
-            return {
-              id_karyawan: item.id_karyawan,
-              total_bayaran: totalLembur,
-            };
-          } catch (err) {
-            console.error("Error lembur id:", item.id_karyawan, err);
-            return {
-              id_karyawan: item.id_karyawan,
-              total_bayaran: 0,
-            };
-          }
-        })
-      );
-
-      // 🔄 ubah ke map biar gampang dipakai
-      const map = {};
-      results.forEach((r) => {
-        map[r.id_karyawan] = r.total_bayaran;
-      });
-
-      setLemburMap(map);
-    } catch (err) {
-      console.error("Gagal fetch lembur:", err);
     }
   };
 
@@ -760,15 +696,6 @@ const PerhitunganGaji = () => {
     }
   };
 
-  // ================= TOTAL LEMBUR =================
-  const totalGajiLembur = sourceData.reduce(
-    (sum, item) => sum + (lemburMap[item.id_karyawan] || 0),
-    0
-  );
-
-  const totalGajiBersihPlusLembur =
-    (summary.total_gaji_bersih || 0) + (totalGajiLembur || 0);
-
   return (
     <div className="Perhitungan Gaji">
       <div className="flex">
@@ -974,28 +901,6 @@ const PerhitunganGaji = () => {
                           >
                             Gaji Bersih
                           </TableCell>
-                          {/* Lembur */}
-                          <TableCell
-                            sx={{
-                              ...headStyle,
-                              minWidth: 120,
-                              maxWidth: 130,
-                            }}
-                            align="right"
-                          >
-                            Gaji Lembur
-                          </TableCell>
-
-                          <TableCell
-                            sx={{
-                              ...headStyle,
-                              minWidth: 120,
-                              maxWidth: 130,
-                            }}
-                            align="right"
-                          >
-                            Total
-                          </TableCell>
 
                           {/* Rekap Disiplin */}
                           <TableCell
@@ -1113,22 +1018,6 @@ const PerhitunganGaji = () => {
                                   {formatRupiah(item.gaji_bersih)}
                                 </TableCell>
 
-                                <TableCell sx={cellStyle} align="right">
-                                  {formatRupiah(
-                                    lemburMap[item.id_karyawan] || 0
-                                  )}
-                                </TableCell>
-
-                                <TableCell
-                                  sx={{ ...cellStyle, fontWeight: 600 }}
-                                  align="right"
-                                >
-                                  {formatRupiah(
-                                    (item.gaji_bersih || 0) +
-                                      (lemburMap[item.id_karyawan] || 0)
-                                  )}
-                                </TableCell>
-
                                 <TableCell
                                   sx={{
                                     fontSize: 12,
@@ -1185,12 +1074,10 @@ const PerhitunganGaji = () => {
                                 TOTAL
                               </TableCell>
 
-                              {/* Gaji Kotor */}
                               <TableCell align="right">
                                 {formatRupiah(summary.total_gaji_kotor)}
                               </TableCell>
 
-                              {/* Potongan */}
                               <TableCell
                                 align="right"
                                 sx={{ color: "#d32f2f" }}
@@ -1198,27 +1085,9 @@ const PerhitunganGaji = () => {
                                 {formatRupiah(summary.total_potongan)}
                               </TableCell>
 
-                              {/* Gaji Bersih */}
                               <TableCell align="right">
                                 {formatRupiah(summary.total_gaji_bersih)}
                               </TableCell>
-
-                              {/* Total Lembur */}
-                              <TableCell
-                                align="right"
-                                sx={{ color: "#1976d2" }}
-                              >
-                                {formatRupiah(totalGajiLembur)}
-                              </TableCell>
-
-                              {/* TOTAL (Gaji Bersih + Lembur) */}
-                              <TableCell
-                                align="right"
-                                sx={{ color: "#2e7d32" }}
-                              >
-                                {formatRupiah(totalGajiBersihPlusLembur)}
-                              </TableCell>
-
                               <TableCell />
                               <TableCell />
                             </TableRow>

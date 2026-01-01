@@ -20,20 +20,6 @@ const getFirstName = (fullName = "") => {
   return fullName.trim().split(" ")[0];
 };
 
-const buildFileName = ({ selectedNamaList, rowsData, monthName, tahun }) => {
-  if (selectedNamaList.length === 1) {
-    const firstName = getFirstName(selectedNamaList[0]);
-    return `Gaji_${sanitizeFileName(firstName)}_${monthName}_${tahun}`;
-  }
-
-  if (selectedNamaList.length > 1 && selectedNamaList.length <= 3) {
-    const firstName = getFirstName(selectedNamaList[0]);
-    return `Gaji_${sanitizeFileName(firstName)}_dkk_${monthName}_${tahun}`;
-  }
-
-  return `Gaji_${rowsData.length}_Pegawai_${monthName}_${tahun}`;
-};
-
 const capitalize = (value) => {
   const str = safeString(value);
   if (str === "-") return "-";
@@ -60,8 +46,8 @@ export const ExportPayrollPreviewPDF = ({
     return;
   }
 
-  const confirm = window.confirm("Unduh data gaji ke PDF?");
-  if (!confirm) return;
+  const confirmExport = window.confirm("Unduh data gaji ke PDF?");
+  if (!confirmExport) return;
 
   /* ========================
      FILTER DATA
@@ -109,22 +95,32 @@ export const ExportPayrollPreviewPDF = ({
       "Gaji Kotor",
       "Total Potongan",
       "Gaji Bersih",
+      "Gaji Lembur",
+      "Total",
       "Keterangan",
     ],
   ];
 
-  const tableBody = rowsData.map((item, index) => [
-    index + 1,
-    capitalize(item.nama),
-    capitalize(item.jenis_pegawai),
-    formatRupiah(item.gaji_kotor || 0),
-    formatRupiah(item.total_potongan || 0),
-    formatRupiah(item.gaji_bersih || 0),
-    safeString(item.keterangan),
-  ]);
+  const tableBody = rowsData.map((item, index) => {
+    const lembur = item.total_bayaran_lembur || 0;
+    const gajiBersih = item.gaji_bersih || 0;
+    const total = gajiBersih + lembur;
+
+    return [
+      index + 1,
+      capitalize(item.nama),
+      capitalize(item.jenis_pegawai),
+      formatRupiah(item.gaji_kotor || 0),
+      formatRupiah(item.total_potongan || 0),
+      formatRupiah(gajiBersih),
+      formatRupiah(lembur),
+      formatRupiah(total),
+      safeString(item.keterangan),
+    ];
+  });
 
   /* ========================
-     AUTOTABLE (NO TOTAL)
+     AUTOTABLE
   ======================== */
   doc.autoTable({
     startY: 32,
@@ -155,21 +151,36 @@ export const ExportPayrollPreviewPDF = ({
 
     columnStyles: {
       0: { halign: "center", cellWidth: 10 },
-      1: { cellWidth: 45 },
-      2: { halign: "center", cellWidth: 30 },
-      3: { halign: "right", cellWidth: 35 },
-      4: { halign: "right", cellWidth: 35 },
-      5: { halign: "right", cellWidth: 35 },
-      6: { cellWidth: 70 },
+      1: { cellWidth: 40 },
+      2: { halign: "center", cellWidth: 28 },
+      3: { halign: "right", cellWidth: 32 },
+      4: { halign: "right", cellWidth: 32 },
+      5: { halign: "right", cellWidth: 32 },
+      6: { halign: "right", cellWidth: 30 }, // lembur
+      7: { halign: "right", cellWidth: 32 }, // total
+      8: { cellWidth: 55 },
     },
 
     didParseCell: (data) => {
+      // Potongan merah
       if (data.section === "body" && data.column.index === 4) {
-        data.cell.styles.textColor = [198, 40, 40]; // potongan merah
+        data.cell.styles.textColor = [198, 40, 40];
       }
 
+      // Gaji Bersih bold
       if (data.section === "body" && data.column.index === 5) {
         data.cell.styles.fontStyle = "bold";
+      }
+
+      // Lembur biru
+      if (data.section === "body" && data.column.index === 6) {
+        data.cell.styles.textColor = [25, 118, 210];
+      }
+
+      // Total hijau & bold
+      if (data.section === "body" && data.column.index === 7) {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.textColor = [46, 125, 50];
       }
     },
   });
@@ -181,17 +192,26 @@ export const ExportPayrollPreviewPDF = ({
     (sum, d) => sum + (d.gaji_kotor || 0),
     0
   );
+
   const totalPotongan = rowsData.reduce(
     (sum, d) => sum + (d.total_potongan || 0),
     0
   );
+
   const totalGajiBersih = rowsData.reduce(
     (sum, d) => sum + (d.gaji_bersih || 0),
     0
   );
 
+  const totalGajiLembur = rowsData.reduce(
+    (sum, d) => sum + (d.total_bayaran_lembur || 0),
+    0
+  );
+
+  const totalGajiBersihPlusLembur = totalGajiBersih + totalGajiLembur;
+
   /* ========================
-     TOTAL SECTION (SEPARATE)
+     TOTAL SECTION
   ======================== */
   let y = doc.lastAutoTable.finalY + 12;
 
@@ -221,30 +241,26 @@ export const ExportPayrollPreviewPDF = ({
 
   drawTotalRow("Total Gaji Kotor", totalGajiKotor);
   drawTotalRow("Total Potongan", totalPotongan);
-  drawTotalRow("Total Gaji Bersih", totalGajiBersih, true);
+  drawTotalRow("Total Gaji Bersih", totalGajiBersih);
+  drawTotalRow("Total Gaji Lembur", totalGajiLembur);
+  drawTotalRow("TOTAL DITERIMA", totalGajiBersihPlusLembur, true);
 
   /* ========================
      SAVE FILE
   ======================== */
-  const getFirstName = (name = "") =>
-    name?.trim()?.split(" ")?.[0] || "Karyawan";
-
   const buildSelectedName = (names = []) => {
     if (!names.length) return "Karyawan";
 
     const firstNames = names.map(getFirstName);
 
-    // Lebih dari 5 → NamaPertama_dkk
     if (firstNames.length > 5) {
       return `${firstNames[0]}_dkk`;
     }
 
-    // 1 orang
     if (firstNames.length === 1) {
       return firstNames[0];
     }
 
-    // 2–5 orang → gabung & terakhir pakai &
     if (firstNames.length >= 2 && firstNames.length <= 5) {
       return (
         firstNames.slice(0, -1).join("_") +
