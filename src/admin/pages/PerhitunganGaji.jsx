@@ -20,16 +20,6 @@ import ModalBayarKasbon from "../components/ModalBayarKasbon";
 import ModalBayarGaji from "../components/ModalBayarGaji";
 import ModalDetailGaji from "../components/ModalDetailGaji";
 
-const kolom = [
-  { id: "nama", label: "Nama", minWidth: 120 },
-  { id: "jenis_pegawai", label: "Jenis", minWidth: 80 },
-  { id: "gaji_kotor", label: "Gaji Kotor", minWidth: 120 },
-  { id: "total_potongan_estimasi", label: "Potongan", minWidth: 120 },
-  { id: "gaji_bersih", label: "Gaji Bersih", minWidth: 120 },
-  { id: "rekap_disiplin", label: "Rekap Disiplin", minWidth: 180 },
-  { id: "aksi", label: "Aksi", minWidth: 100 },
-];
-
 const headStyle = {
   backgroundColor: "#4d4d4d",
   color: "white",
@@ -128,7 +118,7 @@ const PerhitunganGaji = () => {
     try {
       setLoading(true);
 
-      const res = await api.get("/payroll/preview/masal", {
+      const res = await api.get("/payroll/all", {
         params: {
           bulan: selectedMonth,
           tahun: selectedYear,
@@ -140,7 +130,7 @@ const PerhitunganGaji = () => {
       setSummary({
         jumlah_karyawan: res.data.jumlah_karyawan,
         total_gaji_kotor: res.data.total_gaji_kotor,
-        total_potongan: res.data.total_potongan_estimasi,
+        total_potongan: res.data.total_potongan,
         total_gaji_bersih: res.data.total_gaji_bersih,
       });
 
@@ -912,7 +902,7 @@ const PerhitunganGaji = () => {
                               maxWidth: 220,
                             }}
                           >
-                            Rekap Disiplin
+                            Keterangan
                           </TableCell>
                           {/* Aksi */}
                           <TableCell
@@ -996,7 +986,7 @@ const PerhitunganGaji = () => {
                                   sx={{ ...cellStyle, color: "#d32f2f" }}
                                   align="right"
                                 >
-                                  {formatRupiah(item.total_potongan_estimasi)}
+                                  {formatRupiah(item.total_potongan)}
                                 </TableCell>
 
                                 <TableCell
@@ -1019,7 +1009,7 @@ const PerhitunganGaji = () => {
                                     maxWidth: 220, // 🔒 biar tidak melebar
                                   }}
                                 >
-                                  {item.rekap_disiplin || "-"}
+                                  {item.keterangan || "-"}
                                 </TableCell>
                                 <TableCell
                                   align="center"

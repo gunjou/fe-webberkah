@@ -118,9 +118,9 @@ export const ExportPayrollPreviewPDF = ({
     capitalize(item.nama),
     capitalize(item.jenis_pegawai),
     formatRupiah(item.gaji_kotor || 0),
-    formatRupiah(item.total_potongan_estimasi || 0),
+    formatRupiah(item.total_potongan || 0),
     formatRupiah(item.gaji_bersih || 0),
-    safeString(item.rekap_disiplin),
+    safeString(item.keterangan),
   ]);
 
   /* ========================
@@ -182,7 +182,7 @@ export const ExportPayrollPreviewPDF = ({
     0
   );
   const totalPotongan = rowsData.reduce(
-    (sum, d) => sum + (d.total_potongan_estimasi || 0),
+    (sum, d) => sum + (d.total_potongan || 0),
     0
   );
   const totalGajiBersih = rowsData.reduce(
@@ -202,7 +202,7 @@ export const ExportPayrollPreviewPDF = ({
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("Ringkasan Total Payroll", 14, y);
+  doc.text("Ringkasan Total Gaji", 14, y);
 
   y += 8;
 

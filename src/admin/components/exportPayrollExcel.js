@@ -82,9 +82,9 @@ export const exportPayrollExcel = ({
       item.nama || "-",
       item.jenis_pegawai || "-",
       Number(item.gaji_kotor || 0),
-      Number(item.total_potongan_estimasi || 0),
+      Number(item.total_potongan || 0),
       Number(item.gaji_bersih || 0),
-      item.rekap_disiplin || "-",
+      item.keterangan || "-",
     ]);
   });
 
@@ -97,7 +97,7 @@ export const exportPayrollExcel = ({
   );
 
   const totalPotongan = rowsData.reduce(
-    (sum, r) => sum + (r.total_potongan_estimasi || 0),
+    (sum, r) => sum + (r.total_potongan || 0),
     0
   );
 
