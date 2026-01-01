@@ -49,6 +49,7 @@ const Absensi = () => {
   const nama = toTitleCase(localStorage.getItem("nama"));
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAbsenMasuk, setIsAbsenMasuk] = useState(true);
+  const [absenMode, setAbsenMode] = useState("");
   const [dataPresensi, setDataPresensi] = useState(null);
   const jamTerlambat = formatMenitToJamMenit(dataPresensi?.jam_terlambat);
   const dropdownRef = useRef(null);
@@ -126,13 +127,11 @@ const Absensi = () => {
 
   useEffect(() => {
     const fetchPresensi = async () => {
-      setLoading(true); // mulai loading
-
+      setLoading(true);
       const id_karyawan = localStorage.getItem("id_karyawan");
       const token = localStorage.getItem("token");
 
       if (!id_karyawan || !token) {
-        console.warn("Token atau ID karyawan belum tersedia");
         setLoading(false);
         return;
       }
@@ -145,17 +144,26 @@ const Absensi = () => {
         const presensi = response.data;
         setDataPresensi(presensi);
 
-        if (!presensi) {
-          setIsAbsenMasuk(true);
+        // --- LOGIKA PENENTUAN MODE TOMBOL ---
+        if (!presensi || !presensi.jam_masuk) {
+          setAbsenMode("checkin");
         } else if (presensi.jam_masuk && !presensi.jam_keluar) {
-          setIsAbsenMasuk(false);
+          // Cek urutan istirahat
+          if (!presensi.istirahat?.sudah_mulai) {
+            setAbsenMode("mulai_istirahat");
+          } else if (!presensi.istirahat?.sudah_selesai) {
+            setAbsenMode("selesai_istirahat");
+          } else {
+            // Istirahat sudah selesai semua, berarti tinggal pulang
+            setAbsenMode("checkout");
+          }
         } else if (presensi.jam_masuk && presensi.jam_keluar) {
-          setIsAbsenMasuk(null);
+          setAbsenMode("completed");
         }
       } catch (err) {
-        console.error("Gagal mengambil data presensi.");
+        console.error("Gagal mengambil data presensi:", err);
       } finally {
-        setLoading(false); // selesai loading
+        setLoading(false);
       }
     };
 
@@ -214,12 +222,40 @@ const Absensi = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
+  const handleMulaiIstirahat = async () => {
+    // 1. Konfirmasi opsional agar tidak sengaja terpencet
+    if (!window.confirm("Mulai waktu istirahat sekarang?")) return;
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.post(
+        "/absensi/istirahat/mulai",
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Jika berhasil
+      alert(response.data.message || "Selamat beristirahat!");
+      window.location.reload();
+    } catch (err) {
+      // 2. TANGKAP PESAN ERROR DARI BACKEND
+      // Backend mengirim: { "status": "error", "message": "Istirahat hanya bisa..." }
+      const errorMessage =
+        err.response?.data?.message || "Gagal memulai istirahat";
+
+      console.error("Error istirahat:", err.response?.data);
+      alert("Gagal: " + errorMessage); // Ini akan memunculkan pesan "Istirahat hanya bisa dimulai dari 11.30..."
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAbsen = () => {
-    navigate("/ambil-gambar", {
-      state: {
-        mode: isAbsenMasuk ? "checkin" : "checkout",
-      },
-    });
+    // Ini akan membawa mode 'checkin', 'selesai_istirahat', atau 'checkout' ke AmbilGambar.jsx
+    navigate("/ambil-gambar", { state: { mode: absenMode } });
   };
 
   useEffect(() => {
@@ -252,6 +288,21 @@ const Absensi = () => {
         .catch((err) => console.error("Gagal menghapus:", err));
     }
   };
+
+  // Di dalam komponen, sebelum return:
+  const sekarang = new Date();
+  const jam = sekarang.getHours();
+  const menit = sekarang.getMinutes();
+  const totalMenit = jam * 60 + menit;
+
+  const menitMulai = 11 * 60 + 30; // 11:30
+  const menitSelesai = 14 * 60; // 14:00
+
+  // Status spesifik
+  const belumWaktunya = totalMenit < menitMulai;
+  const sudahLewat = totalMenit > menitSelesai;
+  const isWaktuIstirahat =
+    totalMenit >= menitMulai && totalMenit <= menitSelesai;
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-custom-merah to-custom-gelap">
@@ -325,32 +376,52 @@ const Absensi = () => {
             <div className="text-4xl font-bold pb-4">08:00 - 17:00</div>
             <div className="flex justify-center mt-4">
               {loading ? (
-                // === SPINNER TAMPIL DULU ===
-                <div className="flex items-center justify-center h-20">
-                  <div className="loader"></div>
-                </div>
-              ) : izinDisetujui || isSakitHariIni ? (
-                // === STATUS IZIN / SAKIT ===
-                <span className="text-black font-semibold">
-                  {izinDisetujui
-                    ? "Izin telah disetujui"
-                    : "Status absen: Sakit"}
-                </span>
-              ) : isAbsenMasuk !== null ? (
-                // === TOMBOL ABSEN ===
-                <button
-                  type="button"
-                  className="flex w-[150px] text-white items-center justify-center bg-custom-merah hover:bg-custom-gelap text-black font-medium rounded-[20px] px-2 py-2 shadow-md disabled:opacity-50"
-                  onClick={handleAbsen}
-                  disabled={izinDisetujui || isSakitHariIni}
-                >
-                  {isAbsenMasuk ? "Absen Masuk" : "Absen Pulang"}
-                </button>
+                <div className="loader"></div>
               ) : (
-                // === SUDAH ABSEN MASUK & KELUAR ===
-                <p className="font-semibold">
-                  Terimakasih telah bekerja hari ini!
-                </p>
+                <>
+                  {absenMode === "completed" ? (
+                    <p className="font-semibold text-green-600">
+                      Terimakasih telah bekerja hari ini!
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      // Tombol mati jika mode istirahat tapi di luar jam 11:30 - 14:00
+                      disabled={
+                        absenMode === "mulai_istirahat" && !isWaktuIstirahat
+                      }
+                      className={`flex w-[200px] text-white items-center justify-center font-medium rounded-[20px] px-2 py-2 shadow-md transition-all ${
+                        absenMode === "mulai_istirahat" && !isWaktuIstirahat
+                          ? "bg-gray-400 cursor-not-allowed opacity-70"
+                          : "bg-custom-merah hover:bg-red-700"
+                      }`}
+                      onClick={
+                        absenMode === "mulai_istirahat"
+                          ? handleMulaiIstirahat
+                          : handleAbsen
+                      }
+                    >
+                      {absenMode === "mulai_istirahat" ? (
+                        !isWaktuIstirahat ? (
+                          belumWaktunya ? (
+                            "Belum Jam Istirahat"
+                          ) : (
+                            "Waktu Istirahat Lewat"
+                          )
+                        ) : (
+                          "Mulai Istirahat"
+                        )
+                      ) : (
+                        <>
+                          {absenMode === "checkin" && "Absen Masuk"}
+                          {absenMode === "selesai_istirahat" &&
+                            "Selesai Istirahat"}
+                          {absenMode === "checkout" && "Absen Pulang"}
+                        </>
+                      )}
+                    </button>
+                  )}
+                </>
               )}
             </div>
 
@@ -468,60 +539,125 @@ const Absensi = () => {
         )}
 
         <div>
-          <span className="Title flex pl-6 pt-2 text-xl text-white font-semibold">
-            Presensi
+          <span className="Title flex pl-6 text-xl text-white font-semibold">
+            Presensi Hari Ini
           </span>
-          <div className="block ml-2 mr-2 mt-3 bg-white border border-gray-200 rounded-[20px] shadow-lg relative">
-            <div className="pt-2 pl-4 pb-2 pr-4 flex justify-between items-center font-semibold">
-              <span>{getFormattedDate()}</span>
+
+          {/* KARTU UTAMA: MASUK & KELUAR */}
+          <div className="block mx-2 mt-3 bg-white border border-gray-200 rounded-[20px] shadow-lg relative overflow-hidden">
+            <div className="pt-2 px-4 pb-1 flex justify-between items-center border-b border-gray-50">
+              <span className="text-sm font-bold text-gray-700">
+                {dataPresensi?.tanggal || getFormattedDate()}
+              </span>
+              <span className="text-[9px] bg-custom-merah/10 text-custom-merah px-2 py-0.5 rounded-full font-bold">
+                LOG KERJA
+              </span>
             </div>
-            <div className="pl-4 grid grid-cols-2">
-              <div className="flex pl-0.5 pb-2">
-                <p className="text-xl pt-0.5 pr-2 text-custom-merah">
-                  <FaLocationDot />
-                  <span className="text-sm font-semibold">
-                    {dataPresensi?.lokasi_masuk || "Belum absensi masuk"}
-                  </span>
-                </p>
-              </div>
-              <span className="text-md font-semibold absolute right-7 text-custom-merah">
-                Jam Masuk: <br />
-                <span className="text-xl font-bold">
+
+            <div className="p-3 grid grid-cols-2 gap-0 divide-x divide-gray-100">
+              {/* Jam Masuk */}
+              <div className="flex flex-col items-center justify-center pr-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase">
+                  Jam Masuk
+                </span>
+                <span className="text-xl font-black text-custom-merah leading-none my-1">
                   {dataPresensi?.jam_masuk || "--:--"}
                 </span>
-              </span>
+                <div className="flex items-center text-gray-500">
+                  <FaLocationDot className="text-[10px] mr-1 text-custom-merah" />
+                  <span className="text-[10px] font-medium truncate max-w-[80px]">
+                    {dataPresensi?.lokasi_masuk || "Belum Absen"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Jam Keluar */}
+              <div className="flex flex-col items-center justify-center pl-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase">
+                  Jam Keluar
+                </span>
+                <span className="text-xl font-black text-custom-merah leading-none my-1">
+                  {dataPresensi?.jam_keluar || "--:--"}
+                </span>
+                <div className="flex items-center text-gray-500">
+                  <FaLocationDot className="text-[10px] mr-1 text-custom-merah" />
+                  <span className="text-[10px] font-medium truncate max-w-[80px]">
+                    {dataPresensi?.lokasi_keluar || "Belum Keluar"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="block ml-2 mr-2 mt-3 bg-white border border-gray-200 rounded-[20px] shadow-lg relative">
-            <div className="pt-2 pl-4 pb-2 pr-4 flex justify-between items-center font-semibold">
-              <span>{getFormattedDate()}</span>
-              <button
-                onClick={() => {
-                  handleDelete(dataPresensi.id_absensi);
-                }}
-                className="flex items-center absolute right-7 text-custom-merah hover:text-red-700"
-                title="Hapus"
-              >
-                <IoTrashBin className="mr-1" />
-                Hapus
-              </button>
-            </div>
-            <div className="pl-4 grid grid-cols-2">
-              <div className="flex pl-0.5 pb-2">
-                <p className="text-xl pt-0.5 pr-2 text-custom-merah">
-                  <FaLocationDot />
-                  <span className="text-sm font-semibold">
-                    {dataPresensi?.lokasi_keluar || "Belum absensi keluar"}
+          {/* KARTU ISTIRAHAT: MULAI & SELESAI */}
+          <div className="block mx-2 mt-3 bg-white border border-gray-200 rounded-[20px] shadow-lg relative overflow-hidden">
+            <div className="pt-2 px-4 pb-1 flex justify-between items-center border-b border-gray-50 bg-orange-50/30">
+              <span className="text-xs font-bold text-custom-merah flex items-center">
+                Waktu Istirahat
+                {dataPresensi?.istirahat?.sudah_selesai && (
+                  <span className="ml-2 text-[8px] bg-green-100 text-green-700 px-1 rounded">
+                    SELESAI
                   </span>
-                </p>
-              </div>
-              <span className="text-md font-semibold absolute right-7 text-custom-merah">
-                Jam Keluar: <br />
-                <span className="text-xl font-bold">
-                  {dataPresensi?.jam_keluar || "--:--"}
-                </span>
+                )}
               </span>
+
+              {/* Section Status Menit (Pengganti Button) */}
+              <div className="flex items-center">
+                {dataPresensi?.istirahat?.sudah_selesai && (
+                  <>
+                    {/* Kondisi jika Telat Balik */}
+                    {dataPresensi.istirahat.menit_telat > 0 && (
+                      <div className="flex items-center bg-red-100 text-red-700 px-2 py-0.5 rounded-lg border border-red-200 shadow-sm">
+                        <span className="text-[10px] font-black tracking-tighter">
+                          Telat: {dataPresensi.istirahat.menit_telat} menit
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Kondisi jika Lebih Awal/Rajin (Hanya muncul jika tidak telat) */}
+                    {dataPresensi.istirahat.menit_telat === 0 &&
+                      dataPresensi.istirahat.menit_lebih > 0 && (
+                        <div className="flex items-center bg-blue-100 text-blue-700 px-2 py-0.5 rounded-lg border border-blue-200 shadow-sm">
+                          <span className="text-[10px] font-black tracking-tighter">
+                            Awal: {dataPresensi.istirahat.menit_lebih} menit
+                          </span>
+                        </div>
+                      )}
+
+                    {/* Kondisi jika Tepat Waktu */}
+                    {dataPresensi.istirahat.menit_telat === 0 &&
+                      dataPresensi.istirahat.menit_lebih === 0 && (
+                        <div className="flex items-center bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg border border-gray-200">
+                          <span className="text-[10px] font-bold uppercase tracking-tighter">
+                            Tepat Waktu
+                          </span>
+                        </div>
+                      )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="p-3 grid grid-cols-2 gap-0 divide-x divide-gray-100">
+              {/* Jam Mulai Istirahat */}
+              <div className="flex flex-col items-center justify-center pr-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase">
+                  Mulai
+                </span>
+                <span className="text-xl font-black text-custom-merah leading-none my-1">
+                  {dataPresensi?.istirahat?.jam_mulai || "--:--"}
+                </span>
+              </div>
+
+              {/* Jam Selesai Istirahat */}
+              <div className="flex flex-col items-center justify-center pl-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase">
+                  Selesai
+                </span>
+                <span className="text-xl font-black text-custom-merah leading-none my-1">
+                  {dataPresensi?.istirahat?.jam_selesai || "--:--"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
